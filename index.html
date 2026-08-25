@@ -662,7 +662,7 @@
     if (!CONFIGURED) { state.error = "setup"; renderAll(); return Promise.resolve(); }
     return Promise.all([
       sb("roster?select=email,name,gen,has_pin"),
-      sb("scores?select=email,week,attempt,score,streak"),
+      sb("scores?select=email,gen,week,attempt,score,streak"),
       sb("games?select=week,name,tries")
     ]).then(function(res){
       state.roster = res[0] || [];
