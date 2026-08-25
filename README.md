@@ -5,8 +5,10 @@ One tiny browser game per week for the Uproot team. Fully public — anyone can 
 **Play here:** https://dharmesh7063-cmd.github.io/uproot-arcade/
 
 ## How it works
-- **Sign up once**: display name + `@uprootclean.com` email (no password). Typing just the email username auto-fills the domain. One account per email and unique names — enforced by the database.
-- **Returning players** just tap their name on the roster.
+- **Sign up once**: display name + `@uprootclean.com` email + a secret **4-digit PIN**. Typing just the email username auto-fills the domain. One account per email — enforced by the database.
+- **Returning players** tap their name and enter their PIN ("prove it's you"). A verified device remembers you.
+- **PIN security**: only a hash is stored, in a write-once column the public key cannot read; verification runs server-side (`check_pin`). Pre-PIN accounts get a one-shot claim flow.
+- **Forgot PIN → reset = NEW LIFE**: your old account becomes a ghost 👻 that keeps every score forever, and you restart the season at zero. If you later remember the old PIN, entering it signs you back into the ghost, scores intact. Weekly credits are counted per *email* across lives, so resetting never grants extra runs.
 - **Credits**: each player gets a set number of runs per week (the `games` table row for that week — 3 for Week 1). Best run counts. The credit cap is enforced server-side; the 4th attempt is rejected.
 - **Scores never reset**: every run ever played is stored permanently. Weekly winners earn 🏆; season standings rank by the total of each week's best.
 - **Scoreboard sidebar**: the 🏆 button shows/hides it (side column on desktop, drawer on phones) so full-screen games get the whole canvas.
