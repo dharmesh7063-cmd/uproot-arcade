@@ -164,6 +164,10 @@
     font-size:14px; letter-spacing:.05em;
   }
   .joincol input::placeholder{ color:#6B5D9E; }
+  .pin{ text-align:center; letter-spacing:.6em; font-size:18px !important; }
+  .hl{ color:var(--cyan); }
+  .warn{ color:var(--gold); }
+  .linkrow{ display:flex; gap:20px; justify-content:center; margin-top:12px; }
 
   .chips{ display:flex; flex-wrap:wrap; gap:8px; margin:2px 0 14px; }
   .chip{
@@ -430,15 +434,57 @@
     </div>
 
     <section class="card" id="join-card" aria-label="Join the arcade">
-      <h2 class="cardtitle">WHO'S PLAYING?</h2>
-      <p class="sub">Coming back? Just tap your name. New here? Sign up once with your @uprootclean.com email — one account per Uprooter, no password.</p>
-      <div class="chips" id="chips"></div>
-      <div class="joincol">
-        <input id="join-name" maxlength="20" placeholder="YOUR NAME" autocomplete="off" aria-label="Your name">
-        <input id="join-email" maxlength="60" placeholder="EMAIL (JUST YOUR USERNAME WORKS)" autocomplete="off" inputmode="email" aria-label="Your @uprootclean.com email — typing just the username auto-fills the domain">
-        <button class="btn pink" id="join-btn">JOIN THE ROSTER</button>
+      <h2 class="cardtitle" id="join-title">WHO'S PLAYING?</h2>
+
+      <div id="jv-list">
+        <p class="sub">Coming back? Tap your name and enter your PIN. New here? Sign up once with your @uprootclean.com email and a secret 4-digit PIN.</p>
+        <div class="chips" id="chips"></div>
+        <div class="joincol">
+          <input id="join-name" maxlength="20" placeholder="YOUR NAME" autocomplete="off" aria-label="Your name">
+          <input id="join-email" maxlength="60" placeholder="EMAIL (JUST YOUR USERNAME WORKS)" autocomplete="off" inputmode="email" aria-label="Your @uprootclean.com email — typing just the username auto-fills the domain">
+          <input id="join-pin" class="pin" maxlength="4" placeholder="CHOOSE A 4-DIGIT PIN" autocomplete="off" inputmode="numeric" aria-label="Choose a secret 4-digit PIN">
+          <button class="btn pink" id="join-btn">JOIN THE ROSTER</button>
+        </div>
+        <p class="note" id="join-note"></p>
       </div>
-      <p class="note" id="join-note"></p>
+
+      <div id="jv-pin" hidden>
+        <p class="sub">Playing as <b id="pin-who" class="hl"></b> — prove it's you!</p>
+        <div class="joincol">
+          <input id="pin-input" class="pin" maxlength="4" placeholder="••••" autocomplete="off" inputmode="numeric" aria-label="Your 4-digit PIN">
+          <button class="btn pink" id="pin-go">LET ME IN</button>
+        </div>
+        <p class="note" id="pin-note"></p>
+        <div class="linkrow">
+          <button class="linkbtn" id="pin-forgot">forgot your pin?</button>
+          <button class="linkbtn" id="pin-back">back</button>
+        </div>
+      </div>
+
+      <div id="jv-claim" hidden>
+        <p class="sub"><b id="claim-who" class="hl"></b>, your account is from the pre-PIN era. Claim it by setting a secret 4-digit PIN — first come, first served!</p>
+        <div class="joincol">
+          <input id="claim-pin" class="pin" maxlength="4" placeholder="SET YOUR 4-DIGIT PIN" autocomplete="off" inputmode="numeric" aria-label="Set your 4-digit PIN">
+          <button class="btn pink" id="claim-go">CLAIM MY ACCOUNT</button>
+        </div>
+        <p class="note" id="claim-note"></p>
+        <div class="linkrow">
+          <button class="linkbtn" id="claim-back">back</button>
+        </div>
+      </div>
+
+      <div id="jv-reset" hidden>
+        <p class="sub warn">⚠ PIN AMNESIA DETECTED</p>
+        <p class="sub">Resetting does NOT unlock your old account — it gives you a <b>new life</b>. Old-you becomes a ghost 👻 who keeps every score forever, and new-you starts the season at <b>ZERO</b>. The arcade forgives; the leaderboard never forgets. (Fun fact: 90% of PIN amnesia is cured by trying one more time. Make sure you enter the correct PIN!)</p>
+        <div class="joincol">
+          <input id="reset-pin" class="pin" maxlength="4" placeholder="NEW 4-DIGIT PIN" autocomplete="off" inputmode="numeric" aria-label="New 4-digit PIN for your new life">
+          <button class="btn pink" id="reset-go">RESET — START MY NEW LIFE</button>
+        </div>
+        <p class="note" id="reset-note"></p>
+        <div class="linkrow">
+          <button class="linkbtn" id="reset-back">wait, I remember now!</button>
+        </div>
+      </div>
     </section>
 
     <section class="card" id="game-card" aria-label="Fur Frenzy game" hidden>
@@ -520,7 +566,7 @@
 
   var DURATION = 30;
   var COLS = 4, ROWS = 5, TILES = COLS * ROWS;
-  var ME_KEY = "ua-me", PENDING_KEY = "ua-pending-v3", SB_KEY = "ua-sb";
+  var ME_KEY = "ua-me", PENDING_KEY = "ua-pending-v4", SB_KEY = "ua-sb";
 
   var $ = function(s){ return document.querySelector(s); };
 
@@ -549,6 +595,19 @@
     if (v && v.indexOf("@") === -1) v += "@uprootclean.com";
     return v;
   }
+  function sha256Hex(str){
+    var enc = new TextEncoder().encode(str);
+    return crypto.subtle.digest("SHA-256", enc).then(function(buf){
+      return Array.prototype.map.call(new Uint8Array(buf), function(b){
+        return ("0" + b.toString(16)).slice(-2);
+      }).join("");
+    });
+  }
+  /* Must match check_pin() in the database exactly. */
+  function pinHash(email, pin){
+    return sha256Hex(email + ":" + pin + ":uproot-arcade");
+  }
+  function validPin(p){ return /^\d{4}$/.test(p); }
 
   /* ================= backend calls ================= */
   function sb(path, opts){
@@ -585,11 +644,15 @@
 
   function postRoster(rec){
     return sb("roster", { method: "POST", prefer: "return=minimal",
-      body: { email: rec.email, name: rec.name } });
+      body: { email: rec.email, name: rec.name, gen: rec.gen || 1, pin_hash: rec.pin_hash || null } });
   }
   function postScore(rec){
     return sb("scores", { method: "POST", prefer: "return=minimal",
-      body: { email: rec.email, week: rec.week, attempt: rec.attempt, score: rec.score, streak: rec.streak } });
+      body: { email: rec.email, gen: rec.gen || 1, week: rec.week, attempt: rec.attempt, score: rec.score, streak: rec.streak } });
+  }
+  function checkPin(email, gen, pin){
+    return sb("rpc/check_pin", { method: "POST",
+      body: { p_email: email, p_gen: gen, p_pin: pin } });
   }
 
   /* ================= shared state ================= */
@@ -598,7 +661,7 @@
   function loadData(){
     if (!CONFIGURED) { state.error = "setup"; renderAll(); return Promise.resolve(); }
     return Promise.all([
-      sb("roster?select=email,name"),
+      sb("roster?select=email,name,gen,has_pin"),
       sb("scores?select=email,week,attempt,score,streak"),
       sb("games?select=week,name,tries")
     ]).then(function(res){
@@ -618,13 +681,21 @@
     var g = state.games[week];
     return (g && g.tries) ? g.tries : FALLBACK_TRIES;
   }
-  function nameFor(email){
+  function gensFor(email){
+    return state.roster.filter(function(r){ return r.email === email; })
+      .sort(function(a, b){ return b.gen - a.gen; });
+  }
+  function latestGen(email){
+    var g = gensFor(email);
+    return g.length ? g[0].gen : 1;
+  }
+  function nameFor(email, gen){
+    gen = gen || 1;
     var found = null;
-    state.roster.forEach(function(r){ if (r.email === email) found = r; });
-    if (found) return found.name;
+    state.roster.forEach(function(r){ if (r.email === email && r.gen === gen) found = r; });
     var m = me();
-    if (m && m.email === email) return m.name;
-    return email.split("@")[0];
+    var base = found ? found.name : (m && m.email === email ? m.name : email.split("@")[0]);
+    return gen < latestGen(email) ? base + " 👻" : base; // pre-reset lives haunt the board
   }
 
   /* ================= pending queue (offline safety net) ================= */
@@ -675,7 +746,10 @@
 
   /* ================= identity ================= */
   function me(){
-    try { return JSON.parse(store(true, ME_KEY) || "null"); } catch (e) { return null; }
+    try {
+      var m = JSON.parse(store(true, ME_KEY) || "null");
+      return (m && m.gen) ? m : null; // identities from before the PIN era must re-verify
+    } catch (e) { return null; }
   }
   function setMe(m){ store(false, ME_KEY, m ? JSON.stringify(m) : null); }
   function myRuns(){
@@ -705,11 +779,16 @@
   var justFinished = false;
 
   function renderChips(){
-    var roster = state.roster.slice().sort(function(a, b){ return a.name.localeCompare(b.name); });
+    var byEmail = {};
+    state.roster.forEach(function(r){
+      if (!byEmail[r.email] || r.gen > byEmail[r.email].gen) byEmail[r.email] = r;
+    });
     var m = me();
-    if (m && !roster.some(function(r){ return r.email === m.email; })) {
-      roster.push({ email: m.email, name: m.name }); // signup still syncing
+    if (m && !byEmail[m.email]) {
+      byEmail[m.email] = { email: m.email, name: m.name, gen: m.gen, has_pin: true }; // signup still syncing
     }
+    var roster = Object.keys(byEmail).map(function(k){ return byEmail[k]; })
+      .sort(function(a, b){ return a.name.localeCompare(b.name); });
     var used = {};
     state.scores.forEach(function(s){ if (s.week === WEEK) used[s.email] = (used[s.email] || 0) + 1; });
     var box = $("#chips");
@@ -724,12 +803,7 @@
       var b = document.createElement("button");
       b.className = "chip";
       b.innerHTML = esc(r.name) + ((used[r.email] || 0) >= triesFor(WEEK) ? ' <span class="done">✔</span>' : "");
-      b.addEventListener("click", function(){
-        setMe({ email: r.email, name: r.name });
-        justFinished = false;
-        toast("WELCOME BACK, " + r.name.toUpperCase() + "!");
-        renderAll();
-      });
+      b.addEventListener("click", function(){ selectAccount(r.email); });
       box.appendChild(b);
     });
   }
@@ -741,10 +815,10 @@
   function bestPerWeek(scores){
     var map = {};
     scores.forEach(function(s){
-      var k = s.email + "|" + s.week;
+      var k = s.email + "|" + (s.gen || 1) + "|" + s.week;
       var b = map[k];
       if (!b) {
-        map[k] = { email: s.email, week: s.week, score: s.score, streak: s.streak, attempts: 1 };
+        map[k] = { email: s.email, gen: s.gen || 1, week: s.week, score: s.score, streak: s.streak, attempts: 1 };
       } else {
         b.attempts++;
         if (s.score > b.score) { b.score = s.score; b.streak = s.streak; }
@@ -759,8 +833,10 @@
       : (state.error ? "Can't reach the scoreboard — retrying…" : "");
     boardNote.className = "note" + (state.error || !CONFIGURED ? " err" : "");
 
-    $("#roster-count").textContent = state.roster.length
-      ? state.roster.length + " PLAYER" + (state.roster.length === 1 ? "" : "S") : "";
+    var emails = {};
+    state.roster.forEach(function(r){ emails[r.email] = true; });
+    var nPlayers = Object.keys(emails).length;
+    $("#roster-count").textContent = nPlayers ? nPlayers + " PLAYER" + (nPlayers === 1 ? "" : "S") : "";
 
     var bests = bestPerWeek(state.scores);
     var wk = bests.filter(function(s){ return s.week === WEEK; })
@@ -770,7 +846,7 @@
           return '<li class="w-row' + (i === 0 ? " t1" : "") + '">' +
             (medal(i) ? '<span class="w-rank">' + medal(i) + "</span>"
                       : '<span class="w-rank n">' + (i + 1) + "</span>") +
-            '<span class="w-name">' + esc(nameFor(s.email)) + "</span>" +
+            '<span class="w-name">' + esc(nameFor(s.email, s.gen)) + "</span>" +
             '<span class="w-streak">' + s.attempts + "/" + triesFor(s.week) + " 🪙 · x" + s.streak + "</span>" +
             '<span class="w-score">' + s.score + "</span></li>";
         }).join("")
@@ -779,7 +855,8 @@
 
     var by = {};
     bests.forEach(function(s){
-      var b = by[s.email] || (by[s.email] = { total: 0, weeks: 0, wins: 0 });
+      var k = s.email + "|" + s.gen;
+      var b = by[k] || (by[k] = { email: s.email, gen: s.gen, total: 0, weeks: 0, wins: 0 });
       b.total += s.score; b.weeks++;
     });
     var weekNums = [];
@@ -788,11 +865,10 @@
       var ws = bests.filter(function(s){ return s.week === w; });
       var max = -1;
       ws.forEach(function(s){ if (s.score > max) max = s.score; });
-      ws.forEach(function(s){ if (s.score === max) by[s.email].wins++; });
+      ws.forEach(function(s){ if (s.score === max) by[s.email + "|" + s.gen].wins++; });
     });
-    var rows = Object.keys(by).map(function(k){
-      var b = by[k]; return { email: k, total: b.total, weeks: b.weeks, wins: b.wins };
-    }).sort(function(a, b){ return b.total - a.total; });
+    var rows = Object.keys(by).map(function(k){ return by[k]; })
+      .sort(function(a, b){ return b.total - a.total; });
 
     $("#season").innerHTML = rows.length
       ? '<div class="s-row head"><span class="s-rank">#</span><span class="s-name">Player</span>' +
@@ -800,7 +876,7 @@
         rows.map(function(r, i){
           return '<div class="s-row' + (i === 0 ? " t1" : "") + '">' +
             '<span class="s-rank">' + (i + 1) + "</span>" +
-            '<span class="s-name">' + esc(nameFor(r.email)) + "</span>" +
+            '<span class="s-name">' + esc(nameFor(r.email, r.gen)) + "</span>" +
             '<span class="s-wins">' + (r.wins ? "🏆" + (r.wins > 1 ? "×" + r.wins : "") : "—") + "</span>" +
             '<span class="s-weeks">' + r.weeks + "</span>" +
             '<span class="s-total">' + r.total + "</span></div>";
@@ -847,77 +923,234 @@
     n.textContent = msg;
     n.className = "note" + (kind ? " " + kind : "");
   }
+  /* ---- join card views: list | pin | claim | reset ---- */
+  var pinTarget = null; // { email, name } — account being unlocked/claimed/reset
+  function showJoin(view){
+    ["jv-list", "jv-pin", "jv-claim", "jv-reset"].forEach(function(id){
+      $("#" + id).hidden = (id !== "jv-" + view);
+    });
+    $("#join-title").textContent =
+      view === "pin" ? "ENTER YOUR PIN" :
+      view === "claim" ? "CLAIM YOUR ACCOUNT" :
+      view === "reset" ? "NEW LIFE?" : "WHO'S PLAYING?";
+  }
+  function noteIn(sel, msg, kind){
+    var n = $(sel);
+    n.textContent = msg;
+    n.className = "note" + (kind ? " " + kind : "");
+  }
+  function signIn(email, gen, name){
+    setMe({ email: email, gen: gen, name: name });
+    justFinished = false;
+    showJoin("list");
+    renderAll();
+  }
+  function selectAccount(email){
+    var gens = gensFor(email);
+    if (!gens.length) return;
+    var latest = gens[0];
+    var m = me();
+    if (m && m.email === email) { // already verified on this device
+      toast("WELCOME BACK, " + m.name.toUpperCase() + "!");
+      justFinished = false;
+      renderAll();
+      return;
+    }
+    pinTarget = { email: email, name: latest.name };
+    if (!latest.has_pin) {
+      $("#claim-who").textContent = latest.name.toUpperCase();
+      $("#claim-pin").value = "";
+      noteIn("#claim-note", "", "");
+      showJoin("claim");
+      $("#claim-pin").focus();
+    } else {
+      $("#pin-who").textContent = latest.name.toUpperCase();
+      $("#pin-input").value = "";
+      noteIn("#pin-note", "", "");
+      showJoin("pin");
+      $("#pin-input").focus();
+    }
+  }
+
+  /* ---- unlock with PIN (checks every life, newest first) ---- */
+  $("#pin-go").addEventListener("click", function(){
+    var pin = $("#pin-input").value.trim();
+    if (!validPin(pin)) { noteIn("#pin-note", "PINs are exactly 4 digits!", "err"); return; }
+    if (!pinTarget) { showJoin("list"); return; }
+    var gens = gensFor(pinTarget.email).filter(function(g){ return g.has_pin; });
+    var btn = $("#pin-go");
+    btn.disabled = true;
+    noteIn("#pin-note", "Checking…", "");
+    var i = 0;
+    (function tryNext(){
+      if (i >= gens.length) {
+        btn.disabled = false;
+        noteIn("#pin-note", "WRONG PIN! The couch remembers its true owner. Breathe, try again.", "err");
+        return;
+      }
+      var g = gens[i++];
+      checkPin(pinTarget.email, g.gen, pin).then(function(ok){
+        if (ok) {
+          btn.disabled = false;
+          var ghost = g.gen < latestGen(pinTarget.email);
+          toast(ghost ? "👻 GHOST MODE: OLD-YOU LIVES — SCORES INTACT!"
+                      : "WELCOME BACK, " + g.name.toUpperCase() + "!");
+          signIn(pinTarget.email, g.gen, g.name);
+        } else {
+          tryNext();
+        }
+      }).catch(function(){
+        btn.disabled = false;
+        noteIn("#pin-note", "Can't reach the arcade — try again in a moment.", "err");
+      });
+    })();
+  });
+  $("#pin-forgot").addEventListener("click", function(){
+    $("#reset-pin").value = "";
+    noteIn("#reset-note", "", "");
+    showJoin("reset");
+  });
+  $("#pin-back").addEventListener("click", function(){ showJoin("list"); });
+
+  /* ---- claim a pre-PIN account (one shot: PIN can only be set while empty) ---- */
+  $("#claim-go").addEventListener("click", function(){
+    var pin = $("#claim-pin").value.trim();
+    if (!validPin(pin)) { noteIn("#claim-note", "PINs are exactly 4 digits!", "err"); return; }
+    if (!pinTarget) { showJoin("list"); return; }
+    var email = pinTarget.email, gens = gensFor(email), latest = gens[0];
+    var btn = $("#claim-go");
+    btn.disabled = true;
+    noteIn("#claim-note", "Claiming…", "");
+    pinHash(email, pin).then(function(hash){
+      return sb("roster?email=eq." + encodeURIComponent(email) + "&gen=eq." + latest.gen + "&select=email,gen",
+        { method: "PATCH", prefer: "return=representation", body: { pin_hash: hash } });
+    }).then(function(rows){
+      btn.disabled = false;
+      if (rows && rows.length) {
+        toast("ACCOUNT CLAIMED! GUARD THAT PIN WITH YOUR LIFE 🧹");
+        signIn(email, latest.gen, latest.name);
+        loadData();
+      } else {
+        noteIn("#claim-note", "Too slow — this account already has a PIN! Enter it instead.", "err");
+        loadData().then(function(){ selectAccount(email); });
+      }
+    }).catch(function(){
+      btn.disabled = false;
+      noteIn("#claim-note", "Can't reach the arcade — try again in a moment.", "err");
+    });
+  });
+  $("#claim-back").addEventListener("click", function(){ showJoin("list"); });
+
+  /* ---- reset = new life: old account becomes a ghost with its scores ---- */
+  $("#reset-go").addEventListener("click", function(){
+    var pin = $("#reset-pin").value.trim();
+    if (!validPin(pin)) { noteIn("#reset-note", "New PINs are exactly 4 digits!", "err"); return; }
+    if (!pinTarget) { showJoin("list"); return; }
+    var email = pinTarget.email, name = pinTarget.name;
+    var newGen = latestGen(email) + 1;
+    var btn = $("#reset-go");
+    btn.disabled = true;
+    noteIn("#reset-note", "Reincarnating…", "");
+    pinHash(email, pin).then(function(hash){
+      function attempt(gen, retry){
+        return postRoster({ email: email, name: name, gen: gen, pin_hash: hash })
+          .catch(function(e){
+            if (isDup(e, "roster_pkey") && retry) return attempt(gen + 1, false);
+            throw e;
+          }).then(function(){ return gen; });
+      }
+      return attempt(newGen, true);
+    }).then(function(gen){
+      btn.disabled = false;
+      toast("NEW LIFE STARTED! OLD-YOU HAUNTS THE BOARD AS A GHOST 👻");
+      signIn(email, gen, name);
+      loadData();
+    }).catch(function(){
+      btn.disabled = false;
+      noteIn("#reset-note", "Can't reach the arcade — your old life survives another day.", "err");
+    });
+  });
+  $("#reset-back").addEventListener("click", function(){
+    if (pinTarget) selectAccount(pinTarget.email); else showJoin("list");
+  });
+
+  /* ---- sign-up (new account, gen 1) ---- */
   $("#join-btn").addEventListener("click", function(){
     var name = $("#join-name").value.trim().replace(/\s+/g, " ").slice(0, 20);
     var email = normalizeEmail($("#join-email").value);
+    var pin = $("#join-pin").value.trim();
     justFinished = false;
 
-    var existing = null;
-    state.roster.forEach(function(r){ if (r.email === email) existing = r; });
-    if (existing) {
-      setMe({ email: existing.email, name: existing.name });
-      toast("WELCOME BACK, " + existing.name.toUpperCase() + "!");
-      renderAll();
+    var gens = gensFor(email);
+    if (gens.length) { // email already registered → this is a sign-in, not a sign-up
+      joinNote("That email is already on the roster — enter its PIN.", "");
+      selectAccount(email);
       return;
     }
     if (!name || name.length < 2) { joinNote("Type a name first (2–20 letters)!", "err"); return; }
     if (!/^[a-z0-9._%+-]+@uprootclean\.com$/.test(email)) {
       joinNote("Sign-up needs your @uprootclean.com email.", "err"); return;
     }
+    if (!validPin(pin)) { joinNote("Pick a 4-digit PIN — you'll need it every time you play. Don't forget it 😉", "err"); return; }
     var nameTaken = false;
-    state.roster.forEach(function(r){ if (r.name.toLowerCase() === name.toLowerCase()) nameTaken = true; });
+    state.roster.forEach(function(r){
+      if (r.email !== email && r.gen === latestGen(r.email) && r.name.toLowerCase() === name.toLowerCase()) nameTaken = true;
+    });
     if (nameTaken) { joinNote("That name is already on the roster — add a last initial?", "err"); return; }
-
-    if (!CONFIGURED) {
-      setMe({ email: email, name: name });
-      queuePending({ kind: "roster", rec: { email: email, name: name } });
-      toast("JOINED ON THIS DEVICE — SYNCS ONCE THE BOARD IS LIVE");
-      renderAll();
-      return;
-    }
 
     var btn = $("#join-btn");
     btn.disabled = true;
     joinNote("Adding you to the roster…", "");
-    postRoster({ email: email, name: name }).then(function(){
-      setMe({ email: email, name: name });
-      toast("WELCOME TO THE ARCADE, " + name.toUpperCase() + "!");
-      return loadData();
-    }).catch(function(e){
-      if (isDup(e, "roster_pkey")) {
-        // Email already registered (fresh data beat us) — sign them in as that account.
-        return loadData().then(function(){
-          var m2 = null;
-          state.roster.forEach(function(r){ if (r.email === email) m2 = r; });
-          if (m2) { setMe({ email: m2.email, name: m2.name }); toast("WELCOME BACK, " + m2.name.toUpperCase() + "!"); }
-          renderAll();
-        });
-      }
-      if (isDup(e, "roster_name_unique")) { joinNote("That name is already on the roster — add a last initial?", "err"); return; }
-      if (e && e.code === "23514") { joinNote("Sign-up needs your @uprootclean.com email.", "err"); return; }
-      if (isNetwork(e)) {
-        setMe({ email: email, name: name });
-        queuePending({ kind: "roster", rec: { email: email, name: name } });
-        toast("OFFLINE — YOU'RE IN ON THIS DEVICE; SYNCS WHEN BACK ONLINE");
+    pinHash(email, pin).then(function(hash){
+      var rec = { email: email, name: name, gen: 1, pin_hash: hash };
+      if (!CONFIGURED) {
+        setMe({ email: email, gen: 1, name: name });
+        queuePending({ kind: "roster", rec: rec });
+        toast("JOINED ON THIS DEVICE — SYNCS ONCE THE BOARD IS LIVE");
         renderAll();
         return;
       }
-      joinNote("Couldn't reach the arcade — try again in a moment.", "err");
+      return postRoster(rec).then(function(){
+        toast("WELCOME TO THE ARCADE, " + name.toUpperCase() + "!");
+        signIn(email, 1, name);
+        return loadData();
+      }).catch(function(e){
+        if (isDup(e, "roster_pkey")) { // raced with a signup elsewhere
+          return loadData().then(function(){ selectAccount(email); });
+        }
+        if (e && e.code === "23514") { joinNote("Sign-up needs your @uprootclean.com email.", "err"); return; }
+        if (isNetwork(e)) {
+          setMe({ email: email, gen: 1, name: name });
+          queuePending({ kind: "roster", rec: rec });
+          toast("OFFLINE — YOU'RE IN ON THIS DEVICE; SYNCS WHEN BACK ONLINE");
+          renderAll();
+          return;
+        }
+        joinNote("Couldn't reach the arcade — try again in a moment.", "err");
+      });
     }).then(function(){ btn.disabled = false; });
   });
   $("#join-name").addEventListener("keydown", function(e){
     if (e.key === "Enter") $("#join-email").focus();
   });
   $("#join-email").addEventListener("keydown", function(e){
-    if (e.key === "Enter") $("#join-btn").click();
+    if (e.key === "Enter") $("#join-pin").focus();
   });
   $("#join-email").addEventListener("blur", function(){
     if (this.value.trim()) this.value = normalizeEmail(this.value);
   });
+  [["#join-pin", "#join-btn"], ["#pin-input", "#pin-go"], ["#claim-pin", "#claim-go"], ["#reset-pin", "#reset-go"]]
+    .forEach(function(pair){
+      $(pair[0]).addEventListener("keydown", function(e){
+        if (e.key === "Enter") $(pair[1]).click();
+      });
+    });
   $("#switch-btn").addEventListener("click", function(){
     if (playing) return;
     setMe(null);
     justFinished = false;
+    pinTarget = null;
+    showJoin("list");
     renderAll();
     $("#join-name").focus();
   });
@@ -1086,7 +1319,7 @@
       againBtn.hidden = false;
       againBtn.textContent = "PLAY AGAIN — " + left + " CREDIT" + (left === 1 ? "" : "S") + " LEFT";
     }
-    var rec = { email: m.email, week: WEEK, attempt: attempt, score: score, streak: bestStreak };
+    var rec = { email: m.email, gen: m.gen || 1, week: WEEK, attempt: attempt, score: score, streak: bestStreak };
     state.scores.push(rec); // optimistic; loadData() reconciles with the server
     renderChips(); renderScoreboard();
 
