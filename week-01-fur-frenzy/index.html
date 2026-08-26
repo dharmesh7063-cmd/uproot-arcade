@@ -169,6 +169,26 @@
   .warn{ color:var(--gold); }
   .linkrow{ display:flex; gap:20px; justify-content:center; margin-top:12px; }
 
+  .btn.wide{ width:100%; }
+  #continue-btn{ margin:2px 0 14px; }
+  #new-player-btn{ margin-top:14px; }
+  #signup-form{ margin-top:12px; }
+  .searchbox{
+    width:100%; margin:0 0 12px;
+    background:var(--bg); color:var(--lav);
+    border:2px solid var(--purple); border-radius:8px;
+    padding:10px 12px;
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:13px; letter-spacing:.05em;
+  }
+  .searchbox::placeholder{ color:#6B5D9E; }
+  .searchbox:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
+  .chips-scroll{
+    max-height:176px; overflow-y:auto; padding-right:2px;
+    scrollbar-width:thin; scrollbar-color:var(--line) transparent;
+  }
+  .chips-scroll::-webkit-scrollbar{ width:6px; }
+  .chips-scroll::-webkit-scrollbar-thumb{ background:var(--line); border-radius:3px; }
   .chips{ display:flex; flex-wrap:wrap; gap:8px; margin:2px 0 14px; }
   .chip{
     font-family:"Silkscreen","Courier New",monospace;
@@ -497,9 +517,12 @@
       <h2 class="cardtitle" id="join-title">WHO'S PLAYING?</h2>
 
       <div id="jv-list">
-        <p class="sub">Coming back? Tap your name and enter your PIN. New here? Sign up once with your @uprootclean.com email and a secret 4-digit PIN.</p>
-        <div class="chips" id="chips"></div>
-        <div class="joincol">
+        <p class="sub">Tap your name, enter your PIN, play. Your browser remembers you after that.</p>
+        <button class="btn cyan wide" id="continue-btn" hidden>⚡ CONTINUE AS <span id="continue-name"></span></button>
+        <input id="chip-search" class="searchbox" placeholder="🔎 FIND YOUR NAME…" autocomplete="off" aria-label="Search players" hidden>
+        <div class="chips chips-scroll" id="chips"></div>
+        <button class="btn pink wide" id="new-player-btn">🪙 INSERT COIN — NEW PLAYER</button>
+        <div class="joincol" id="signup-form" hidden>
           <input id="join-name" maxlength="20" placeholder="YOUR NAME" autocomplete="off" aria-label="Your name">
           <input id="join-email" maxlength="60" placeholder="EMAIL (JUST YOUR USERNAME WORKS)" autocomplete="off" inputmode="email" aria-label="Your @uprootclean.com email — typing just the username auto-fills the domain">
           <input id="join-pin" class="pin" maxlength="4" placeholder="CHOOSE A 4-DIGIT PIN" autocomplete="off" inputmode="numeric" aria-label="Choose a secret 4-digit PIN">
@@ -655,7 +678,7 @@
 
   var DURATION = 30;
   var COLS = 4, ROWS = 5, TILES = COLS * ROWS;
-  var ME_KEY = "ua-me", PENDING_KEY = "ua-pending-v4", SB_KEY = "ua-sb";
+  var ME_KEY = "ua-me", LAST_KEY = "ua-last", PENDING_KEY = "ua-pending-v4", SB_KEY = "ua-sb";
 
   var $ = function(s){ return document.querySelector(s); };
 
@@ -840,7 +863,10 @@
       return (m && m.gen) ? m : null; // identities from before the PIN era must re-verify
     } catch (e) { return null; }
   }
-  function setMe(m){ store(false, ME_KEY, m ? JSON.stringify(m) : null); }
+  function setMe(m){
+    store(false, ME_KEY, m ? JSON.stringify(m) : null);
+    if (m) store(false, LAST_KEY, m.email); // remembered even after switching player
+  }
   function myRuns(){
     var m = me();
     if (!m) return [];
@@ -878,13 +904,37 @@
     }
     var roster = Object.keys(byEmail).map(function(k){ return byEmail[k]; })
       .sort(function(a, b){ return a.name.localeCompare(b.name); });
+
+    /* Fast lane for the device's last player (works even after "switch"). */
+    var cont = $("#continue-btn");
+    var last = store(true, LAST_KEY);
+    var lastRow = last ? byEmail[last] : null;
+    if (!me() && lastRow) {
+      cont.hidden = false;
+      $("#continue-name").textContent = lastRow.name.toUpperCase();
+      cont.onclick = function(){ selectAccount(lastRow.email); };
+    } else {
+      cont.hidden = true;
+    }
+
+    /* Search appears once the roster outgrows a glance. */
+    var search = $("#chip-search");
+    search.hidden = roster.length <= 8;
+    var q = search.hidden ? "" : (search.value || "").trim().toLowerCase();
+    if (q) {
+      roster = roster.filter(function(r){
+        return r.name.toLowerCase().indexOf(q) !== -1 || r.email.indexOf(q) !== -1;
+      });
+    }
+
     var used = {};
     state.scores.forEach(function(s){ if (s.week === WEEK) used[s.email] = (used[s.email] || 0) + 1; });
     var box = $("#chips");
     box.innerHTML = "";
     if (!roster.length) {
       box.innerHTML = '<span class="none">' +
-        (state.loaded || !CONFIGURED ? "Roster is empty — be the first Uprooter to sign up!" : "Loading the roster…") +
+        (q ? "No player named “" + esc(q) + "” — check the spelling, or insert a coin below!"
+           : (state.loaded || !CONFIGURED ? "Roster is empty — be the first Uprooter to sign up!" : "Loading the roster…")) +
         "</span>";
       return;
     }
@@ -1284,6 +1334,14 @@
         joinNote("Couldn't reach the arcade — try again in a moment.", "err");
       });
     }).then(function(){ btn.disabled = false; });
+  });
+  $("#chip-search").addEventListener("input", function(){ renderChips(); });
+  $("#new-player-btn").addEventListener("click", function(){
+    var form = $("#signup-form");
+    var opening = form.hidden;
+    form.hidden = !opening;
+    this.textContent = opening ? "◂ NEVER MIND — I HAVE AN ACCOUNT" : "🪙 INSERT COIN — NEW PLAYER";
+    if (opening) $("#join-name").focus();
   });
   $("#join-name").addEventListener("keydown", function(e){
     if (e.key === "Enter") $("#join-email").focus();
