@@ -80,7 +80,15 @@
 
   /* ---------- Pixel-block logo: cream outline, pink→purple 3D extrusion ---------- */
   .marquee{ text-align:center; padding:4px 0 2px; }
-  .logo{ margin:0 0 4px; display:flex; flex-direction:column; align-items:center; gap:14px; transform:rotate(-2deg); }
+  .logo{
+    margin:0 0 4px; display:flex; flex-direction:column; align-items:center; gap:14px;
+    transform:rotate(-2deg);
+    animation:logo-bob 5s ease-in-out infinite;
+  }
+  @keyframes logo-bob{
+    0%, 100%{ transform:rotate(-2deg) translateY(0); }
+    50%{ transform:rotate(-1.4deg) translateY(-5px); }
+  }
   .logo span{
     font-family:"Press Start 2P","Courier New",monospace;
     font-weight:400; display:block; line-height:1; position:relative;
@@ -368,12 +376,25 @@
   /* Cheat-smell detector */
   .w-row.sus{ border-color:var(--pink); background:#3A1740; }
   .w-row.sus .w-score{ color:var(--pink); }
-  .sus-callout{
-    margin-top:10px; padding:9px 12px;
-    border:2px dashed var(--pink); border-radius:10px;
-    background:rgba(245,44,135,.08);
-    font-size:14.5px; color:var(--lav);
+  .w-row.sus .w-rank{ animation:blink 1.1s steps(2,start) infinite; }
+  /* departure-board ticker for suspects */
+  .sus-ticker{
+    margin-top:10px; overflow:hidden;
+    border:2px solid var(--pink); border-radius:10px;
+    background:#190716;
+    padding:9px 0;
   }
+  .ticker-track{
+    display:inline-flex; white-space:nowrap;
+    animation:ticker 16s linear infinite;
+  }
+  .ticker-track span{
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:12px; letter-spacing:.14em; color:var(--pink);
+    text-shadow:0 0 8px rgba(245,44,135,.6);
+    padding-right:70px;
+  }
+  @keyframes ticker{ to{ transform:translateX(-50%); } }
   /* House bot (exhibition player) */
   .w-row.bot{ border-style:dashed; border-color:var(--cyan); }
   .botchip{
@@ -390,16 +411,32 @@
     background:rgba(44,224,222,.07);
     font-size:14.5px; color:var(--lav);
   }
-  /* Week leader banner — the golden marquee */
+  /* Week leader banner — the golden marquee with a shine rolling the outline */
+  @property --ang{ syntax:"<angle>"; initial-value:0deg; inherits:false; }
   .week-champ{
+    position:relative;
     display:flex; align-items:center; justify-content:space-between; gap:10px;
     font-family:"Silkscreen","Courier New",monospace;
     font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;
     padding:11px 12px; margin-bottom:10px;
-    border:2px solid var(--gold); border-radius:10px;
-    background:linear-gradient(90deg, rgba(255,210,63,.18), rgba(255,210,63,.04));
-    animation:glowpulse 2.6s ease-in-out infinite;
+    border:2px solid rgba(255,210,63,.45); border-radius:10px;
+    background:linear-gradient(90deg, rgba(255,210,63,.16), rgba(255,210,63,.04));
+    box-shadow:0 0 12px rgba(255,210,63,.22);
   }
+  .week-champ::before{
+    content:""; position:absolute; inset:-2px; border-radius:12px; padding:2px;
+    background:conic-gradient(from var(--ang),
+      transparent 0deg, transparent 290deg,
+      rgba(255,210,63,.95) 322deg, #FFF6CE 336deg, rgba(255,210,63,.95) 350deg,
+      transparent 360deg);
+    -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite:xor;
+    mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite:exclude;
+    animation:ring-shine 3.8s linear infinite;
+    pointer-events:none;
+  }
+  @keyframes ring-shine{ to{ --ang:360deg; } }
   .week-champ .champ{
     font-family:"Press Start 2P","Courier New",monospace;
     font-size:12px; color:var(--gold);
@@ -439,6 +476,20 @@
   .hof li.latest .champ{
     font-family:"Press Start 2P","Courier New",monospace;
     font-size:11px; text-shadow:0 0 10px rgba(255,210,63,.5);
+  }
+  .heart{
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:11px; color:var(--lav);
+    background:var(--panel-2); border:2px solid var(--line); border-radius:999px;
+    padding:3px 10px; cursor:pointer; flex:none;
+  }
+  .heart:hover{ border-color:var(--pink); color:var(--pink); }
+  .heart.mine{ border-color:var(--pink); color:var(--pink); cursor:default; }
+  .heart:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
+  /* Gate mode: page one is just "who goes there?" — arcade unlocks after sign-in */
+  body.gated .sidebar, body.gated .sb-toggle{ display:none !important; }
+  body.gated #join-card{
+    box-shadow:var(--shadow), inset 0 0 0 1px rgba(140,75,255,.15), 0 0 34px rgba(140,75,255,.3);
   }
   .hof .empty{ display:block; text-align:center; font-family:"Pixelify Sans",sans-serif; font-size:14px; padding:12px; }
   /* Wide screens: the two panels sit side by side in a wider sidebar */
@@ -528,7 +579,7 @@
   @keyframes toastin{ from{ transform:translate(-50%,14px); opacity:0; } }
 
   @media (prefers-reduced-motion: reduce){
-    .pop-in, .float-score, .toast, .blink, .week-champ{ animation:none; }
+    .pop-in, .float-score, .toast, .blink, .week-champ::before, .ticker-track, .logo, .w-row.sus .w-rank{ animation:none; }
     .float-score{ opacity:0; }
   }
 </style>
@@ -553,10 +604,10 @@
     </div>
 
     <section class="card" id="join-card" aria-label="Join the arcade">
-      <h2 class="cardtitle" id="join-title">WHO'S PLAYING?</h2>
+      <h2 class="cardtitle" id="join-title">WHO GOES THERE?</h2>
 
       <div id="jv-list">
-        <p class="sub">Tap your name, enter your PIN, play. Your browser remembers you after that.</p>
+        <p class="sub">Identify yourself, player — tap your name and whisper your 4-digit code. The arcade remembers you after that.</p>
         <button class="btn cyan wide" id="continue-btn" hidden>⚡ CONTINUE AS <span id="continue-name"></span></button>
         <input id="chip-search" class="searchbox" placeholder="🔎 FIND YOUR NAME…" autocomplete="off" aria-label="Search players" hidden>
         <div class="chips chips-scroll" id="chips"></div>
@@ -696,8 +747,8 @@
   /* ============ weekly config (tune per game) ============ */
   var WEEK = 1;
   var GAME_NAME = "FUR FRENZY";
-  var WEEK_ENDS = "2026-09-01T00:00:00-04:00"; // when this week's game closes — set in each weekly build
   var FALLBACK_TRIES = 3; // server value in the `games` table wins
+  /* Weeks run Monday→Sunday; the countdown reads the calendar by itself. */
   /* Seasons: every 5 weeks a champion is crowned and a new season begins. */
   var SEASON_LEN = 5;
   var SEASON = Math.floor((WEEK - 1) / SEASON_LEN) + 1;
@@ -809,19 +860,21 @@
   }
 
   /* ================= shared state ================= */
-  var state = { roster: [], scores: [], games: {}, loaded: false, error: null };
+  var state = { roster: [], scores: [], games: {}, reactions: null, loaded: false, error: null };
 
   function loadData(){
     if (!CONFIGURED) { state.error = "setup"; renderAll(); return Promise.resolve(); }
     return Promise.all([
       sb("roster?select=email,name,gen,has_pin"),
       sb("scores?select=email,gen,week,attempt,score,streak"),
-      sb("games?select=week,name,tries")
+      sb("games?select=week,name,tries"),
+      sb("reactions?select=target,email").catch(function(){ return null; }) // table may not exist yet
     ]).then(function(res){
       state.roster = res[0] || [];
       state.scores = res[1] || [];
       state.games = {};
       (res[2] || []).forEach(function(g){ state.games[g.week] = g; });
+      state.reactions = res[3];
       state.loaded = true;
       state.error = null;
       renderAll();
@@ -1088,7 +1141,10 @@
       : '<li class="empty">' + (state.loaded || !CONFIGURED
           ? "No runs yet this week — spend a credit! 🪙" : "Loading scores…") + "</li>";
     var callouts = wk.filter(function(s){ return !isBot(s) && isSus(s); }).map(function(s){
-      return '<div class="sus-callout">' + roastFor(esc(nameFor(s.email, s.gen))) + "</div>";
+      var n = esc(nameFor(s.email, s.gen)).toUpperCase();
+      var line = "🚨 SMELL ALERT ••• " + n + " SMELLS LIKE CHEATING ••• " + roastFor(n) +
+        " ••• PROVE YOURSELF, LEGEND — REPLAY IT LIVE OR LOSE THE CROWN ••• THE ARCADE COMMITTEE NEVER BLINKS ••• ";
+      return '<div class="sus-ticker"><div class="ticker-track"><span>' + line + "</span><span>" + line + "</span></div></div>";
     });
     wk.filter(isBot).forEach(function(s){
       callouts.push('<div class="bot-callout">🤖 ' + esc(nameFor(s.email, s.gen)) + " is " +
@@ -1096,19 +1152,11 @@
     });
     $("#sus-box").innerHTML = callouts.join("");
 
-    /* Days-left countdown on the week bar. */
-    var daysEl = $("#week-days");
-    var msLeft = new Date(WEEK_ENDS).getTime() - Date.now();
-    if (isNaN(msLeft)) {
-      daysEl.textContent = "";
-    } else if (msLeft <= 0) {
-      daysEl.textContent = "⏳ NEW GAME LOADING…";
-    } else if (msLeft <= 86400000) {
-      daysEl.textContent = "⏳ FINAL DAY!";
-    } else {
-      var d = Math.ceil(msLeft / 86400000);
-      daysEl.textContent = "⏳ " + d + " DAYS LEFT";
-    }
+    /* Days-left countdown: weeks run Monday→Sunday, counted off the calendar. */
+    var dow = new Date().getDay();            // 0=Sun … 6=Sat
+    var isoDay = dow === 0 ? 7 : dow;         // Mon=1 … Sun=7
+    var left = 8 - isoDay;                    // days left, today included
+    $("#week-days").textContent = left <= 1 ? "⏳ FINAL DAY!" : "⏳ " + left + " DAYS LEFT";
 
     /* Week leader banner — first clean human on the board wears the crown. */
     var leader = null;
@@ -1152,10 +1200,21 @@
       var top = standingsFor(bests, from, from + SEASON_LEN - 1)[0];
       if (top) champs.push({ season: sn, name: nameFor(top.email, top.gen), total: top.total });
     }
+    var m3 = me();
     $("#hof").innerHTML = champs.length
       ? champs.map(function(c, i){
+          var target = "hof-s" + c.season;
+          var heartHtml = "";
+          if (state.reactions) {
+            var count = 0, mine = false;
+            state.reactions.forEach(function(r){
+              if (r.target === target) { count++; if (m3 && r.email === m3.email) mine = true; }
+            });
+            heartHtml = '<button class="heart' + (mine ? " mine" : "") + '" data-target="' + target +
+              '" title="One heart per player — hearts are forever">' + (mine ? "❤️" : "🤍") + " " + count + "</button>";
+          }
           return '<li' + (i === 0 ? ' class="latest"' : "") + '><span>S' + c.season + "</span>" +
-            '<span class="champ">👑 ' + esc(c.name) + "</span><span>" + c.total + "</span></li>";
+            '<span class="champ">👑 ' + esc(c.name) + "</span><span>" + c.total + "</span>" + heartHtml + "</li>";
         }).join("")
       : '<li><span class="empty">The first champion is crowned after Week ' + SEASON_END + '. Legends load here… ⏳</span></li>';
   }
@@ -1169,6 +1228,7 @@
 
   function renderAll(){
     var m = me();
+    document.body.classList.toggle("gated", !m); // page one: the gate; page two: the arcade
     $("#join-card").hidden = !!m;
     $("#greet").hidden = !m;
     $("#game-card").hidden = !m;
@@ -1206,9 +1266,9 @@
       $("#" + id).hidden = (id !== "jv-" + view);
     });
     $("#join-title").textContent =
-      view === "pin" ? "ENTER YOUR PIN" :
+      view === "pin" ? "SPEAK YOUR SECRET CODE" :
       view === "claim" ? "CLAIM YOUR ACCOUNT" :
-      view === "reset" ? "NEW LIFE?" : "WHO'S PLAYING?";
+      view === "reset" ? "NEW LIFE?" : "WHO GOES THERE?";
   }
   function noteIn(sel, msg, kind){
     var n = $(sel);
@@ -1653,6 +1713,30 @@
     b.setAttribute("aria-pressed", String(open));
     b.classList.toggle("on", open);
   }
+  /* Hall of Fame hearts: one per player per legend, forever. */
+  $("#hof").addEventListener("click", function(e){
+    var btn = e.target.closest(".heart");
+    if (!btn) return;
+    var m = me();
+    if (!m) { toast("PICK YOUR PLAYER FIRST, THEN SPREAD THE LOVE ❤️"); return; }
+    var target = btn.dataset.target;
+    if (!state.reactions) return;
+    var already = state.reactions.some(function(r){ return r.target === target && r.email === m.email; });
+    if (already) { toast("ONE HEART PER LEGEND — YOURS IS ALREADY UP THERE ❤️"); return; }
+    state.reactions.push({ target: target, email: m.email }); // optimistic
+    renderScoreboard();
+    sb("reactions", { method: "POST", prefer: "return=minimal",
+      body: { target: target, email: m.email, emoji: "❤️" } })
+      .catch(function(err){
+        if (isDup(err)) return; // already there — perfect
+        state.reactions = state.reactions.filter(function(r){
+          return !(r.target === target && r.email === m.email);
+        });
+        renderScoreboard();
+        toast("HEART GOT LOST IN TRANSIT — TRY AGAIN!");
+      });
+  });
+
   $("#sb-toggle").addEventListener("click", function(){
     var open = !$("#layout").classList.contains("sb-open");
     setSidebar(open);
