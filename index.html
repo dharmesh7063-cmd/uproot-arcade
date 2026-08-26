@@ -453,7 +453,17 @@
     0%, 100%{ box-shadow:0 0 8px rgba(255,210,63,.2); }
     50%{ box-shadow:0 0 20px rgba(255,210,63,.5); }
   }
-  .days-left{ color:var(--cyan); }
+  .days-left{
+    display:inline-block; color:var(--cyan);
+    animation:days-blink 2s steps(1,end) infinite;
+  }
+  @keyframes days-blink{
+    0%{ color:var(--cyan); opacity:1; }
+    25%{ color:var(--cyan); opacity:0; }
+    50%{ color:var(--pink); opacity:1; }
+    75%{ color:var(--pink); opacity:0; }
+    100%{ color:var(--cyan); opacity:1; }
+  }
   /* Hall of fame */
   .hof-h{
     font-size:13px; color:var(--gold);
@@ -580,7 +590,7 @@
   @keyframes toastin{ from{ transform:translate(-50%,14px); opacity:0; } }
 
   @media (prefers-reduced-motion: reduce){
-    .pop-in, .float-score, .toast, .blink, .week-champ::before, .ticker-track, .logo, .w-row.sus .w-rank{ animation:none; }
+    .pop-in, .float-score, .toast, .blink, .week-champ::before, .ticker-track, .logo, .w-row.sus .w-rank, .days-left{ animation:none; }
     .float-score{ opacity:0; }
   }
 </style>
@@ -749,7 +759,20 @@
   var WEEK = 1;
   var GAME_NAME = "FUR FRENZY";
   var FALLBACK_TRIES = 3; // server value in the `games` table wins
-  /* Weeks run Monday→Sunday; the countdown reads the calendar by itself. */
+  /* Arcade clock: US Eastern (America/New_York, DST-aware). Weeks run
+     Monday→Sunday on the EASTERN calendar, anchored at Mon 2026-08-24. */
+  var ANCHOR_UTC = Date.UTC(2026, 7, 24);
+  function easternDateUTC(){
+    var parts = new Intl.DateTimeFormat("en-US",
+      { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" })
+      .formatToParts(new Date());
+    var o = {};
+    parts.forEach(function(p){ o[p.type] = p.value; });
+    return Date.UTC(+o.year, +o.month - 1, +o.day);
+  }
+  function daysSinceAnchor(){
+    return Math.round((easternDateUTC() - ANCHOR_UTC) / 86400000);
+  }
   /* Seasons: every 5 weeks a champion is crowned and a new season begins. */
   var SEASON_LEN = 5;
   var SEASON = Math.floor((WEEK - 1) / SEASON_LEN) + 1;
@@ -1153,11 +1176,19 @@
     });
     $("#sus-box").innerHTML = callouts.join("");
 
-    /* Days-left countdown: weeks run Monday→Sunday, counted off the calendar. */
-    var dow = new Date().getDay();            // 0=Sun … 6=Sat
-    var isoDay = dow === 0 ? 7 : dow;         // Mon=1 … Sun=7
-    var left = 8 - isoDay;                    // days left, today included
-    $("#week-days").textContent = left <= 1 ? "⏳ FINAL DAY!" : "⏳ " + left + " DAYS LEFT";
+    /* Countdown on the Eastern calendar, aware of THIS game's week. */
+    var dLeft = WEEK * 7 - daysSinceAnchor(); // days until this game's week ends, today included
+    var daysEl = $("#week-days");
+    if (dLeft > 7) {
+      var until = dLeft - 7;
+      daysEl.textContent = "🔒 UNLOCKS IN " + until + " DAY" + (until === 1 ? "" : "S");
+    } else if (dLeft > 1) {
+      daysEl.textContent = "⏳ " + dLeft + " DAYS LEFT";
+    } else if (dLeft === 1) {
+      daysEl.textContent = "⏳ FINAL DAY!";
+    } else {
+      daysEl.textContent = "🏁 WEEK OVER";
+    }
 
     /* Week leader banner — first clean human on the board wears the crown. */
     var leader = null;
