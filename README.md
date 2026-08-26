@@ -10,8 +10,10 @@ One tiny browser game per week for the Uproot team. Fully public — anyone can 
 - **PIN security**: only a hash is stored, in a write-once column the public key cannot read; verification runs server-side (`check_pin`). Pre-PIN accounts get a one-shot claim flow.
 - **Forgot PIN → reset = NEW LIFE**: your old account becomes a ghost 👻 that keeps every score forever, and you restart the season at zero. If you later remember the old PIN, entering it signs you back into the ghost, scores intact. Weekly credits are counted per *email* across lives, so resetting never grants extra runs.
 - **Credits**: each player gets a set number of runs per week (the `games` table row for that week — 3 for Week 1). Best run counts. The credit cap is enforced server-side; the 4th attempt is rejected.
-- **Scores never reset**: every run ever played is stored permanently. Weekly winners earn 🏆; season standings rank by the total of each week's best.
-- **Scoreboard sidebar**: the 🏆 button shows/hides it (side column on desktop, drawer on phones) so full-screen games get the whole canvas.
+- **Seasons**: 5 weeks each — the champion (highest total of weekly bests) is crowned after week 5, then a fresh season begins. The **Hall of Fame** keeps the last 6 champions. Every raw score still lives forever in the database.
+- **Cheat-smell detector**: each game sets a plausibility ceiling (`SUS_LIMITS` in the page). Scores above it stay on the board but get a 🤖 flag and a public roast from "The Arcade Committee," and don't count for medals, weekly wins, or the championship.
+- **Scoreboard**: two separate collapsible panels — THIS WEEK and SEASON (standings + 👑 Hall of Fame) — side by side on wide screens, inside the 🏆-toggleable sidebar; every list scrolls internally.
+- **Game pipeline**: the `games-lab` branch holds `GAMES.md` — idea backlog, the 5-games-in-development queue, team-mode design notes, and the weekly launch checklist.
 
 ## Architecture (all free tiers)
 - **Hosting**: GitHub Pages — repo `dharmesh7063-cmd/uproot-arcade`, `main` branch root. Push = deploy (~1 min; CDN cache up to 10 min).
