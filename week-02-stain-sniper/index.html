@@ -1,0 +1,1819 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Uproot Arcade</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧹</text></svg>">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Pixelify+Sans:wght@400..700&family=Silkscreen:wght@400;700&display=swap">
+<style>
+  /* Committed single-theme arcade cabinet — every color painted explicitly. */
+  :root{
+    --bg:#150F2B;
+    --panel:#221743;
+    --panel-2:#2A1D52;
+    --line:#3D2B70;
+    --cyan:#2CE0DE;
+    --cyan-deep:#0E4A4E;
+    --pink:#F52C87;
+    --purple:#8C4BFF;
+    --purple-deep:#5B2EA6;
+    --lav:#F2E9FF;
+    --gold:#FFD23F;
+    --muted:#9D8FC7;
+    --shadow:0 6px 0 rgba(0,0,0,.45);
+  }
+  [hidden]{ display:none !important; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--bg);
+    background-image:
+      radial-gradient(circle at 50% -80px, rgba(140,75,255,.22), transparent 55%),
+      radial-gradient(circle at 12px 12px, rgba(44,224,222,.05) 2px, transparent 2.6px);
+    background-size:auto, 46px 46px;
+    color:var(--lav);
+    font-family:"Pixelify Sans","Trebuchet MS",system-ui,sans-serif;
+    font-size:16px;
+    line-height:1.5;
+    font-variant-ligatures:none;
+    padding:26px 16px 60px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  /* CRT scanlines, very faint */
+  body::after{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:99;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,.13) 0 1px, transparent 1px 3px);
+    mix-blend-mode:multiply;
+  }
+  .wrap{ max-width:1280px; margin:0 auto; display:flex; flex-direction:column; gap:18px; }
+
+  /* ---------- Layout: game column + collapsible scoreboard sidebar ---------- */
+  .layout{ display:flex; align-items:flex-start; justify-content:center; gap:18px; }
+  .main{ flex:0 1 520px; min-width:0; width:100%; display:flex; flex-direction:column; gap:18px; }
+  .sidebar{ display:none; min-width:0; }
+  .layout.sb-open .sidebar{ display:block; }
+  @media (min-width:880px){
+    .layout.sb-open .sidebar{ width:312px; flex:none; position:sticky; top:16px; }
+  }
+  @media (max-width:879.98px){
+    .layout.sb-open .sidebar{
+      position:fixed; top:0; right:0; height:100dvh; width:min(340px,90vw);
+      overflow-y:auto; z-index:120;
+      background:var(--bg);
+      border-left:2px solid var(--line);
+      padding:16px 14px 80px;
+      box-shadow:-12px 0 30px rgba(0,0,0,.65);
+    }
+  }
+  .sb-toggle{
+    position:fixed; right:14px; bottom:14px; z-index:130;
+    width:54px; height:54px; border-radius:50%;
+    background:var(--panel-2); color:var(--lav);
+    border:2px solid var(--purple);
+    font-size:22px; line-height:1; cursor:pointer;
+    box-shadow:0 4px 0 rgba(0,0,0,.5);
+  }
+  .sb-toggle.on{ background:var(--gold); border-color:var(--pink); }
+  .sb-toggle:active{ transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.5); }
+  .sb-toggle:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
+
+  /* ---------- Pixel-block logo: cream outline, pink→purple 3D extrusion ---------- */
+  .marquee{ text-align:center; padding:4px 0 2px; }
+  .logo{
+    margin:0 0 4px; display:flex; flex-direction:column; align-items:center; gap:14px;
+    transform:rotate(-2deg);
+    animation:logo-bob 5s ease-in-out infinite;
+  }
+  @keyframes logo-bob{
+    0%, 100%{ transform:rotate(-2deg) translateY(0); }
+    50%{ transform:rotate(-1.4deg) translateY(-5px); }
+  }
+  .logo span{
+    font-family:"Press Start 2P","Courier New",monospace;
+    font-weight:400; display:block; line-height:1; position:relative;
+    text-shadow:
+      -3px -3px 0 #FFF3D9, 3px -3px 0 #FFF3D9, -3px 3px 0 #FFF3D9, 3px 3px 0 #FFF3D9,
+      -4px 0 0 #FFF3D9, 4px 0 0 #FFF3D9, 0 -4px 0 #FFF3D9, 0 4px 0 #FFF3D9,
+      6px 6px 0 #F5237E, 8px 8px 0 #F5237E,
+      10px 10px 0 #5B2EA6, 12px 12px 0 #241456;
+  }
+  .logo .l1{ font-size:clamp(24px,7vw,36px); color:#35CFF2; }
+  .logo .l2{ font-size:clamp(24px,7vw,36px); color:#F7A21B; }
+  .logo span::after{
+    content:attr(data-text);
+    position:absolute; left:0; top:0; width:100%; height:100%;
+    text-shadow:none; color:transparent;
+    -webkit-background-clip:text; background-clip:text;
+  }
+  .logo .l1::after{ background-image:linear-gradient(180deg,#7FEBFF 0%,#35CFF2 55%,#12A5DC 100%); }
+  .logo .l2::after{ background-image:linear-gradient(180deg,#FFE243 0%,#FFD91F 45%,#F59B18 100%); }
+  .weekchip{
+    display:inline-block; margin-top:18px;
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:13px; letter-spacing:.1em;
+    color:var(--bg); background:var(--gold);
+    border:2px solid var(--pink);
+    padding:5px 14px;
+    box-shadow:3px 3px 0 rgba(0,0,0,.5);
+  }
+  .tagline{ margin:12px 0 0; color:var(--muted); font-size:15px; }
+
+  /* ---------- Cards ---------- */
+  .card{
+    background:var(--panel);
+    border:2px solid var(--line);
+    border-radius:14px;
+    box-shadow:var(--shadow), inset 0 0 0 1px rgba(140,75,255,.15);
+    padding:18px;
+  }
+  .cardtitle{
+    font-family:"Press Start 2P","Courier New",monospace;
+    font-size:15px; margin:0; color:var(--cyan);
+    text-shadow:2px 2px 0 rgba(0,0,0,.6);
+    letter-spacing:.02em;
+  }
+  .sub{ margin:10px 0 12px; color:var(--muted); font-size:15px; }
+  .note{ min-height:20px; margin:8px 0 0; font-size:14.5px; color:var(--muted); }
+  .note.ok{ color:var(--cyan); }
+  .note.err{ color:var(--pink); }
+
+  /* ---------- Buttons & inputs ---------- */
+  .btn{
+    font-family:"Press Start 2P","Courier New",monospace;
+    font-size:13px; letter-spacing:.02em;
+    color:var(--lav);
+    border:2px solid var(--lav);
+    border-radius:8px;
+    padding:12px 18px; cursor:pointer;
+    line-height:1.6;
+    text-shadow:1px 1px 0 rgba(0,0,0,.5);
+  }
+  .btn.pink{ background:var(--pink); box-shadow:0 5px 0 #8F1450; }
+  .btn.pink:active{ transform:translateY(4px); box-shadow:0 1px 0 #8F1450; }
+  .btn.cyan{ background:var(--purple); box-shadow:0 5px 0 var(--purple-deep); }
+  .btn.cyan:active{ transform:translateY(4px); box-shadow:0 1px 0 var(--purple-deep); }
+  .btn.big{ font-size:15px; padding:15px 26px; }
+  .btn[disabled]{ opacity:.55; cursor:default; }
+  #again-btn{ margin-top:12px; }
+  .btn:focus-visible, .chip:focus-visible, .linkbtn:focus-visible, input:focus-visible, .mute:focus-visible{
+    outline:3px solid var(--gold); outline-offset:2px;
+  }
+  .blink{ animation:blink 1.2s steps(2,start) infinite; }
+  @keyframes blink{ 50%{ opacity:.35; } }
+
+  .joincol{ display:flex; flex-direction:column; gap:10px; }
+  .joincol input{
+    width:100%; min-width:0;
+    background:var(--bg); color:var(--lav);
+    border:2px solid var(--purple); border-radius:8px;
+    padding:10px 12px;
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:14px; letter-spacing:.05em;
+  }
+  .joincol input::placeholder{ color:#6B5D9E; }
+  .pin{ text-align:center; letter-spacing:.6em; font-size:18px !important; }
+  .hl{ color:var(--cyan); }
+  .warn{ color:var(--gold); }
+  .linkrow{ display:flex; gap:20px; justify-content:center; margin-top:12px; }
+
+  .btn.wide{ width:100%; }
+  #continue-btn{ margin:2px 0 14px; }
+  #new-player-btn{ margin-top:14px; }
+  #signup-form{ margin-top:12px; }
+  .searchbox{
+    width:100%; margin:0 0 12px;
+    background:var(--bg); color:var(--lav);
+    border:2px solid var(--purple); border-radius:8px;
+    padding:10px 12px;
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:13px; letter-spacing:.05em;
+  }
+  .searchbox::placeholder{ color:#6B5D9E; }
+  .searchbox:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
+  .chips-scroll{
+    max-height:176px; overflow-y:auto; padding-right:2px;
+    scrollbar-width:thin; scrollbar-color:var(--line) transparent;
+  }
+  .chips-scroll::-webkit-scrollbar{ width:6px; }
+  .chips-scroll::-webkit-scrollbar-thumb{ background:var(--line); border-radius:3px; }
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; margin:2px 0 14px; }
+  .chip{
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:13px;
+    background:var(--panel-2); color:var(--lav);
+    border:2px solid var(--purple); border-radius:999px;
+    padding:6px 14px; cursor:pointer;
+  }
+  .chip:hover{ border-color:var(--cyan); color:var(--cyan); }
+  .chip .done{ color:var(--gold); }
+  .chips .none{ color:var(--muted); font-size:14.5px; padding:2px; }
+
+  .greet{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--panel-2);
+    border:2px solid var(--line); border-radius:10px;
+    padding:9px 14px;
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:13px; letter-spacing:.04em;
+  }
+  .greet b{ color:var(--cyan); }
+  .linkbtn{
+    background:none; border:none; cursor:pointer;
+    color:var(--pink); font-family:inherit; font-size:12px;
+    text-decoration:underline; letter-spacing:.04em;
+  }
+
+  /* ---------- HUD ---------- */
+  .hud{ display:flex; gap:10px; align-items:stretch; margin-bottom:14px; }
+  .pill{
+    flex:1; text-align:center;
+    background:var(--bg);
+    border:2px solid var(--line);
+    border-radius:10px;
+    padding:8px 4px 9px;
+  }
+  .pill .lab{
+    display:block; font-family:"Silkscreen","Courier New",monospace;
+    font-size:10px; letter-spacing:.12em; color:var(--muted); text-transform:uppercase;
+  }
+  .pill .val{
+    display:block; margin-top:4px;
+    font-family:"Press Start 2P","Courier New",monospace;
+    font-size:17px; line-height:1.1; color:var(--cyan);
+    font-variant-numeric:tabular-nums;
+  }
+  .pill.time.hot{ border-color:var(--pink); }
+  .pill.time.hot .val{ color:var(--pink); }
+  .mute{
+    align-self:center;
+    background:var(--panel-2); border:2px solid var(--line); border-radius:10px;
+    width:44px; height:44px; font-size:19px; cursor:pointer; color:var(--lav);
+  }
+
+  /* ---------- Board: the rug ---------- */
+  .stage{ position:relative; }
+  .snipe{
+    position:relative;
+    height:clamp(360px, 60vh, 480px);
+    border:2px solid var(--line); border-radius:10px;
+    overflow:hidden;
+    background:
+      repeating-linear-gradient(45deg, rgba(140,75,255,.06) 0 12px, transparent 12px 24px),
+      repeating-linear-gradient(-45deg, rgba(44,224,222,.045) 0 12px, transparent 12px 24px),
+      var(--panel-2);
+    user-select:none; -webkit-user-select:none; touch-action:manipulation;
+    cursor:crosshair;
+  }
+  .stain{
+    position:absolute;
+    background:radial-gradient(circle at 40% 35%, #C06BFF 0 18%, #7A2FBF 48%, #45196F 76%, transparent 79%);
+    border-radius:58% 42% 63% 37%/45% 62% 38% 55%;
+    filter:drop-shadow(0 2px 3px rgba(0,0,0,.5));
+  }
+  .stain::after{
+    content:""; position:absolute; inset:30%;
+    border:2px dashed rgba(242,233,255,.55); border-radius:50%;
+  }
+  .paw{
+    position:absolute; display:flex; align-items:center; justify-content:center;
+    font-size:32px; line-height:1;
+    filter:drop-shadow(0 2px 3px rgba(0,0,0,.6));
+  }
+  .ministain{
+    display:inline-block; width:24px; height:24px;
+    background:radial-gradient(circle at 40% 35%, #C06BFF 0 18%, #7A2FBF 48%, #45196F 76%, transparent 79%);
+    border-radius:58% 42% 63% 37%/45% 62% 38% 55%;
+  }
+  .grid{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
+    user-select:none; -webkit-user-select:none; touch-action:manipulation;
+  }
+  .tile{
+    aspect-ratio:1/1;
+    background:var(--panel-2);
+    border:2px solid var(--line);
+    border-radius:10px;
+    position:relative; cursor:pointer; overflow:hidden;
+  }
+  .tile.zap{ background:#1E4B54; border-color:var(--cyan); }
+  .tile.oops{ background:#4A1235; border-color:var(--pink); }
+  .item{ position:absolute; inset:12%; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+  .fuzz{
+    width:82%; height:82%;
+    background:radial-gradient(circle at 34% 30%, #C7CEDA 0 28%, #939DAD 68%, #6C7686 100%);
+    border-radius:58% 42% 55% 45%/48% 60% 40% 52%;
+    box-shadow:inset -3px -4px 0 rgba(0,0,0,.2), 0 2px 4px rgba(0,0,0,.5);
+    position:relative;
+  }
+  .fuzz::before{
+    content:""; position:absolute; top:-14%; left:16%;
+    width:38%; height:38%; background:inherit; border-radius:inherit; opacity:.9;
+  }
+  .fuzz.gold{
+    background:radial-gradient(circle at 34% 30%, #FFE28A 0 28%, #FFD23F 68%, #C98C0B 100%);
+    box-shadow:inset -3px -4px 0 rgba(0,0,0,.15), 0 0 16px rgba(255,210,63,.8);
+  }
+  .sock{ font-size:min(9vw,42px); line-height:1; filter:drop-shadow(0 2px 3px rgba(0,0,0,.6)); }
+  .pop-in{ animation:pop .16s ease-out; }
+  @keyframes pop{ from{ transform:scale(.2); } to{ transform:scale(1); } }
+  .float-score{
+    position:absolute; left:50%; top:18%;
+    transform:translateX(-50%);
+    font-family:"Press Start 2P","Courier New",monospace;
+    font-size:12px; pointer-events:none; z-index:5;
+    animation:rise .6s ease-out forwards;
+  }
+  .float-score.good{ color:var(--cyan); }
+  .float-score.bad{ color:var(--pink); }
+  @keyframes rise{ to{ transform:translate(-50%,-26px); opacity:0; } }
+
+  /* ---------- Overlay panels ---------- */
+  .overlay{
+    position:absolute; inset:-4px;
+    background:rgba(21,15,43,.95);
+    border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    padding:14px;
+  }
+  .panel{ text-align:center; width:100%; max-width:360px; }
+  .panel h2{
+    font-family:"Press Start 2P","Courier New",monospace;
+    font-size:16px; line-height:1.5; margin:0 0 14px;
+    color:var(--lav); text-wrap:balance;
+    text-shadow:2px 2px 0 rgba(0,0,0,.6);
+  }
+  .howto{ list-style:none; margin:0 0 14px; padding:0; display:flex; flex-direction:column; gap:8px; text-align:left; }
+  .howto li{
+    display:flex; align-items:center; gap:10px;
+    background:var(--panel); border:2px solid var(--line); border-radius:10px;
+    padding:7px 12px; font-size:15px;
+  }
+  .howto .demo{ width:30px; height:30px; flex:none; display:flex; align-items:center; justify-content:center; }
+  .howto .demo .fuzz{ width:24px; height:24px; }
+  .howto .demo .sock{ font-size:22px; filter:none; }
+  .plus{ color:var(--cyan); font-weight:700; } .minus{ color:var(--pink); font-weight:700; }
+  .credit{
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:13px; letter-spacing:.08em;
+    color:var(--gold);
+    margin:0 0 14px;
+  }
+  .final{
+    font-family:"Press Start 2P","Courier New",monospace;
+    font-size:42px; line-height:1; color:var(--cyan);
+    margin:6px 0 12px; font-variant-numeric:tabular-nums;
+    text-shadow:3px 3px 0 var(--cyan-deep), 0 0 22px rgba(44,224,222,.5);
+  }
+  .ranktitle{
+    display:inline-block; margin:0 0 12px;
+    background:var(--gold); color:var(--bg);
+    border:2px solid var(--pink);
+    padding:4px 14px;
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:13px; letter-spacing:.06em;
+    box-shadow:3px 3px 0 rgba(0,0,0,.5);
+  }
+
+  /* ---------- Scoreboard ---------- */
+  .lb-head{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:12px; }
+  .lb-sub{
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:11px; color:var(--muted); letter-spacing:.1em;
+  }
+  .boards{ display:grid; grid-template-columns:1fr; gap:18px; align-items:start; }
+  .board-sec{ min-width:0; } /* nowrap ticker must never blow the grid open */
+  .board-card{ padding:16px; }
+  .board-card .lb-head{ align-items:center; margin-bottom:2px; }
+  .lb-sub2{
+    margin:0 0 12px;
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:10.5px; letter-spacing:.1em; color:var(--muted); text-transform:uppercase;
+  }
+  .sec-h{
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:12px; letter-spacing:.12em; color:var(--gold);
+    margin:14px 0 8px; text-transform:uppercase;
+  }
+  .sec-toggle{
+    width:34px; height:30px; flex:none;
+    background:var(--panel-2); border:2px solid var(--line); border-radius:8px;
+    color:var(--gold); font-size:13px; line-height:1; cursor:pointer; padding:0;
+  }
+  .sec-toggle:hover{ border-color:var(--cyan); color:var(--cyan); }
+  .sec-toggle:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
+  .board-sec.collapsed .board-body, .board-sec.collapsed .lb-sub2{ display:none; }
+  .wlist, .season{ max-height:440px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
+  .wlist::-webkit-scrollbar, .season::-webkit-scrollbar{ width:6px; }
+  .wlist::-webkit-scrollbar-thumb, .season::-webkit-scrollbar-thumb{ background:var(--line); border-radius:3px; }
+  /* Cheat-smell detector */
+  .w-row.sus{ border-color:var(--pink); background:#3A1740; }
+  .w-row.sus .w-score{ color:var(--pink); }
+  .w-row.sus .w-rank{ animation:blink 1.1s steps(2,start) infinite; }
+  /* departure-board ticker for suspects */
+  .sus-ticker{
+    margin-top:10px; overflow:hidden;
+    border:2px solid var(--pink); border-radius:10px;
+    background:#190716;
+    padding:9px 0;
+  }
+  .ticker-track{
+    display:inline-flex; white-space:nowrap;
+    animation:ticker 32s linear infinite;
+  }
+  .ticker-track span{
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:12px; letter-spacing:.14em; color:var(--pink);
+    text-shadow:0 0 8px rgba(245,44,135,.6);
+    padding-right:70px;
+  }
+  @keyframes ticker{ to{ transform:translateX(-50%); } }
+  /* House bot (exhibition player) */
+  .w-row.bot{ border-style:dashed; border-color:var(--cyan); }
+  .botchip{
+    display:inline-block;
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:9px; letter-spacing:.08em;
+    color:var(--bg); background:var(--cyan);
+    border-radius:4px; padding:1px 5px; margin-left:6px;
+    vertical-align:2px;
+  }
+  .bot-callout{
+    margin-top:10px; padding:9px 12px;
+    border:2px dashed var(--cyan); border-radius:10px;
+    background:rgba(44,224,222,.07);
+    font-size:14.5px; color:var(--lav);
+  }
+  /* Week leader banner — the golden marquee with a shine rolling the outline */
+  @property --ang{ syntax:"<angle>"; initial-value:0deg; inherits:false; }
+  .week-champ{
+    position:relative;
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;
+    padding:11px 12px; margin-bottom:10px;
+    border:2px solid rgba(255,210,63,.45); border-radius:10px;
+    background:linear-gradient(90deg, rgba(255,210,63,.16), rgba(255,210,63,.04));
+    box-shadow:0 0 12px rgba(255,210,63,.22);
+  }
+  .week-champ::before{
+    content:""; position:absolute; inset:-2px; border-radius:12px; padding:2px;
+    background:conic-gradient(from var(--ang),
+      transparent 0deg, transparent 290deg,
+      rgba(255,210,63,.95) 322deg, #FFF6CE 336deg, rgba(255,210,63,.95) 350deg,
+      transparent 360deg);
+    -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite:xor;
+    mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite:exclude;
+    animation:ring-shine 3.8s linear infinite;
+    pointer-events:none;
+  }
+  @keyframes ring-shine{ to{ --ang:360deg; } }
+  .week-champ .champ{
+    font-family:"Press Start 2P","Courier New",monospace;
+    font-size:12px; color:var(--gold);
+    text-shadow:0 0 10px rgba(255,210,63,.55);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .week-champ .wc-score{
+    font-family:"Press Start 2P","Courier New",monospace;
+    font-size:13px; color:var(--gold);
+    font-variant-numeric:tabular-nums;
+  }
+  @keyframes glowpulse{
+    0%, 100%{ box-shadow:0 0 8px rgba(255,210,63,.2); }
+    50%{ box-shadow:0 0 20px rgba(255,210,63,.5); }
+  }
+  .days-left{ color:var(--cyan); }
+  /* Hall of fame */
+  .hof-h{
+    font-size:13px; color:var(--gold);
+    text-shadow:0 0 12px rgba(255,210,63,.5);
+    letter-spacing:.14em;
+  }
+  .hof{ list-style:none; margin:0; padding:0; }
+  .hof li{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:12px; color:var(--muted);
+    padding:8px 12px; margin-bottom:6px;
+    border:2px dashed var(--line); border-radius:8px;
+  }
+  .hof li .champ{ color:var(--gold); }
+  .hof li.latest{
+    border-style:solid; border-color:var(--gold);
+    background:linear-gradient(90deg, rgba(255,210,63,.14), transparent);
+    box-shadow:0 0 12px rgba(255,210,63,.3);
+  }
+  .hof li.latest .champ{
+    font-family:"Press Start 2P","Courier New",monospace;
+    font-size:11px; text-shadow:0 0 10px rgba(255,210,63,.5);
+  }
+  .heart{
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:11px; color:var(--lav);
+    background:var(--panel-2); border:2px solid var(--line); border-radius:999px;
+    padding:3px 10px; cursor:pointer; flex:none;
+  }
+  .heart:hover{ border-color:var(--pink); color:var(--pink); }
+  .heart.mine{ border-color:var(--pink); color:var(--pink); cursor:default; }
+  .heart:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
+  /* Gate mode: page one is just "who goes there?" — arcade unlocks after sign-in */
+  body.gated .sidebar, body.gated .sb-toggle{ display:none !important; }
+  body.gated #join-card{
+    box-shadow:var(--shadow), inset 0 0 0 1px rgba(140,75,255,.15), 0 0 34px rgba(140,75,255,.3);
+  }
+  .hof .empty{ display:block; text-align:center; font-family:"Pixelify Sans",sans-serif; font-size:14px; padding:12px; }
+  /* Wide screens: the two panels sit side by side in a wider sidebar */
+  @media (min-width:1240px){
+    .layout.sb-open .sidebar{ width:680px; }
+    .boards{ grid-template-columns:1fr 1fr; }
+  }
+  .wlist{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:7px; }
+  .wlist .empty, .season .empty{
+    text-align:center; color:var(--muted);
+    border:2px dashed var(--line); border-radius:10px;
+    padding:14px 12px; font-size:14.5px;
+  }
+  .w-row{
+    display:grid; grid-template-columns:32px 1fr auto auto;
+    align-items:center; gap:8px;
+    background:var(--panel-2);
+    border:2px solid var(--line); border-radius:10px;
+    padding:7px 12px 7px 8px;
+  }
+  .w-row.t1{ border-color:var(--gold); background:#33254D; }
+  .w-rank{ font-size:17px; text-align:center; }
+  .w-rank.n{
+    font-family:"Press Start 2P","Courier New",monospace;
+    font-size:12px; color:var(--muted);
+  }
+  .w-name{ font-weight:700; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .w-streak{
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:10px; color:var(--muted); white-space:nowrap;
+  }
+  .w-score{
+    font-family:"Press Start 2P","Courier New",monospace;
+    font-size:14px; color:var(--cyan);
+    font-variant-numeric:tabular-nums; min-width:48px; text-align:right;
+  }
+  .season{ display:flex; flex-direction:column; gap:6px; }
+  .s-row{
+    display:grid; grid-template-columns:24px 1fr 40px 34px 58px;
+    align-items:center; gap:6px;
+    padding:7px 8px;
+    background:var(--panel-2);
+    border:2px solid var(--line); border-radius:10px;
+  }
+  .s-row.head{
+    background:none; border:none; padding:2px 10px;
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:10px; letter-spacing:.1em; color:var(--muted); text-transform:uppercase;
+  }
+  .s-row.head span{ font-family:inherit; font-size:inherit; color:inherit; font-weight:400; }
+  .s-row.t1{ border-color:var(--gold); background:#33254D; }
+  .s-rank{
+    font-family:"Press Start 2P","Courier New",monospace;
+    font-size:12px; color:var(--muted); text-align:center;
+  }
+  .s-row.t1 .s-rank{ color:var(--gold); }
+  .s-name{ font-weight:700; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .s-wins{ font-size:12px; text-align:center; }
+  .s-weeks{
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:10px; color:var(--muted); text-align:center;
+  }
+  .s-total{
+    font-family:"Press Start 2P","Courier New",monospace;
+    font-size:13px; color:var(--gold);
+    font-variant-numeric:tabular-nums; text-align:right;
+  }
+
+  footer{
+    text-align:center; color:var(--muted);
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:10.5px; letter-spacing:.08em; line-height:1.9;
+  }
+  footer b{ color:var(--cyan); }
+
+  .toast{
+    position:fixed; left:50%; bottom:26px; transform:translateX(-50%);
+    background:var(--gold); color:var(--bg);
+    border:2px solid var(--pink);
+    padding:10px 18px;
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:13px; letter-spacing:.04em;
+    box-shadow:4px 4px 0 rgba(0,0,0,.5);
+    z-index:100; animation:toastin .25s ease-out;
+    max-width:calc(100vw - 40px);
+  }
+  @keyframes toastin{ from{ transform:translate(-50%,14px); opacity:0; } }
+
+  @media (prefers-reduced-motion: reduce){
+    .pop-in, .float-score, .toast, .blink, .week-champ::before, .ticker-track, .logo, .w-row.sus .w-rank{ animation:none; }
+    .float-score{ opacity:0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="marquee">
+    <h1 class="logo" aria-label="Uproot Arcade">
+      <span class="l1" data-text="UPROOT">UPROOT</span>
+      <span class="l2" data-text="ARCADE">ARCADE</span>
+    </h1>
+    <div class="weekchip">WEEK 2 ★ STAIN SNIPER</div>
+    <p class="tagline">One game a week · Limited credits · Best run counts · Scores live forever</p>
+  </header>
+
+  <div class="layout" id="layout">
+  <div class="main">
+    <div class="greet" id="greet" hidden>
+      <span>PLAYER: <b id="greet-name"></b></span>
+      <button class="linkbtn" id="switch-btn">switch player</button>
+    </div>
+
+    <section class="card" id="join-card" aria-label="Join the arcade">
+      <h2 class="cardtitle" id="join-title">WHO GOES THERE?</h2>
+
+      <div id="jv-list">
+        <p class="sub">Identify yourself, player — tap your name and whisper your 4-digit code. The arcade remembers you after that.</p>
+        <button class="btn cyan wide" id="continue-btn" hidden>⚡ CONTINUE AS <span id="continue-name"></span></button>
+        <input id="chip-search" class="searchbox" placeholder="🔎 FIND YOUR NAME…" autocomplete="off" aria-label="Search players" hidden>
+        <div class="chips chips-scroll" id="chips"></div>
+        <button class="btn pink wide" id="new-player-btn">🪙 INSERT COIN — NEW PLAYER</button>
+        <div class="joincol" id="signup-form" hidden>
+          <input id="join-name" maxlength="20" placeholder="YOUR NAME" autocomplete="off" aria-label="Your name">
+          <input id="join-email" maxlength="60" placeholder="EMAIL (JUST YOUR USERNAME WORKS)" autocomplete="off" inputmode="email" aria-label="Your @uprootclean.com email — typing just the username auto-fills the domain">
+          <input id="join-pin" class="pin" maxlength="4" placeholder="CHOOSE A 4-DIGIT PIN" autocomplete="off" inputmode="numeric" aria-label="Choose a secret 4-digit PIN">
+          <button class="btn pink" id="join-btn">JOIN THE ROSTER</button>
+        </div>
+        <p class="note" id="join-note"></p>
+      </div>
+
+      <div id="jv-pin" hidden>
+        <p class="sub">Playing as <b id="pin-who" class="hl"></b> — prove it's you!</p>
+        <div class="joincol">
+          <input id="pin-input" class="pin" maxlength="4" placeholder="••••" autocomplete="off" inputmode="numeric" aria-label="Your 4-digit PIN">
+          <button class="btn pink" id="pin-go">LET ME IN</button>
+        </div>
+        <p class="note" id="pin-note"></p>
+        <div class="linkrow">
+          <button class="linkbtn" id="pin-forgot">forgot your pin?</button>
+          <button class="linkbtn" id="pin-back">back</button>
+        </div>
+      </div>
+
+      <div id="jv-claim" hidden>
+        <p class="sub"><b id="claim-who" class="hl"></b>, your account is from the pre-PIN era. Claim it by setting a secret 4-digit PIN — first come, first served!</p>
+        <div class="joincol">
+          <input id="claim-pin" class="pin" maxlength="4" placeholder="SET YOUR 4-DIGIT PIN" autocomplete="off" inputmode="numeric" aria-label="Set your 4-digit PIN">
+          <button class="btn pink" id="claim-go">CLAIM MY ACCOUNT</button>
+        </div>
+        <p class="note" id="claim-note"></p>
+        <div class="linkrow">
+          <button class="linkbtn" id="claim-back">back</button>
+        </div>
+      </div>
+
+      <div id="jv-reset" hidden>
+        <p class="sub warn">⚠ PIN AMNESIA DETECTED</p>
+        <p class="sub">Resetting does NOT unlock your old account — it gives you a <b>new life</b>. Old-you becomes a ghost 👻 who keeps every score forever, and new-you starts the season at <b>ZERO</b>. The arcade forgives; the leaderboard never forgets. (Fun fact: 90% of PIN amnesia is cured by trying one more time. Make sure you enter the correct PIN!)</p>
+        <div class="joincol">
+          <input id="reset-pin" class="pin" maxlength="4" placeholder="NEW 4-DIGIT PIN" autocomplete="off" inputmode="numeric" aria-label="New 4-digit PIN for your new life">
+          <button class="btn pink" id="reset-go">RESET — START MY NEW LIFE</button>
+        </div>
+        <p class="note" id="reset-note"></p>
+        <div class="linkrow">
+          <button class="linkbtn" id="reset-back">wait, I remember now!</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="game-card" aria-label="Stain Sniper game" hidden>
+      <div class="hud">
+        <div class="pill time" id="time-pill"><span class="lab">Time</span><span class="val" id="hud-time">30</span></div>
+        <div class="pill"><span class="lab">Score</span><span class="val" id="hud-score">0</span></div>
+        <div class="pill"><span class="lab">Streak</span><span class="val" id="hud-streak">0</span></div>
+        <button class="mute" id="mute" aria-pressed="false" title="Toggle sound">🔊</button>
+      </div>
+      <div class="stage">
+        <div class="snipe" id="board" aria-hidden="true"></div>
+
+        <div class="overlay" id="overlay">
+          <div class="panel" id="screen-start">
+            <h2>THE RUG HAS SEEN THINGS…</h2>
+            <ul class="howto">
+              <li><span class="demo"><span class="ministain"></span></span><span>Snipe stains — dead-center <b class="plus">BULLSEYE +50</b></span></li>
+              <li><span class="demo">🎯</span><span>Solid hit <b class="plus">+25</b> · edge graze <b class="plus">+10</b></span></li>
+              <li><span class="demo">🐾</span><span>That's the pet, not a stain <b class="minus">−15</b> · air-shots <b class="minus">−10</b></span></li>
+              <li><span class="demo">⚡</span><span>Chain hits for <b>streak bonuses</b> · 30 seconds</span></li>
+            </ul>
+            <p class="credit" id="credit-line">🪙 CREDITS LEFT: — OF —</p>
+            <p class="sub" id="best-so-far" hidden></p>
+            <button class="btn cyan big blink" id="start">PRESS START</button>
+          </div>
+
+          <div class="panel" id="screen-end" hidden>
+            <h2 id="end-title">TIME'S UP!</h2>
+            <div class="final" id="final-score">0</div>
+            <div class="ranktitle" id="rank-title">DUST ROOKIE</div>
+            <p class="sub" id="end-streak"></p>
+            <p class="note" id="save-note"></p>
+            <button class="btn cyan" id="again-btn" hidden>PLAY AGAIN</button>
+          </div>
+
+          <div class="panel" id="screen-locked" hidden>
+            <h2>OUT OF CREDITS!</h2>
+            <div class="final" id="locked-score">0</div>
+            <div class="ranktitle" id="locked-rank">DUST ROOKIE</div>
+            <p class="sub">All credits spent — your best run is on the board. New game drops next week, same link. Scout the scoreboard!</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div><!-- /.main -->
+
+  <aside class="sidebar" id="sidebar" aria-label="Scoreboard sidebar">
+    <div class="boards">
+      <section class="card board-card board-sec" id="sec-week" aria-label="This week's scoreboard">
+        <div class="lb-head">
+          <h2 class="cardtitle">THIS WEEK</h2>
+          <button class="sec-toggle" id="th-week" aria-expanded="true" title="Collapse / expand">▾</button>
+        </div>
+        <p class="lb-sub2">W2 · STAIN SNIPER · <span id="roster-count"></span> · <span id="week-days" class="days-left"></span></p>
+        <div class="board-body">
+          <div id="week-champ" class="week-champ" hidden></div>
+          <ol id="week-list" class="wlist"></ol>
+          <div id="sus-box"></div>
+        </div>
+      </section>
+
+      <section class="card board-card board-sec" id="sec-season" aria-label="Season standings">
+        <div class="lb-head">
+          <h2 class="cardtitle" id="season-title">SEASON 1</h2>
+          <button class="sec-toggle" id="th-season" aria-expanded="true" title="Collapse / expand">▾</button>
+        </div>
+        <p class="lb-sub2" id="season-progress"></p>
+        <div class="board-body">
+          <div id="season" class="season"></div>
+          <h3 class="sec-h hof-h">👑 HALL OF FAME</h3>
+          <ol id="hof" class="hof"></ol>
+        </div>
+      </section>
+    </div>
+    <p class="note" id="board-note"></p>
+  </aside>
+  </div><!-- /.layout -->
+
+  <button class="sb-toggle" id="sb-toggle" aria-pressed="false" title="Show / hide scoreboard">🏆</button>
+
+  <footer>NEW GAME EVERY WEEK · SCORES NEVER RESET<br>MADE WITH 🧹 BY <b>DHARMESH</b> FOR THE UPROOT TEAM</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  /* ============ weekly config (tune per game) ============ */
+  var WEEK = 2;
+  var GAME_NAME = "STAIN SNIPER";
+  var FALLBACK_TRIES = 3; // server value in the `games` table wins
+  /* Weeks run Monday→Sunday; the countdown reads the calendar by itself. */
+  var SEASON_ANCHOR = new Date("2026-08-24T00:00:00"); // Monday of Week 1
+  function currentCalendarWeek(){
+    return Math.floor((Date.now() - SEASON_ANCHOR.getTime()) / 604800000) + 1;
+  }
+  /* Seasons: every 5 weeks a champion is crowned and a new season begins. */
+  var SEASON_LEN = 5;
+  var SEASON = Math.floor((WEEK - 1) / SEASON_LEN) + 1;
+  var SEASON_START = (SEASON - 1) * SEASON_LEN + 1;
+  var SEASON_END = SEASON_START + SEASON_LEN - 1;
+  var HOF_KEEP = 6; // hall of fame shows the last 6 champions
+  /* Cheat-smell detector: per-week plausibility ceiling (add a line per game).
+     Scores above it stay visible but get publicly roasted and are excluded
+     from medals, weekly wins, and the season championship. */
+  var SUS_LIMITS = { 1: 2000, 2: 2400 };
+  /* House bots (e.g. Viktor the chatbot): they play every game and keep their
+     scores as fun score-holders, but never take medals, wins, or the crown. */
+  var BOT_EMAILS = { "ai@uprootclean.com": "Viktor, our house chatbot" };
+
+  /* ============ backend (Supabase — anon key is public by design) ============ */
+  var SUPABASE_URL = "https://cofdyguyfltehvbdigok.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_BcbxCQw76Ovq7tZXNLl9Gg_6yqx3QiD";
+  var CONFIGURED = SUPABASE_URL.indexOf("http") === 0;
+
+  var DURATION = 30;
+  var ME_KEY = "ua-me", LAST_KEY = "ua-last", PENDING_KEY = "ua-pending-v4", SB_KEY = "ua-sb";
+
+  var $ = function(s){ return document.querySelector(s); };
+
+  /* ================= helpers ================= */
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function toast(msg){
+    var t = document.createElement("div");
+    t.className = "toast";
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function(){ t.remove(); }, 3600);
+  }
+  function store(get, key, val){
+    try {
+      if (get) return localStorage.getItem(key);
+      if (val === null) localStorage.removeItem(key); else localStorage.setItem(key, val);
+    } catch (e) { return null; }
+  }
+  /* Typing just the email username auto-fills @uprootclean.com. */
+  function normalizeEmail(v){
+    v = String(v).trim().toLowerCase();
+    if (v && v.indexOf("@") === -1) v += "@uprootclean.com";
+    return v;
+  }
+  function sha256Hex(str){
+    var enc = new TextEncoder().encode(str);
+    return crypto.subtle.digest("SHA-256", enc).then(function(buf){
+      return Array.prototype.map.call(new Uint8Array(buf), function(b){
+        return ("0" + b.toString(16)).slice(-2);
+      }).join("");
+    });
+  }
+  /* Must match check_pin() in the database exactly. */
+  function pinHash(email, pin){
+    return sha256Hex(email + ":" + pin + ":uproot-arcade");
+  }
+  function validPin(p){ return /^\d{4}$/.test(p); }
+
+  /* ================= backend calls ================= */
+  function sb(path, opts){
+    opts = opts || {};
+    var headers = {
+      "apikey": SUPABASE_KEY,
+      "Authorization": "Bearer " + SUPABASE_KEY
+    };
+    if (opts.body) headers["Content-Type"] = "application/json";
+    if (opts.prefer) headers["Prefer"] = opts.prefer;
+    return fetch(SUPABASE_URL + "/rest/v1/" + path, {
+      method: opts.method || "GET",
+      headers: headers,
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    }).then(function(res){
+      if (res.status === 201 || res.status === 204) return null;
+      return res.text().then(function(txt){
+        var data = null;
+        try { data = txt ? JSON.parse(txt) : null; } catch (e) {}
+        if (!res.ok) {
+          throw { status: res.status,
+                  code: (data && data.code) || "",
+                  message: (data && (data.message || data.details)) || ("HTTP " + res.status) };
+        }
+        return data;
+      });
+    });
+  }
+  function isDup(e, constraint){
+    return e && e.code === "23505" && (!constraint || String(e.message).indexOf(constraint) !== -1);
+  }
+  function isPolicy(e){ return e && (e.code === "42501" || e.status === 403 || e.status === 401); }
+  function isNetwork(e){ return e && !e.status; }
+
+  function postRoster(rec){
+    return sb("roster", { method: "POST", prefer: "return=minimal",
+      body: { email: rec.email, name: rec.name, gen: rec.gen || 1, pin_hash: rec.pin_hash || null } });
+  }
+  function postScore(rec){
+    return sb("scores", { method: "POST", prefer: "return=minimal",
+      body: { email: rec.email, gen: rec.gen || 1, week: rec.week, attempt: rec.attempt, score: rec.score, streak: rec.streak } });
+  }
+  function checkPin(email, gen, pin){
+    return sb("rpc/check_pin", { method: "POST",
+      body: { p_email: email, p_gen: gen, p_pin: pin } });
+  }
+
+  /* ================= shared state ================= */
+  var state = { roster: [], scores: [], games: {}, reactions: null, loaded: false, error: null };
+
+  function loadData(){
+    if (!CONFIGURED) { state.error = "setup"; renderAll(); return Promise.resolve(); }
+    return Promise.all([
+      sb("roster?select=email,name,gen,has_pin"),
+      sb("scores?select=email,gen,week,attempt,score,streak"),
+      sb("games?select=week,name,tries"),
+      sb("reactions?select=target,email").catch(function(){ return null; }) // table may not exist yet
+    ]).then(function(res){
+      state.roster = res[0] || [];
+      state.scores = res[1] || [];
+      state.games = {};
+      (res[2] || []).forEach(function(g){ state.games[g.week] = g; });
+      state.reactions = res[3];
+      state.loaded = true;
+      state.error = null;
+      renderAll();
+    }).catch(function(){
+      state.error = state.loaded ? "net" : "net-first";
+      renderAll();
+    });
+  }
+  function triesFor(week){
+    var g = state.games[week];
+    return (g && g.tries) ? g.tries : FALLBACK_TRIES;
+  }
+  function gensFor(email){
+    return state.roster.filter(function(r){ return r.email === email; })
+      .sort(function(a, b){ return b.gen - a.gen; });
+  }
+  function latestGen(email){
+    var g = gensFor(email);
+    return g.length ? g[0].gen : 1;
+  }
+  function nameFor(email, gen){
+    gen = gen || 1;
+    var found = null;
+    state.roster.forEach(function(r){ if (r.email === email && r.gen === gen) found = r; });
+    var m = me();
+    var base = found ? found.name : (m && m.email === email ? m.name : email.split("@")[0]);
+    return gen < latestGen(email) ? base + " 👻" : base; // pre-reset lives haunt the board
+  }
+
+  /* ================= pending queue (offline safety net) ================= */
+  function readPending(){
+    try {
+      var q = JSON.parse(store(true, PENDING_KEY) || "[]");
+      return Array.isArray(q) ? q.filter(function(it){ return it && it.kind && it.rec; }) : [];
+    } catch (e) { return []; }
+  }
+  function writePending(q){ store(false, PENDING_KEY, q.length ? JSON.stringify(q) : null); }
+  function pendingKey(it){
+    return it.kind === "roster" ? "r|" + it.rec.email
+                                : "s|" + it.rec.email + "|" + it.rec.week + "|" + it.rec.attempt;
+  }
+  function queuePending(it){
+    var q = readPending();
+    var k = pendingKey(it);
+    if (!q.some(function(x){ return pendingKey(x) === k; })) q.push(it);
+    writePending(q);
+  }
+  function myPendingScores(){
+    var m = me();
+    if (!m) return [];
+    return readPending().filter(function(it){
+      return it.kind === "score" && it.rec.email === m.email;
+    }).map(function(it){ return it.rec; });
+  }
+  function flushPending(){
+    var q = readPending();
+    if (!q.length || !CONFIGURED) return Promise.resolve();
+    var chain = Promise.resolve();
+    q.forEach(function(it){
+      chain = chain.then(function(){
+        var push = it.kind === "roster" ? postRoster(it.rec) : postScore(it.rec);
+        return push.then(function(){ dropPending(it); })
+          .catch(function(e){
+            if (isDup(e) || isPolicy(e) || e.code === "23514") dropPending(it); // landed already or refused for good
+            // network errors keep it queued for next time
+          });
+      });
+    });
+    return chain;
+    function dropPending(it){
+      var k = pendingKey(it);
+      writePending(readPending().filter(function(x){ return pendingKey(x) !== k; }));
+    }
+  }
+
+  /* ================= identity ================= */
+  function me(){
+    try {
+      var m = JSON.parse(store(true, ME_KEY) || "null");
+      return (m && m.gen) ? m : null; // identities from before the PIN era must re-verify
+    } catch (e) { return null; }
+  }
+  function setMe(m){
+    store(false, ME_KEY, m ? JSON.stringify(m) : null);
+    if (m) store(false, LAST_KEY, m.email); // remembered even after switching player
+  }
+  function myRuns(){
+    var m = me();
+    if (!m) return [];
+    var runs = state.scores.filter(function(s){ return s.email === m.email && s.week === WEEK; });
+    myPendingScores().forEach(function(p){
+      if (p.week === WEEK && !runs.some(function(r){ return r.attempt === p.attempt; })) runs.push(p);
+    });
+    return runs;
+  }
+  function bestOf(runs){
+    var b = null;
+    runs.forEach(function(s){ if (!b || s.score > b.score) b = s; });
+    return b;
+  }
+
+  /* ================= rank titles ================= */
+  function rankTitle(s){
+    if (s >= 1200) return "STAIN SNIPER ELITE";
+    if (s >= 800) return "SHARPSHOOTER";
+    if (s >= 400) return "SPRAY SLINGER";
+    return "SPOT ROOKIE";
+  }
+
+  /* ================= render ================= */
+  var justFinished = false;
+
+  function renderChips(){
+    var byEmail = {};
+    state.roster.forEach(function(r){
+      if (!byEmail[r.email] || r.gen > byEmail[r.email].gen) byEmail[r.email] = r;
+    });
+    var m = me();
+    if (m && !byEmail[m.email]) {
+      byEmail[m.email] = { email: m.email, name: m.name, gen: m.gen, has_pin: true }; // signup still syncing
+    }
+    var roster = Object.keys(byEmail).map(function(k){ return byEmail[k]; })
+      .sort(function(a, b){ return a.name.localeCompare(b.name); });
+
+    /* Fast lane for the device's last player (works even after "switch"). */
+    var cont = $("#continue-btn");
+    var last = store(true, LAST_KEY);
+    var lastRow = last ? byEmail[last] : null;
+    if (!me() && lastRow) {
+      cont.hidden = false;
+      $("#continue-name").textContent = lastRow.name.toUpperCase();
+      cont.onclick = function(){ selectAccount(lastRow.email); };
+    } else {
+      cont.hidden = true;
+    }
+
+    /* Search appears once the roster outgrows a glance. */
+    var search = $("#chip-search");
+    search.hidden = roster.length <= 8;
+    var q = search.hidden ? "" : (search.value || "").trim().toLowerCase();
+    if (q) {
+      roster = roster.filter(function(r){
+        return r.name.toLowerCase().indexOf(q) !== -1 || r.email.indexOf(q) !== -1;
+      });
+    }
+
+    var used = {};
+    state.scores.forEach(function(s){ if (s.week === WEEK) used[s.email] = (used[s.email] || 0) + 1; });
+    var box = $("#chips");
+    box.innerHTML = "";
+    if (!roster.length) {
+      box.innerHTML = '<span class="none">' +
+        (q ? "No player named “" + esc(q) + "” — check the spelling, or insert a coin below!"
+           : (state.loaded || !CONFIGURED ? "Roster is empty — be the first Uprooter to sign up!" : "Loading the roster…")) +
+        "</span>";
+      return;
+    }
+    roster.forEach(function(r){
+      var b = document.createElement("button");
+      b.className = "chip";
+      b.innerHTML = esc(r.name) + ((used[r.email] || 0) >= triesFor(WEEK) ? ' <span class="done">✔</span>' : "");
+      b.addEventListener("click", function(){ selectAccount(r.email); });
+      box.appendChild(b);
+    });
+  }
+
+  function medal(i){
+    return i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "";
+  }
+  /* One entry per player per week: their best run, with attempts used. */
+  function bestPerWeek(scores){
+    var map = {};
+    scores.forEach(function(s){
+      var k = s.email + "|" + (s.gen || 1) + "|" + s.week;
+      var b = map[k];
+      if (!b) {
+        map[k] = { email: s.email, gen: s.gen || 1, week: s.week, score: s.score, streak: s.streak, attempts: 1 };
+      } else {
+        b.attempts++;
+        if (s.score > b.score) { b.score = s.score; b.streak = s.streak; }
+      }
+    });
+    return Object.keys(map).map(function(k){ return map[k]; });
+  }
+  /* Cheat-smell detector: flagged scores stay visible, get roasted, and are
+     excluded from medals, weekly wins, and the championship. */
+  function isSus(s){
+    var lim = SUS_LIMITS[s.week];
+    return !!lim && s.score > lim;
+  }
+  function isBot(s){ return !!BOT_EMAILS[s.email]; }
+  var ROASTS = [
+    "🕵️ {N}'s score just broke our fur-physics engine. The Arcade Committee has opened a VERY serious investigation.",
+    "👃 Something smells around here… and it isn't the pet hair. {N}, blink twice if you're human.",
+    "🤖 {N} cleans like a robot vacuum on triple espresso. Suspiciously spotless. SUSPICIOUSLY.",
+    "🚨 {N}'s score has more red flags than a dog park has tennis balls. The Fur Police are en route."
+  ];
+  function roastFor(name){
+    var h = 0;
+    for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+    return ROASTS[h % ROASTS.length].split("{N}").join(name);
+  }
+  /* Standings from clean bests within a week window (one season, usually). */
+  function standingsFor(bests, fromWeek, toWeek){
+    var by = {};
+    var pool = bests.filter(function(s){
+      return s.week >= fromWeek && s.week <= toWeek && !isSus(s) && !isBot(s);
+    });
+    pool.forEach(function(s){
+      var k = s.email + "|" + s.gen;
+      var b = by[k] || (by[k] = { email: s.email, gen: s.gen, total: 0, weeks: 0, wins: 0 });
+      b.total += s.score; b.weeks++;
+    });
+    var weekNums = [];
+    pool.forEach(function(s){ if (weekNums.indexOf(s.week) === -1) weekNums.push(s.week); });
+    weekNums.forEach(function(w){
+      var ws = pool.filter(function(s){ return s.week === w; });
+      var max = -1;
+      ws.forEach(function(s){ if (s.score > max) max = s.score; });
+      ws.forEach(function(s){ if (s.score === max) by[s.email + "|" + s.gen].wins++; });
+    });
+    return Object.keys(by).map(function(k){ return by[k]; })
+      .sort(function(a, b){ return b.total - a.total; });
+  }
+  function renderScoreboard(){
+    var boardNote = $("#board-note");
+    boardNote.textContent = !CONFIGURED
+      ? "Scoreboard connects once setup finishes — runs stay on this device for now."
+      : (state.error ? "Can't reach the scoreboard — retrying…" : "");
+    boardNote.className = "note" + (state.error || !CONFIGURED ? " err" : "");
+
+    var emails = {};
+    state.roster.forEach(function(r){ emails[r.email] = true; });
+    var nPlayers = Object.keys(emails).length;
+    $("#roster-count").textContent = nPlayers ? nPlayers + " PLAYER" + (nPlayers === 1 ? "" : "S") : "";
+
+    var bests = bestPerWeek(state.scores);
+
+    /* --- THIS WEEK panel --- */
+    var wk = bests.filter(function(s){ return s.week === WEEK; })
+      .sort(function(a, b){ return b.score - a.score; });
+    var cleanRank = 0;
+    $("#week-list").innerHTML = wk.length
+      ? wk.map(function(s){
+          var bot = isBot(s);
+          var sus = !bot && isSus(s);
+          var rankHtml;
+          if (bot) {
+            rankHtml = '<span class="w-rank">🤖</span>';
+          } else if (sus) {
+            rankHtml = '<span class="w-rank">🚨</span>';
+          } else {
+            rankHtml = medal(cleanRank)
+              ? '<span class="w-rank">' + medal(cleanRank) + "</span>"
+              : '<span class="w-rank n">' + (cleanRank + 1) + "</span>";
+            cleanRank++;
+          }
+          return '<li class="w-row' + (!bot && !sus && cleanRank === 1 ? " t1" : "") + (sus ? " sus" : "") + (bot ? " bot" : "") + '">' +
+            rankHtml +
+            '<span class="w-name">' + esc(nameFor(s.email, s.gen)) + (bot ? ' <span class="botchip">BOT</span>' : "") + "</span>" +
+            '<span class="w-streak">' + s.attempts + "/" + triesFor(s.week) + " 🪙 · x" + s.streak + "</span>" +
+            '<span class="w-score">' + s.score + "</span></li>";
+        }).join("")
+      : '<li class="empty">' + (state.loaded || !CONFIGURED
+          ? "No runs yet this week — spend a credit! 🪙" : "Loading scores…") + "</li>";
+    var callouts = wk.filter(function(s){ return !isBot(s) && isSus(s); }).map(function(s){
+      var n = esc(nameFor(s.email, s.gen)).toUpperCase();
+      var line = "🚨 SMELL ALERT ••• " + n + " SMELLS LIKE CHEATING ••• " + roastFor(n) +
+        " ••• PROVE YOURSELF, LEGEND — REPLAY IT LIVE OR LOSE THE CROWN ••• THE ARCADE COMMITTEE NEVER BLINKS ••• ";
+      return '<div class="sus-ticker"><div class="ticker-track"><span>' + line + "</span><span>" + line + "</span></div></div>";
+    });
+    wk.filter(isBot).forEach(function(s){
+      callouts.push('<div class="bot-callout">🤖 ' + esc(nameFor(s.email, s.gen)) + " is " +
+        BOT_EMAILS[s.email] + " — it plays for the love of the game. Scores on the board, but no crown, no medals. Beat it if you can!</div>");
+    });
+    $("#sus-box").innerHTML = callouts.join("");
+
+    /* Days-left countdown: weeks run Monday→Sunday, counted off the calendar. */
+    var dow = new Date().getDay();            // 0=Sun … 6=Sat
+    var isoDay = dow === 0 ? 7 : dow;         // Mon=1 … Sun=7
+    var left = 8 - isoDay;                    // days left, today included
+    $("#week-days").textContent = left <= 1 ? "⏳ FINAL DAY!" : "⏳ " + left + " DAYS LEFT";
+
+    /* Week leader banner — first clean human on the board wears the crown. */
+    var leader = null;
+    for (var wl = 0; wl < wk.length; wl++) {
+      if (!isBot(wk[wl]) && !isSus(wk[wl])) { leader = wk[wl]; break; }
+    }
+    var champBox = $("#week-champ");
+    if (leader) {
+      champBox.hidden = false;
+      champBox.innerHTML = "<span>W" + WEEK + " LEADER</span>" +
+        '<span class="champ">👑 ' + esc(nameFor(leader.email, leader.gen)) + "</span>" +
+        '<span class="wc-score">' + leader.score + "</span>";
+    } else {
+      champBox.hidden = true;
+      champBox.innerHTML = "";
+    }
+
+    /* --- SEASON panel: current season only, cheat-free --- */
+    $("#season-title").textContent = "SEASON " + SEASON;
+    $("#season-progress").textContent =
+      "WEEK " + (WEEK - SEASON_START + 1) + " OF " + SEASON_LEN +
+      (WEEK === SEASON_END ? " · FINAL WEEK — CHAMPION CROWNED!" : " · CHAMPION CROWNED AFTER W" + SEASON_END);
+    var rows = standingsFor(bests, SEASON_START, SEASON_END);
+    $("#season").innerHTML = rows.length
+      ? '<div class="s-row head"><span class="s-rank">#</span><span class="s-name">Player</span>' +
+        '<span class="s-wins">Wins</span><span class="s-weeks">Games</span><span class="s-total">Total</span></div>' +
+        rows.map(function(r, i){
+          return '<div class="s-row' + (i === 0 ? " t1" : "") + '">' +
+            '<span class="s-rank">' + (i + 1) + "</span>" +
+            '<span class="s-name">' + esc(nameFor(r.email, r.gen)) + "</span>" +
+            '<span class="s-wins">' + (r.wins ? "🏆" + (r.wins > 1 ? "×" + r.wins : "") : "—") + "</span>" +
+            '<span class="s-weeks">' + r.weeks + "</span>" +
+            '<span class="s-total">' + r.total + "</span></div>";
+        }).join("")
+      : '<div class="empty">Season starts with the first run. Make history!</div>';
+
+    /* --- HALL OF FAME: champions of completed seasons --- */
+    var champs = [];
+    for (var sn = SEASON - 1; sn >= 1 && champs.length < HOF_KEEP; sn--) {
+      var from = (sn - 1) * SEASON_LEN + 1;
+      var top = standingsFor(bests, from, from + SEASON_LEN - 1)[0];
+      if (top) champs.push({ season: sn, name: nameFor(top.email, top.gen), total: top.total });
+    }
+    var m3 = me();
+    $("#hof").innerHTML = champs.length
+      ? champs.map(function(c, i){
+          var target = "hof-s" + c.season;
+          var heartHtml = "";
+          if (state.reactions) {
+            var count = 0, mine = false;
+            state.reactions.forEach(function(r){
+              if (r.target === target) { count++; if (m3 && r.email === m3.email) mine = true; }
+            });
+            heartHtml = '<button class="heart' + (mine ? " mine" : "") + '" data-target="' + target +
+              '" title="One heart per player — hearts are forever">' + (mine ? "❤️" : "🤍") + " " + count + "</button>";
+          }
+          return '<li' + (i === 0 ? ' class="latest"' : "") + '><span>S' + c.season + "</span>" +
+            '<span class="champ">👑 ' + esc(c.name) + "</span><span>" + c.total + "</span>" + heartHtml + "</li>";
+        }).join("")
+      : '<li><span class="empty">The first champion is crowned after Week ' + SEASON_END + '. Legends load here… ⏳</span></li>';
+  }
+
+  function showPanel(id){
+    ["screen-start", "screen-end", "screen-locked"].forEach(function(p){
+      $("#" + p).hidden = (p !== id);
+    });
+    $("#overlay").hidden = false;
+  }
+
+  function renderAll(){
+    var m = me();
+    document.body.classList.toggle("gated", !m); // page one: the gate; page two: the arcade
+    $("#join-card").hidden = !!m;
+    $("#greet").hidden = !m;
+    $("#game-card").hidden = !m;
+    if (m) $("#greet-name").textContent = m.name.toUpperCase();
+    if (m && !playing && !justFinished) {
+      var runs = myRuns();
+      var b = bestOf(runs);
+      var tries = triesFor(WEEK);
+      if (runs.length >= tries) {
+        $("#locked-score").textContent = String(b ? b.score : 0);
+        $("#locked-rank").textContent = rankTitle(b ? b.score : 0);
+        showPanel("screen-locked");
+      } else {
+        $("#credit-line").textContent = "🪙 CREDITS LEFT: " + (tries - runs.length) + " OF " + tries + " — BEST RUN COUNTS";
+        var bsf = $("#best-so-far");
+        bsf.hidden = !b;
+        if (b) bsf.textContent = "Your best so far: " + b.score + " (" + rankTitle(b.score) + ")";
+        showPanel("screen-start");
+      }
+    }
+    renderChips();
+    renderScoreboard();
+  }
+
+  /* ================= join flow ================= */
+  function joinNote(msg, kind){
+    var n = $("#join-note");
+    n.textContent = msg;
+    n.className = "note" + (kind ? " " + kind : "");
+  }
+  /* ---- join card views: list | pin | claim | reset ---- */
+  var pinTarget = null; // { email, name } — account being unlocked/claimed/reset
+  function showJoin(view){
+    ["jv-list", "jv-pin", "jv-claim", "jv-reset"].forEach(function(id){
+      $("#" + id).hidden = (id !== "jv-" + view);
+    });
+    $("#join-title").textContent =
+      view === "pin" ? "SPEAK YOUR SECRET CODE" :
+      view === "claim" ? "CLAIM YOUR ACCOUNT" :
+      view === "reset" ? "NEW LIFE?" : "WHO GOES THERE?";
+  }
+  function noteIn(sel, msg, kind){
+    var n = $(sel);
+    n.textContent = msg;
+    n.className = "note" + (kind ? " " + kind : "");
+  }
+  function signIn(email, gen, name){
+    setMe({ email: email, gen: gen, name: name });
+    justFinished = false;
+    showJoin("list");
+    renderAll();
+  }
+  function selectAccount(email){
+    var gens = gensFor(email);
+    if (!gens.length) return;
+    var latest = gens[0];
+    var m = me();
+    if (m && m.email === email) { // already verified on this device
+      toast("WELCOME BACK, " + m.name.toUpperCase() + "!");
+      justFinished = false;
+      renderAll();
+      return;
+    }
+    pinTarget = { email: email, name: latest.name };
+    if (!latest.has_pin) {
+      $("#claim-who").textContent = latest.name.toUpperCase();
+      $("#claim-pin").value = "";
+      noteIn("#claim-note", "", "");
+      showJoin("claim");
+      $("#claim-pin").focus();
+    } else {
+      $("#pin-who").textContent = latest.name.toUpperCase();
+      $("#pin-input").value = "";
+      noteIn("#pin-note", "", "");
+      showJoin("pin");
+      $("#pin-input").focus();
+    }
+  }
+
+  /* ---- unlock with PIN (checks every life, newest first) ---- */
+  $("#pin-go").addEventListener("click", function(){
+    var pin = $("#pin-input").value.trim();
+    if (!validPin(pin)) { noteIn("#pin-note", "PINs are exactly 4 digits!", "err"); return; }
+    if (!pinTarget) { showJoin("list"); return; }
+    var gens = gensFor(pinTarget.email).filter(function(g){ return g.has_pin; });
+    var btn = $("#pin-go");
+    btn.disabled = true;
+    noteIn("#pin-note", "Checking…", "");
+    var i = 0;
+    (function tryNext(){
+      if (i >= gens.length) {
+        btn.disabled = false;
+        noteIn("#pin-note", "WRONG PIN! The couch remembers its true owner. Breathe, try again.", "err");
+        return;
+      }
+      var g = gens[i++];
+      checkPin(pinTarget.email, g.gen, pin).then(function(ok){
+        if (ok) {
+          btn.disabled = false;
+          var ghost = g.gen < latestGen(pinTarget.email);
+          toast(ghost ? "👻 GHOST MODE: OLD-YOU LIVES — SCORES INTACT!"
+                      : "WELCOME BACK, " + g.name.toUpperCase() + "!");
+          signIn(pinTarget.email, g.gen, g.name);
+        } else {
+          tryNext();
+        }
+      }).catch(function(){
+        btn.disabled = false;
+        noteIn("#pin-note", "Can't reach the arcade — try again in a moment.", "err");
+      });
+    })();
+  });
+  $("#pin-forgot").addEventListener("click", function(){
+    $("#reset-pin").value = "";
+    noteIn("#reset-note", "", "");
+    showJoin("reset");
+  });
+  $("#pin-back").addEventListener("click", function(){ showJoin("list"); });
+
+  /* ---- claim a pre-PIN account (one shot: PIN can only be set while empty) ---- */
+  $("#claim-go").addEventListener("click", function(){
+    var pin = $("#claim-pin").value.trim();
+    if (!validPin(pin)) { noteIn("#claim-note", "PINs are exactly 4 digits!", "err"); return; }
+    if (!pinTarget) { showJoin("list"); return; }
+    var email = pinTarget.email, gens = gensFor(email), latest = gens[0];
+    var btn = $("#claim-go");
+    btn.disabled = true;
+    noteIn("#claim-note", "Claiming…", "");
+    pinHash(email, pin).then(function(hash){
+      return sb("roster?email=eq." + encodeURIComponent(email) + "&gen=eq." + latest.gen + "&select=email,gen",
+        { method: "PATCH", prefer: "return=representation", body: { pin_hash: hash } });
+    }).then(function(rows){
+      btn.disabled = false;
+      if (rows && rows.length) {
+        toast("ACCOUNT CLAIMED! GUARD THAT PIN WITH YOUR LIFE 🧹");
+        signIn(email, latest.gen, latest.name);
+        loadData();
+      } else {
+        noteIn("#claim-note", "Too slow — this account already has a PIN! Enter it instead.", "err");
+        loadData().then(function(){ selectAccount(email); });
+      }
+    }).catch(function(){
+      btn.disabled = false;
+      noteIn("#claim-note", "Can't reach the arcade — try again in a moment.", "err");
+    });
+  });
+  $("#claim-back").addEventListener("click", function(){ showJoin("list"); });
+
+  /* ---- reset = new life: old account becomes a ghost with its scores ---- */
+  $("#reset-go").addEventListener("click", function(){
+    var pin = $("#reset-pin").value.trim();
+    if (!validPin(pin)) { noteIn("#reset-note", "New PINs are exactly 4 digits!", "err"); return; }
+    if (!pinTarget) { showJoin("list"); return; }
+    var email = pinTarget.email, name = pinTarget.name;
+    var newGen = latestGen(email) + 1;
+    var btn = $("#reset-go");
+    btn.disabled = true;
+    noteIn("#reset-note", "Reincarnating…", "");
+    pinHash(email, pin).then(function(hash){
+      function attempt(gen, retry){
+        return postRoster({ email: email, name: name, gen: gen, pin_hash: hash })
+          .catch(function(e){
+            if (isDup(e, "roster_pkey") && retry) return attempt(gen + 1, false);
+            throw e;
+          }).then(function(){ return gen; });
+      }
+      return attempt(newGen, true);
+    }).then(function(gen){
+      btn.disabled = false;
+      toast("NEW LIFE STARTED! OLD-YOU HAUNTS THE BOARD AS A GHOST 👻");
+      signIn(email, gen, name);
+      loadData();
+    }).catch(function(){
+      btn.disabled = false;
+      noteIn("#reset-note", "Can't reach the arcade — your old life survives another day.", "err");
+    });
+  });
+  $("#reset-back").addEventListener("click", function(){
+    if (pinTarget) selectAccount(pinTarget.email); else showJoin("list");
+  });
+
+  /* ---- sign-up (new account, gen 1) ---- */
+  $("#join-btn").addEventListener("click", function(){
+    var name = $("#join-name").value.trim().replace(/\s+/g, " ").slice(0, 20);
+    var email = normalizeEmail($("#join-email").value);
+    var pin = $("#join-pin").value.trim();
+    justFinished = false;
+
+    var gens = gensFor(email);
+    if (gens.length) { // email already registered → this is a sign-in, not a sign-up
+      joinNote("That email is already on the roster — enter its PIN.", "");
+      selectAccount(email);
+      return;
+    }
+    if (!name || name.length < 2) { joinNote("Type a name first (2–20 letters)!", "err"); return; }
+    if (!/^[a-z0-9._%+-]+@uprootclean\.com$/.test(email)) {
+      joinNote("Sign-up needs your @uprootclean.com email.", "err"); return;
+    }
+    if (!validPin(pin)) { joinNote("Pick a 4-digit PIN — you'll need it every time you play. Don't forget it 😉", "err"); return; }
+    var nameTaken = false;
+    state.roster.forEach(function(r){
+      if (r.email !== email && r.gen === latestGen(r.email) && r.name.toLowerCase() === name.toLowerCase()) nameTaken = true;
+    });
+    if (nameTaken) { joinNote("That name is already on the roster — add a last initial?", "err"); return; }
+
+    var btn = $("#join-btn");
+    btn.disabled = true;
+    joinNote("Adding you to the roster…", "");
+    pinHash(email, pin).then(function(hash){
+      var rec = { email: email, name: name, gen: 1, pin_hash: hash };
+      if (!CONFIGURED) {
+        setMe({ email: email, gen: 1, name: name });
+        queuePending({ kind: "roster", rec: rec });
+        toast("JOINED ON THIS DEVICE — SYNCS ONCE THE BOARD IS LIVE");
+        renderAll();
+        return;
+      }
+      return postRoster(rec).then(function(){
+        toast("WELCOME TO THE ARCADE, " + name.toUpperCase() + "!");
+        signIn(email, 1, name);
+        return loadData();
+      }).catch(function(e){
+        if (isDup(e, "roster_pkey")) { // raced with a signup elsewhere
+          return loadData().then(function(){ selectAccount(email); });
+        }
+        if (e && e.code === "23514") { joinNote("Sign-up needs your @uprootclean.com email.", "err"); return; }
+        if (isNetwork(e)) {
+          setMe({ email: email, gen: 1, name: name });
+          queuePending({ kind: "roster", rec: rec });
+          toast("OFFLINE — YOU'RE IN ON THIS DEVICE; SYNCS WHEN BACK ONLINE");
+          renderAll();
+          return;
+        }
+        joinNote("Couldn't reach the arcade — try again in a moment.", "err");
+      });
+    }).then(function(){ btn.disabled = false; });
+  });
+  $("#chip-search").addEventListener("input", function(){ renderChips(); });
+  $("#new-player-btn").addEventListener("click", function(){
+    var form = $("#signup-form");
+    var opening = form.hidden;
+    form.hidden = !opening;
+    this.textContent = opening ? "◂ NEVER MIND — I HAVE AN ACCOUNT" : "🪙 INSERT COIN — NEW PLAYER";
+    if (opening) $("#join-name").focus();
+  });
+  $("#join-name").addEventListener("keydown", function(e){
+    if (e.key === "Enter") $("#join-email").focus();
+  });
+  $("#join-email").addEventListener("keydown", function(e){
+    if (e.key === "Enter") $("#join-pin").focus();
+  });
+  $("#join-email").addEventListener("blur", function(){
+    if (this.value.trim()) this.value = normalizeEmail(this.value);
+  });
+  [["#join-pin", "#join-btn"], ["#pin-input", "#pin-go"], ["#claim-pin", "#claim-go"], ["#reset-pin", "#reset-go"]]
+    .forEach(function(pair){
+      $(pair[0]).addEventListener("keydown", function(e){
+        if (e.key === "Enter") $(pair[1]).click();
+      });
+    });
+  $("#switch-btn").addEventListener("click", function(){
+    if (playing) return;
+    setMe(null);
+    justFinished = false;
+    pinTarget = null;
+    showJoin("list");
+    renderAll();
+    $("#join-name").focus();
+  });
+
+  /* ================= audio ================= */
+  var audioCtx = null, muted = false;
+  function blip(freq, dur, type, gain){
+    if (muted) return;
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = type || "square"; o.frequency.value = freq;
+      g.gain.setValueAtTime(gain || 0.04, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(); o.stop(audioCtx.currentTime + dur);
+    } catch (e) {}
+  }
+  $("#mute").addEventListener("click", function(){
+    muted = !muted;
+    this.textContent = muted ? "🔇" : "🔊";
+    this.setAttribute("aria-pressed", String(muted));
+  });
+
+  /* ================= game ================= */
+  var board = $("#board");
+  var hudTime = $("#hud-time"), hudScore = $("#hud-score"), hudStreak = $("#hud-streak");
+  var timePill = $("#time-pill");
+  var score = 0, streak = 0, bestStreak = 0, timeLeft = DURATION, playing = false;
+  var startedAt = 0, spawnTimer = null, tickTimer = null;
+  var stains = []; // active targets on the rug
+
+  board.addEventListener("contextmenu", function(e){ e.preventDefault(); });
+
+  function updateHud(){
+    hudScore.textContent = String(score);
+    hudStreak.textContent = String(streak);
+    hudTime.textContent = String(timeLeft);
+    timePill.classList.toggle("hot", playing && timeLeft <= 5);
+  }
+  function removeStain(entry){
+    clearTimeout(entry.t);
+    entry.el.remove();
+    stains = stains.filter(function(s){ return s !== entry; });
+  }
+  function clearStains(){
+    stains.slice().forEach(removeStain);
+  }
+  function spawnOne(){
+    var w = board.clientWidth, h = board.clientHeight;
+    if (!w || !h) return;
+    var elapsed = (Date.now() - startedAt) / 1000;
+    var size = Math.max(46, 66 - elapsed * 0.6);
+    var paw = Math.random() < 0.18;
+    var el = document.createElement("div");
+    el.className = (paw ? "paw" : "stain") + " pop-in";
+    el.style.width = el.style.height = size + "px";
+    el.style.left = (Math.random() * (w - size)) + "px";
+    el.style.top = (Math.random() * (h - size)) + "px";
+    if (paw) el.textContent = "🐾";
+    board.appendChild(el);
+    var entry = { el: el, paw: paw, size: size, t: 0 };
+    entry.t = setTimeout(function(){ removeStain(entry); }, Math.max(720, 1150 - elapsed * 14));
+    stains.push(entry);
+  }
+  function scheduleSpawn(){
+    if (!playing) return;
+    var elapsed = (Date.now() - startedAt) / 1000;
+    spawnOne();
+    if (elapsed > 15 && Math.random() < 0.3) spawnOne();
+    spawnTimer = setTimeout(scheduleSpawn, Math.max(500, 820 - elapsed * 11));
+  }
+  function floatScore(x, y, text, good){
+    var f = document.createElement("span");
+    f.className = "float-score " + (good ? "good" : "bad");
+    f.textContent = text;
+    f.style.left = x + "px";
+    f.style.top = Math.max(10, y - 14) + "px";
+    board.appendChild(f);
+    setTimeout(function(){ f.remove(); }, 620);
+  }
+  board.addEventListener("pointerdown", function(e){
+    if (!playing) return;
+    var rect = board.getBoundingClientRect();
+    var px = e.clientX - rect.left, py = e.clientY - rect.top;
+    var hit = e.target.closest ? e.target.closest(".stain, .paw") : null;
+    if (!hit) { // air-shot
+      score = Math.max(0, score - 10);
+      streak = 0;
+      floatScore(px, py, "-10", false);
+      blip(180, 0.12, "sawtooth", 0.045);
+      updateHud();
+      return;
+    }
+    var entry = null;
+    stains.forEach(function(s){ if (s.el === hit) entry = s; });
+    if (!entry) return;
+    var cx = hit.offsetLeft + entry.size / 2, cy = hit.offsetTop + entry.size / 2;
+    removeStain(entry);
+    if (entry.paw) {
+      score = Math.max(0, score - 15);
+      streak = 0;
+      floatScore(px, py, "-15 🐾", false);
+      blip(140, 0.22, "sawtooth", 0.06);
+    } else {
+      var r = Math.sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy)) / (entry.size / 2);
+      var base = r <= 0.35 ? 50 : (r <= 0.78 ? 25 : 10);
+      streak++;
+      bestStreak = Math.max(bestStreak, streak);
+      var bonus = (streak >= 10 ? 10 : (streak >= 5 ? 5 : 0));
+      var gain = base + bonus;
+      score += gain;
+      floatScore(px, py, base === 50 ? "🎯 BULLSEYE +" + gain : "+" + gain, true);
+      blip(base === 50 ? 990 : base === 25 ? 740 : 560, 0.1, "square", 0.045);
+    }
+    updateHud();
+  });
+
+  function saveNote(msg, kind){
+    var n = $("#save-note");
+    n.textContent = msg;
+    n.className = "note" + (kind ? " " + kind : "");
+  }
+
+  function startRun(){
+    var m = me();
+    if (!m) { renderAll(); return; }
+    if (currentCalendarWeek() < WEEK) { toast("EARLY BIRD! THIS GAME UNLOCKS MONDAY 🐦"); return; }
+    if (myRuns().length >= triesFor(WEEK)) { justFinished = false; renderAll(); toast("OUT OF CREDITS THIS WEEK!"); return; }
+    score = 0; streak = 0; bestStreak = 0; timeLeft = DURATION;
+    playing = true; startedAt = Date.now();
+    clearStains();
+    updateHud();
+    $("#overlay").hidden = true;
+    blip(520, 0.1); setTimeout(function(){ blip(780, 0.12); }, 110);
+    scheduleSpawn();
+    tickTimer = setInterval(function(){
+      timeLeft--;
+      updateHud();
+      if (timeLeft <= 5 && timeLeft > 0) blip(880, 0.05, "square", 0.03);
+      if (timeLeft <= 0) endGame();
+    }, 1000);
+  }
+  $("#start").addEventListener("click", startRun);
+  $("#again-btn").addEventListener("click", startRun);
+
+  function endGame(){
+    playing = false;
+    justFinished = true;
+    clearTimeout(spawnTimer); clearInterval(tickTimer);
+    clearStains();
+    updateHud();
+    blip(660, 0.12); setTimeout(function(){ blip(440, 0.25); }, 130);
+
+    $("#final-score").textContent = String(score);
+    $("#rank-title").textContent = rankTitle(score);
+    $("#end-streak").textContent = "Best streak: x" + bestStreak;
+    showPanel("screen-end");
+
+    var m = me();
+    var againBtn = $("#again-btn");
+    againBtn.hidden = true;
+    if (!m) { saveNote("No player selected — score not recorded.", "err"); return; }
+
+    var tries = triesFor(WEEK);
+    var attempt = myRuns().length + 1;
+    var left = Math.max(0, tries - attempt);
+    $("#end-title").textContent = left > 0 ? "TIME'S UP!" : "LAST CREDIT SPENT!";
+    if (left > 0) {
+      againBtn.hidden = false;
+      againBtn.textContent = "PLAY AGAIN — " + left + " CREDIT" + (left === 1 ? "" : "S") + " LEFT";
+    }
+    var rec = { email: m.email, gen: m.gen || 1, week: WEEK, attempt: attempt, score: score, streak: bestStreak };
+    state.scores.push(rec); // optimistic; loadData() reconciles with the server
+    renderChips(); renderScoreboard();
+
+    if (!CONFIGURED) {
+      queuePending({ kind: "score", rec: rec });
+      saveNote("Recorded on this device — posts to the board once setup finishes.", "err");
+      return;
+    }
+    saveNote("Locking in your run…", "");
+    submitScore(rec, true);
+  }
+
+  function submitScore(rec, allowRetry){
+    postScore(rec).then(function(){
+      saveNote("LOCKED IN! Your run is on the team board. 🎉", "ok");
+      return loadData();
+    }).catch(function(e){
+      if (isDup(e)) { // attempt number raced with another device — take the next slot once
+        if (allowRetry && rec.attempt < triesFor(rec.week)) {
+          rec.attempt += 1;
+          submitScore(rec, false);
+        } else {
+          saveNote("This run couldn't be saved — credits were already used.", "err");
+          loadData();
+        }
+        return;
+      }
+      if (isPolicy(e)) {
+        saveNote("The board says all credits are spent for this week.", "err");
+        loadData();
+        return;
+      }
+      if (e && e.code === "23503") { // roster row still syncing
+        queuePending({ kind: "score", rec: rec });
+        saveNote("Run saved — it posts together with your signup.", "ok");
+        return;
+      }
+      queuePending({ kind: "score", rec: rec });
+      saveNote("Can't reach the board right now — run saved, posting automatically.", "err");
+    });
+  }
+
+  /* ================= scoreboard sidebar (per-viewer, remembered) ================= */
+  function setSidebar(open){
+    $("#layout").classList.toggle("sb-open", open);
+    var b = $("#sb-toggle");
+    b.setAttribute("aria-pressed", String(open));
+    b.classList.toggle("on", open);
+  }
+  /* Hall of Fame hearts: one per player per legend, forever. */
+  $("#hof").addEventListener("click", function(e){
+    var btn = e.target.closest(".heart");
+    if (!btn) return;
+    var m = me();
+    if (!m) { toast("PICK YOUR PLAYER FIRST, THEN SPREAD THE LOVE ❤️"); return; }
+    var target = btn.dataset.target;
+    if (!state.reactions) return;
+    var already = state.reactions.some(function(r){ return r.target === target && r.email === m.email; });
+    if (already) { toast("ONE HEART PER LEGEND — YOURS IS ALREADY UP THERE ❤️"); return; }
+    state.reactions.push({ target: target, email: m.email }); // optimistic
+    renderScoreboard();
+    sb("reactions", { method: "POST", prefer: "return=minimal",
+      body: { target: target, email: m.email, emoji: "❤️" } })
+      .catch(function(err){
+        if (isDup(err)) return; // already there — perfect
+        state.reactions = state.reactions.filter(function(r){
+          return !(r.target === target && r.email === m.email);
+        });
+        renderScoreboard();
+        toast("HEART GOT LOST IN TRANSIT — TRY AGAIN!");
+      });
+  });
+
+  $("#sb-toggle").addEventListener("click", function(){
+    var open = !$("#layout").classList.contains("sb-open");
+    setSidebar(open);
+    store(false, SB_KEY, open ? "open" : "closed");
+  });
+  (function initSidebar(){
+    var pref = store(true, SB_KEY);
+    var wide = false;
+    try { wide = window.matchMedia("(min-width: 880px)").matches; } catch (e) {}
+    setSidebar(pref ? pref === "open" : wide);
+  })();
+
+  /* Each board section collapses like the 🏆 toggle, remembered per device. */
+  [["sec-week", "th-week", "ua-sec-week"], ["sec-season", "th-season", "ua-sec-season"]]
+    .forEach(function(cfg){
+      var sec = $("#" + cfg[0]), head = $("#" + cfg[1]);
+      function apply(open){
+        sec.classList.toggle("collapsed", !open);
+        head.setAttribute("aria-expanded", String(open));
+        head.textContent = open ? "▾" : "▸";
+      }
+      head.addEventListener("click", function(){
+        var opening = sec.classList.contains("collapsed");
+        apply(opening);
+        store(false, cfg[2], opening ? "open" : "closed");
+      });
+      apply((store(true, cfg[2]) || "open") !== "closed");
+    });
+
+  /* ================= boot ================= */
+  renderAll(); // instant paint with loading states
+  flushPending().then(loadData);
+  setInterval(loadData, 45000);
+  document.addEventListener("visibilitychange", function(){
+    if (!document.hidden) loadData();
+  });
+})();
+</script>
+</body>
+</html>
