@@ -1,0 +1,42 @@
+name: weekly-launch
+
+# Every SATURDAY at 09:00 UTC (4-5am US Eastern — past midnight in both
+# EST and EDT), promote this week's game folder to the site root. Safe
+# to run any time: it no-ops when the right game is already live or the
+# week's folder doesn't exist yet.
+on:
+  schedule:
+    - cron: "0 9 * * 6"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  launch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Promote this week's game
+        run: |
+          set -e
+          anchor="2026-08-22"   # Saturday of Week 1 (weeks run Sat→Fri)
+          days=$(( ( $(date -u +%s) - $(date -u -d "$anchor" +%s) ) / 86400 ))
+          week=$(( days / 7 + 1 ))
+          printf -v glob "week-%02d-*" "$week"
+          dir=$(ls -d $glob 2>/dev/null | head -1 || true)
+          if [ -z "$dir" ]; then
+            echo "No folder matching $glob — nothing to launch for week $week."
+            exit 0
+          fi
+          if cmp -s "$dir/index.html" index.html; then
+            echo "Week $week ($dir) is already live."
+            exit 0
+          fi
+          cp "$dir/index.html" index.html
+          git config user.name "arcade-bot"
+          git config user.email "arcade-bot@users.noreply.github.com"
+          git add index.html
+          git commit -m "Auto-launch: $dir goes live (week $week)"
+          git push
+          echo "Launched $dir as week $week. 🕹️"
