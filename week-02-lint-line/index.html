@@ -606,6 +606,18 @@
     font-variant-numeric:tabular-nums; text-align:right;
   }
 
+  .loadbar{
+    height:14px; margin:2px 0 14px;
+    border:2px solid var(--line); border-radius:999px;
+    background:var(--bg); overflow:hidden;
+  }
+  .loadbar-fill{
+    height:100%; width:38%; border-radius:999px;
+    background:linear-gradient(90deg, var(--cyan), var(--purple));
+    animation:loadslide 1.6s ease-in-out infinite alternate;
+  }
+  @keyframes loadslide{ from{ transform:translateX(-30%); } to{ transform:translateX(200%); } }
+
   footer{
     text-align:center; color:var(--muted);
     font-family:"Silkscreen","Courier New",monospace;
@@ -627,7 +639,7 @@
   @keyframes toastin{ from{ transform:translate(-50%,14px); opacity:0; } }
 
   @media (prefers-reduced-motion: reduce){
-    .pop-in, .float-score, .toast, .blink, .week-champ::before, .ticker-track, .logo, .w-row.sus .w-rank, .days-left{ animation:none; }
+    .pop-in, .float-score, .toast, .blink, .week-champ::before, .ticker-track, .logo, .w-row.sus .w-rank, .days-left, .loadbar-fill{ animation:none; }
     .float-score{ opacity:0; }
   }
 </style>
@@ -753,6 +765,15 @@
             <div class="ranktitle" id="locked-rank">DUST ROOKIE</div>
             <p class="sub">All credits spent — your best run is on the board. New game drops next week, same link. Scout the scoreboard!</p>
           </div>
+
+          <div class="panel" id="screen-loading" hidden>
+            <h2 id="loading-week">LOADING…</h2>
+            <div class="loadbar"><div class="loadbar-fill"></div></div>
+            <p class="credit" id="loading-count"></p>
+            <p class="sub" id="loading-hero"></p>
+            <p class="sub" id="loading-season"></p>
+            <p class="sub">Friday is ceremony day — no runs, just glory. Scout the boards!</p>
+          </div>
         </div>
       </div>
     </section>
@@ -803,8 +824,8 @@
   var GAME_NAME = "LINT LINE";
   var FALLBACK_TRIES = 3; // server value in the `games` table wins
   /* Arcade clock: US Eastern (America/New_York, DST-aware). Weeks run
-     Monday→Sunday on the EASTERN calendar, anchored at Mon 2026-08-24. */
-  var ANCHOR_UTC = Date.UTC(2026, 7, 24);
+     Saturday→Friday on the EASTERN calendar (Sat = game day, Fri = ceremony), anchored Sat 2026-08-22. */
+  var ANCHOR_UTC = Date.UTC(2026, 7, 22);
   function easternDateUTC(){
     var parts = new Intl.DateTimeFormat("en-US",
       { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" })
@@ -815,6 +836,13 @@
   }
   function daysSinceAnchor(){
     return Math.round((easternDateUTC() - ANCHOR_UTC) / 86400000);
+  }
+  function dayIndex(){ return ((daysSinceAnchor() % 7) + 7) % 7; } // 0=Sat ... 6=Fri
+  function easternHour(){
+    try {
+      return +new Intl.DateTimeFormat("en-US",
+        { timeZone: "America/New_York", hour: "numeric", hourCycle: "h23" }).format(new Date());
+    } catch (e) { return 12; }
   }
   function currentCalendarWeek(){
     return Math.floor(daysSinceAnchor() / 7) + 1;
@@ -1221,18 +1249,21 @@
     });
     $("#sus-box").innerHTML = callouts.join("");
 
-    /* Countdown on the Eastern calendar, aware of THIS game's week. */
-    var dLeft = WEEK * 7 - daysSinceAnchor(); // days until this game's week ends, today included
+    /* Countdown on the Eastern calendar: Sat-Thu are play days, Friday is ceremony. */
+    var days = daysSinceAnchor();
+    var wkNow = Math.floor(days / 7) + 1;
+    var di = dayIndex();
     var daysEl = $("#week-days");
-    if (dLeft > 7) {
-      var until = dLeft - 7;
+    if (wkNow < WEEK) {
+      var until = (WEEK - 1) * 7 - days;
       daysEl.textContent = "🔒 UNLOCKS IN " + until + " DAY" + (until === 1 ? "" : "S");
-    } else if (dLeft > 1) {
-      daysEl.textContent = "⏳ " + dLeft + " DAYS LEFT";
-    } else if (dLeft === 1) {
-      daysEl.textContent = "⏳ FINAL DAY!";
-    } else {
+    } else if (wkNow > WEEK) {
       daysEl.textContent = "🏁 WEEK OVER";
+    } else if (di === 6) {
+      daysEl.textContent = "🎉 CEREMONY DAY — W" + (WEEK + 1) + " LOADS TOMORROW";
+    } else {
+      var playLeft = 6 - di;
+      daysEl.textContent = playLeft === 1 ? "⏳ FINAL PLAY DAY!" : "⏳ " + playLeft + " PLAY DAYS LEFT";
     }
 
     /* Week leader banner — first clean human on the board wears the crown. */
@@ -1243,7 +1274,8 @@
     var champBox = $("#week-champ");
     if (leader) {
       champBox.hidden = false;
-      champBox.innerHTML = "<span>W" + WEEK + " LEADER</span>" +
+      var crownLabel = (currentCalendarWeek() === WEEK && dayIndex() === 6) ? " WINNER" : " LEADER";
+      champBox.innerHTML = "<span>W" + WEEK + crownLabel + "</span>" +
         '<span class="champ">👑 ' + esc(nameFor(leader.email, leader.gen)) + "</span>" +
         '<span class="wc-score">' + leader.score + "</span>";
     } else {
@@ -1296,8 +1328,29 @@
       : '<li><span class="empty">The first champion is crowned after Week ' + SEASON_END + '. Legends load here… ⏳</span></li>';
   }
 
+  /* Friday ceremony: crown the week's real hero and the season leader. */
+  function renderCeremony(){
+    var bests = bestPerWeek(state.scores);
+    var wk = bests.filter(function(s){ return s.week === WEEK; })
+      .sort(function(a, b){ return b.score - a.score; });
+    var hero = null;
+    for (var i = 0; i < wk.length; i++) {
+      if (!isBot(wk[i]) && !isSus(wk[i])) { hero = wk[i]; break; }
+    }
+    var season = standingsFor(bests, SEASON_START, SEASON_END)[0] || null;
+    $("#loading-week").textContent = "W" + (WEEK + 1) + " LOADING…";
+    var hrs = Math.max(1, 24 - easternHour());
+    $("#loading-count").textContent = "NEW GAME IN ~" + hrs + "H — SATURDAY IS GAME DAY";
+    $("#loading-hero").innerHTML = hero
+      ? "REAL HERO OF W" + WEEK + ": <b>👑 " + esc(nameFor(hero.email, hero.gen)) + " — " + hero.score + "</b>"
+      : "No hero emerged this week…";
+    $("#loading-season").innerHTML = season
+      ? "SEASON LEADER: <b>🏆 " + esc(nameFor(season.email, season.gen)) + " — " + season.total + "</b>"
+      : "";
+  }
+
   function showPanel(id){
-    ["screen-start", "screen-end", "screen-locked"].forEach(function(p){
+    ["screen-start", "screen-end", "screen-locked", "screen-loading"].forEach(function(p){
       $("#" + p).hidden = (p !== id);
     });
     $("#overlay").hidden = false;
@@ -1311,6 +1364,13 @@
     $("#game-card").hidden = !m;
     if (m) $("#greet-name").textContent = m.name.toUpperCase();
     if (m && !playing && !justFinished) {
+      if (currentCalendarWeek() === WEEK && dayIndex() === 6) {
+        renderCeremony();
+        showPanel("screen-loading");
+        renderChips();
+        renderScoreboard();
+        return;
+      }
       var runs = myRuns();
       var b = bestOf(runs);
       var tries = triesFor(WEEK);
@@ -1693,7 +1753,8 @@
   function startRun(){
     var m = me();
     if (!m) { renderAll(); return; }
-    if (currentCalendarWeek() < WEEK) { toast("EARLY BIRD! THIS GAME UNLOCKS MONDAY 🐦"); return; }
+    if (currentCalendarWeek() < WEEK) { toast("EARLY BIRD! THIS GAME UNLOCKS SATURDAY 🐦"); return; }
+    if (currentCalendarWeek() === WEEK && dayIndex() === 6) { toast("CEREMONY DAY — NO RUNS, JUST GLORY. NEW GAME TOMORROW! 🎉"); return; }
     if (myRuns().length >= triesFor(WEEK)) { justFinished = false; renderAll(); toast("OUT OF CREDITS THIS WEEK!"); return; }
     stopTimers();
     score = 0; round = 0; bestStreak = 0; seq = []; inputPos = 0;
