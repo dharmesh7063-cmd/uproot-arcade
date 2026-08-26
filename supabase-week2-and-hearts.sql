@@ -1,12 +1,15 @@
 -- ============================================================
 -- UPROOT ARCADE — one paste, two jobs (safe to run more than once)
--- 1) Registers Week 2 (Stain Sniper, 3 credits) so the credit cap
+-- 1) Registers Week 2 (Lint Line, 3 credits) so the credit cap
 --    is enforced server-side when it auto-launches Monday.
 -- 2) Creates the Hall of Fame hearts table (one ❤️ per player per
 --    legend, insert-only, no comments).
 -- ============================================================
 
-insert into games (week, name, tries) values (2, 'Stain Sniper', 3)
+insert into games (week, name, tries) values (2, 'Lint Line', 3)
+on conflict (week) do update set name = excluded.name, tries = excluded.tries;
+
+insert into games (week, name, tries) values (3, 'Suds Stack', 3)
 on conflict (week) do update set name = excluded.name, tries = excluded.tries;
 
 create table if not exists reactions (
