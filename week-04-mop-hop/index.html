@@ -265,35 +265,9 @@
     user-select:none; -webkit-user-select:none; touch-action:manipulation;
     cursor:pointer;
   }
-  .ground{
-    position:absolute; left:0; right:0; bottom:56px; height:3px;
-    background:repeating-linear-gradient(90deg, var(--purple) 0 26px, transparent 26px 52px);
-    opacity:.8;
-  }
-  .runner{
-    position:absolute; left:56px; bottom:59px;
-    font-size:38px; line-height:1;
-    transform:scaleX(-1); /* face the road ahead */
-    filter:drop-shadow(0 3px 3px rgba(0,0,0,.55));
-    z-index:4;
-  }
-  .runner.dead{
-    transition:transform .6s ease-in;
-    transform:scaleX(-1) rotate(-96deg) translateY(14px);
-  }
-  .obs{
-    position:absolute; bottom:59px; left:0;
-    line-height:1; z-index:3;
-    filter:drop-shadow(0 3px 3px rgba(0,0,0,.5));
-    will-change:transform;
-  }
-  .style-pop{
-    position:absolute; transform:translateX(-50%);
-    font-family:"Press Start 2P","Courier New",monospace;
-    font-size:11px; color:var(--gold);
-    text-shadow:0 0 10px rgba(255,210,63,.7), 1px 1px 0 rgba(0,0,0,.6);
-    pointer-events:none; z-index:6;
-    animation:rise .7s ease-out forwards;
+  #game-canvas{
+    position:absolute; inset:0; width:100%; height:100%;
+    image-rendering:pixelated;
   }
   .grid{
     display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
@@ -791,8 +765,7 @@
       </div>
       <div class="stage">
         <div class="run" id="board" aria-hidden="true">
-          <div class="ground"></div>
-          <span class="runner" id="player">🧹</span>
+          <canvas id="game-canvas"></canvas>
         </div>
 
         <div class="overlay" id="overlay">
@@ -800,8 +773,8 @@
             <h2>THE FLOOR IS FRESHLY MOPPED. RUN.</h2>
             <ul class="howto">
               <li><span class="demo">🧹</span><span>Your mop runs on its own — <b>tap to JUMP</b></span></li>
-              <li><span class="demo">🪣</span><span>Clear buckets, wet-floor signs and strolling cats</span></li>
-              <li><span class="demo">😅</span><span>Near-misses pay <b class="plus">+15 style points</b></span></li>
+              <li><span class="demo">🪣</span><span>Buckets, signs, puddles, cats & bucket-stacks — <b>every height needs its own timing</b></span></li>
+              <li><span class="demo">🧽</span><span>Flying sponge? <b class="minus">DON'T JUMP</b> — stay low and duck under. Near-misses <b class="plus">+15</b></span></li>
               <li><span class="demo">💀</span><span>One hit ends the run · it keeps speeding up · 60s max</span></li>
             </ul>
             <p class="credit" id="credit-line">🪙 CREDITS LEFT: — OF —</p>
@@ -1780,113 +1753,345 @@
 
   /* ================= game ================= */
   var board = $("#board");
-  var playerEl = $("#player");
+  var cv = $("#game-canvas"), g2 = null;
   var hudTime = $("#hud-time"), hudScore = $("#hud-score"), hudStreak = $("#hud-streak");
   var timePill = $("#time-pill");
-  var score = 0, bestStreak = 0, playing = false;   // bestStreak = close calls
-  var PLAYER_X = 56, PLAYER_W = 26, PLAYER_H = 40, GROUND = 0;
-  var MAX_MS = 60000;
+  var score = 0, bestStreak = 0, playing = false, dead = false;
+  var SCALE = 4, PLAYER_X = 56, MAX_MS = 60000;
+  var PW = 12 * SCALE, PH = 16 * SCALE;   // player box
   var py = 0, vy = 0, dist = 0, speed = 0, elapsed = 0;
-  var obstacles = [], spawnIn = 0, rafId = null, lastT = 0;
-  var TYPES = {
-    bucket: { emoji: "🪣", w: 26, h: 28, size: 30 },
-    sign:   { emoji: "🚧", w: 30, h: 34, size: 36 },
-    cat:    { emoji: "🐈", w: 44, h: 30, size: 38 }
-  };
+  var obstacles = [], popups = [], stars = [], spawnIn = 0, rafId = null, lastT = 0, groundOff = 0;
+
+  /* ---- pixel sprites (1 char = 1 px) ---- */
+  var PAL = { K:"#1A1038", B:"#B07B3E", D:"#7A521F", G:"#C7CEDA", H:"#8E99A4",
+              W:"#FFF3D9", C:"#2CE0DE", T:"#17A8A6", P:"#F52C87", Y:"#FFD23F",
+              U:"#8C4BFF", O:"#F7A21B", E:"#150F2B" };
+  function sprite(rows){
+    var h = rows.length, w = rows[0].length;
+    var c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    var g = c.getContext("2d");
+    for (var y = 0; y < h; y++) {
+      for (var x = 0; x < w; x++) {
+        var ch = rows[y][x];
+        if (ch === ".") continue;
+        g.fillStyle = PAL[ch] || "#FFF";
+        g.fillRect(x, y, 1, 1);
+      }
+    }
+    return c;
+  }
+  var MOP_A = sprite([
+    ".....YY.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....DB.....",
+    ".....DB.....",
+    "....KKKK....",
+    "...KWWWWK...",
+    "..KGGGGGGK..",
+    "..KGKGGKGK..",
+    "..KGGGGGGK..",
+    "..GGGGGGGG..",
+    "..G.GG.GG...",
+    "..G.G..G.G.."
+  ]);
+  var MOP_B = sprite([
+    ".....YY.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....DB.....",
+    ".....DB.....",
+    "....KKKK....",
+    "...KWWWWK...",
+    "..KGGGGGGK..",
+    "..KGKGGKGK..",
+    "..KGGGGGGK..",
+    "..GGGGGGGG..",
+    "...GG.GG.G..",
+    ".G..G..G..G."
+  ]);
+  var MOP_J = sprite([
+    ".....YY.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....DB.....",
+    ".....DB.....",
+    "....KKKK....",
+    "...KWWWWK...",
+    "..KGGGGGGK..",
+    "..KGWGGWGK..",
+    "..KGGGGGGK..",
+    "...GGGGGG...",
+    "....GGGG....",
+    "....GGGG...."
+  ]);
+  var BUCKET = sprite([
+    "KKKKKKKKKKKK",
+    "KCWWCCCCCCCK",
+    "KCCCCCCCCCCK",
+    ".KCCCCCCCCK.",
+    ".KCTCCCCTCK.",
+    ".KCTCCCCTCK.",
+    ".KCTCCCCTCK.",
+    "..KTCCCCTK..",
+    "..KTTTTTTK..",
+    "..KKKKKKKK.."
+  ]);
+  var STACK = sprite([
+    "KKKKKKKKKKKK",
+    "KUWWUUUUUUUK",
+    "KUUUUUUUUUUK",
+    ".KUUUUUUUUK.",
+    ".KUUUUUUUUK.",
+    ".KUUUUUUUUK.",
+    "..KUUUUUUK..",
+    "..KKKKKKKK..",
+    "KKKKKKKKKKKK",
+    "KCWWCCCCCCCK",
+    "KCCCCCCCCCCK",
+    ".KCCCCCCCCK.",
+    ".KCCCCCCCCK.",
+    ".KCCCCCCCCK.",
+    ".KCCCCCCCCK.",
+    ".KCCCCCCCCK.",
+    "..KCCCCCCK..",
+    "..KCCCCCCK..",
+    "..KTTTTTTK..",
+    "..KKKKKKKK.."
+  ]);
+  var SIGN = sprite([
+    "....KK....",
+    "...KYYK...",
+    "...KYYK...",
+    "..KYKKYK..",
+    "..KYKKYK..",
+    ".KYYKKYYK.",
+    ".KYYYYYYK.",
+    ".KYYKKYYK.",
+    "KYYYYYYYYK",
+    "KKKKKKKKKK",
+    "..K....K..",
+    "..K....K..",
+    ".KK....KK."
+  ]);
+  var CAT_A = sprite([
+    ".K.K.............",
+    "KUKUK.........KK.",
+    "KUUUK........KUUK",
+    "KWUUKKKKKKKKKUUK.",
+    ".KUUUUUUUUUUUUK..",
+    ".KUUUUUUUUUUUK...",
+    "..KUUUUUUUUUUK...",
+    "..KUK.KUUK.KUK...",
+    "..KK...KK...KK...",
+    "................."
+  ]);
+  var CAT_B = sprite([
+    ".K.K.............",
+    "KUKUK.........KK.",
+    "KUUUK........KUUK",
+    "KWUUKKKKKKKKKUUK.",
+    ".KUUUUUUUUUUUUK..",
+    ".KUUUUUUUUUUUK...",
+    "..KUUUUUUUUUUK...",
+    "..K.KUK.KUK.K....",
+    ".....KK..KK......",
+    "................."
+  ]);
+  var PUDDLE = sprite([
+    "....KKKKKKKKKKKKKK....",
+    "..KKCCWWCCCCCCWWCCKK..",
+    ".KCCCCCCCWWCCCCCCCCCK.",
+    "..KKKKKKKKKKKKKKKKKK.."
+  ]);
+  var SPONGE = sprite([
+    "W....KKKKKK....W",
+    "WW..KOOOOOOK..WW",
+    ".W.KOWOOOOWOK.W.",
+    "...KOOOOOOOOK...",
+    "...KOOWOOWOOK...",
+    "...KOOOOOOOOK...",
+    "....KKKKKKKK....",
+    "................"
+  ]);
+  var OBS_TYPES = [
+    { spr: BUCKET, frames: null, w: 12, h: 10, mode: "ground", minT: 0,     wt: 30, vx: 0 },
+    { spr: SIGN,   frames: null, w: 10, h: 13, mode: "ground", minT: 0,     wt: 22, vx: 0 },
+    { spr: PUDDLE, frames: null, w: 22, h: 4,  mode: "ground", minT: 5000,  wt: 16, vx: 0 },
+    { spr: CAT_A,  frames: [CAT_A, CAT_B], w: 17, h: 9, mode: "ground", minT: 8000, wt: 14, vx: 0.06 },
+    { spr: STACK,  frames: null, w: 12, h: 20, mode: "ground", minT: 12000, wt: 10, vx: 0 },
+    { spr: SPONGE, frames: null, w: 16, h: 7,  mode: "air",    minT: 20000, wt: 14, vx: 0, hover: 84 }
+  ];
 
   board.addEventListener("contextmenu", function(e){ e.preventDefault(); });
 
+  function initCanvas(){
+    cv.width = board.clientWidth;
+    cv.height = board.clientHeight;
+    g2 = cv.getContext("2d");
+    g2.imageSmoothingEnabled = false;
+    stars = [];
+    for (var i = 0; i < 24; i++) {
+      stars.push({ x: Math.random() * cv.width, y: Math.random() * (cv.height - 120),
+                   s: Math.random() < 0.3 ? 3 : 2, a: 0.1 + Math.random() * 0.25 });
+    }
+  }
+  function groundY(){ return cv.height - 24; } // the floor line
   function updateHud(){
     hudTime.textContent = Math.floor(dist / 40) + "m";
     hudScore.textContent = String(Math.floor(score));
     hudStreak.textContent = String(bestStreak);
-    timePill.classList.toggle("hot", playing && elapsed > MAX_MS - 10000); // final stretch
+    timePill.classList.toggle("hot", playing && elapsed > MAX_MS - 10000);
   }
   function stopTimers(){ cancelAnimationFrame(rafId); }
-  function stylePop(x, txt){
-    var p = document.createElement("span");
-    p.className = "style-pop";
-    p.textContent = txt;
-    p.style.left = x + "px";
-    p.style.bottom = "130px";
-    board.appendChild(p);
-    setTimeout(function(){ p.remove(); }, 700);
-  }
-  function spawnObstacle(){
-    var r = Math.random();
-    var kind = (elapsed > 15000 && r < 0.2) ? "cat" : (r < 0.55 ? "bucket" : "sign");
-    var t = TYPES[kind];
-    var el = document.createElement("span");
-    el.className = "obs";
-    el.textContent = t.emoji;
-    el.style.fontSize = t.size + "px";
-    board.appendChild(el);
-    obstacles.push({ el: el, x: board.clientWidth + 40, w: t.w, h: t.h, cleared: false, minGap: 999 });
-  }
   function jump(){
-    if (!playing) return;
-    if (py <= GROUND + 0.5) {
-      vy = 0.62;
+    if (!playing || dead) return;
+    if (py <= 0.5) {
+      vy = 0.70;
       blip(660, 0.08, "square", 0.04);
     }
   }
   function crash(){
-    playing = false;
-    stopTimers();
-    playerEl.classList.add("dead");
+    dead = true;
     blip(150, 0.4, "sawtooth", 0.07);
-    setTimeout(endGame, 650);
+    setTimeout(function(){ playing = false; endGame(); }, 650);
   }
+  function spawnObstacle(){
+    var pool = [], total = 0;
+    OBS_TYPES.forEach(function(t){ if (elapsed >= t.minT) { pool.push(t); total += t.wt; } });
+    var r = Math.random() * total, pick = pool[0];
+    for (var i = 0; i < pool.length; i++) { r -= pool[i].wt; if (r <= 0) { pick = pool[i]; break; } }
+    obstacles.push({ t: pick, x: cv.width + 40, minGap: 999, cleared: false, bob: Math.random() * 6.28 });
+  }
+  function drawWorld(dt){
+    g2.clearRect(0, 0, cv.width, cv.height);
+    var gy = groundY();
+    // drifting pixel dust (parallax)
+    stars.forEach(function(st){
+      st.x -= speed * dt * 0.25;
+      if (st.x < -4) st.x = cv.width + 4;
+      g2.globalAlpha = st.a;
+      g2.fillStyle = "#8C4BFF";
+      g2.fillRect(Math.floor(st.x), Math.floor(st.y), st.s, st.s);
+    });
+    g2.globalAlpha = 1;
+    // ground
+    groundOff = (groundOff + speed * dt) % 30;
+    g2.fillStyle = "#8C4BFF";
+    for (var x = -groundOff; x < cv.width; x += 30) g2.fillRect(Math.floor(x), gy + 4, 16, 3);
+    g2.fillStyle = "#3D2B70";
+    for (var x2 = -((groundOff * 1.6) % 44); x2 < cv.width; x2 += 44) g2.fillRect(Math.floor(x2), gy + 12, 10, 2);
+  }
+  function drawObstacle(o){
+    var gy = groundY();
+    var t = o.t;
+    var spr = t.frames ? t.frames[Math.floor(elapsed / 130) % 2] : t.spr;
+    var h = t.h * SCALE, w = t.w * SCALE;
+    var yTop;
+    if (t.mode === "air") {
+      var bob = Math.sin(elapsed / 300 + o.bob) * 6;
+      o.flyBottom = t.hover + bob;
+      yTop = gy - o.flyBottom - h;
+      g2.drawImage(spr, Math.floor(o.x), Math.floor(yTop), w, spr.height * SCALE);
+    } else {
+      yTop = gy - h;
+      g2.drawImage(spr, Math.floor(o.x), Math.floor(yTop), w, spr.height * SCALE);
+    }
+  }
+  function drawPlayer(){
+    var gy = groundY();
+    var spr = py > 0.5 ? MOP_J : (Math.floor(elapsed / 120) % 2 ? MOP_A : MOP_B);
+    var yTop = gy - PH - py;
+    if (dead) {
+      g2.save();
+      g2.translate(PLAYER_X + PW / 2, gy - PH / 3);
+      g2.rotate(-1.4);
+      g2.drawImage(MOP_J, -PW / 2, -PH / 2, PW, PH);
+      g2.restore();
+    } else {
+      g2.drawImage(spr, PLAYER_X, Math.floor(yTop), PW, PH);
+    }
+  }
+  function drawPopups(dt){
+    g2.textAlign = "center";
+    g2.font = '10px "Press Start 2P", monospace';
+    for (var i = popups.length - 1; i >= 0; i--) {
+      var p = popups[i];
+      p.life -= dt; p.y -= dt * 0.03;
+      if (p.life <= 0) { popups.splice(i, 1); continue; }
+      g2.globalAlpha = Math.min(1, p.life / 300);
+      g2.fillStyle = p.color;
+      g2.fillText(p.txt, p.x, p.y);
+    }
+    g2.globalAlpha = 1;
+  }
+  function pop(x, y, txt, color){ popups.push({ x: x, y: y, txt: txt, life: 750, color: color }); }
   function tick(t){
     if (!playing) return;
     var dt = Math.min(40, t - lastT);
     lastT = t;
-    elapsed += dt;
-
-    // physics
-    if (py > GROUND || vy > 0) {
-      vy -= 0.0024 * dt;
-      py += vy * dt;
-      if (py <= GROUND) { py = GROUND; vy = 0; }
-    }
-    playerEl.style.transform = "scaleX(-1) translateY(" + (-py) + "px)";
-
-    // world
-    speed = 0.27 + elapsed * 0.0000045;      // px per ms
-    dist += speed * dt;
-    score += speed * dt / 25;                 // distance points
-    spawnIn -= dt;
-    if (spawnIn <= 0) {
-      spawnObstacle();
-      var gapMs = 700 + Math.random() * 800;
-      spawnIn = Math.max(520, gapMs - elapsed * 0.004);
-    }
-
-    var pL = PLAYER_X + 3, pR = PLAYER_X + PLAYER_W - 3, pB = py; // player box (bottom at py)
-    for (var i = obstacles.length - 1; i >= 0; i--) {
-      var o = obstacles[i];
-      o.x -= speed * dt;
-      o.el.style.transform = "translateX(" + o.x + "px)";
-      var oL = o.x + 3, oR = o.x + o.w - 3;
-      if (oR > pL && oL < pR) {               // horizontally overlapping
-        var gap = pB - o.h;                   // air between feet and obstacle top
-        if (gap < o.minGap) o.minGap = gap;
-        if (gap < -4) { crash(); return; }    // clipped it
-      } else if (!o.cleared && oR <= pL) {    // just passed behind us
-        o.cleared = true;
-        if (o.minGap < 16 && o.minGap > -4) {
-          bestStreak++;
-          score += 15;
-          stylePop(PLAYER_X + 30, "CLOSE! +15");
-          blip(980, 0.1, "triangle", 0.05);
-        }
+    if (!dead) {
+      elapsed += dt;
+      if (py > 0 || vy > 0) {
+        vy -= 0.0024 * dt;
+        py += vy * dt;
+        if (py <= 0) { py = 0; vy = 0; }
       }
-      if (o.x < -80) { o.el.remove(); obstacles.splice(i, 1); }
+      speed = 0.27 + elapsed * 0.0000045;
+      dist += speed * dt;
+      score += speed * dt / 25;
+      spawnIn -= dt;
+      if (spawnIn <= 0) {
+        spawnObstacle();
+        spawnIn = Math.max(560, 760 + Math.random() * 800 - elapsed * 0.004);
+      }
+      var pL = PLAYER_X + 4, pR = PLAYER_X + PW - 4;
+      var pBottom = py, pTop = py + PH; // heights above floor
+      for (var i = obstacles.length - 1; i >= 0; i--) {
+        var o = obstacles[i];
+        o.x -= (speed + (o.t.vx || 0)) * dt;
+        var w = o.t.w * SCALE, h = o.t.h * SCALE;
+        var oL = o.x + 3, oR = o.x + w - 3;
+        if (oR > pL && oL < pR) {
+          if (o.t.mode === "air") {
+            var clearance = o.flyBottom - pTop;
+            if (clearance < o.minGap) o.minGap = clearance;
+            if (pTop > o.flyBottom + 2 || (py > 0.5 && clearance < -2)) { crash(); break; }
+            if (clearance < -2) { crash(); break; }
+          } else {
+            var gap = pBottom - h;
+            if (gap < o.minGap) o.minGap = gap;
+            if (gap < -5) { crash(); break; }
+          }
+        } else if (!o.cleared && oR <= pL) {
+          o.cleared = true;
+          if (o.minGap > -5 && o.minGap < 16) {
+            bestStreak++;
+            score += 15;
+            pop(PLAYER_X + 40, groundY() - 60, "CLOSE! +15", "#FFD23F");
+            blip(980, 0.1, "triangle", 0.05);
+          }
+        }
+        if (o.x < -120) obstacles.splice(i, 1);
+      }
     }
-
+    drawWorld(dt);
+    for (var d = 0; d < obstacles.length; d++) drawObstacle(obstacles[d]);
+    drawPlayer();
+    drawPopups(dt);
     updateHud();
-    if (elapsed >= MAX_MS) {
-      stylePop(PLAYER_X + 40, "YOU OUTRAN THE MESS!");
+    if (!dead && elapsed >= MAX_MS) {
+      pop(cv.width / 2, groundY() - 90, "YOU OUTRAN THE MESS!", "#2CE0DE");
       playing = false;
       stopTimers();
       setTimeout(endGame, 800);
@@ -1915,12 +2120,10 @@
     if (currentCalendarWeek() === WEEK && dayIndex() === 6) { toast("CEREMONY DAY — NO RUNS, JUST GLORY. NEW GAME TOMORROW! 🎉"); return; }
     if (myRuns().length >= triesFor(WEEK)) { justFinished = false; renderAll(); toast("OUT OF CREDITS THIS WEEK!"); return; }
     stopTimers();
-    obstacles.forEach(function(o){ o.el.remove(); });
-    obstacles = [];
-    playerEl.classList.remove("dead");
-    playerEl.style.transform = "scaleX(-1)";
+    initCanvas();
+    obstacles = []; popups = [];
     score = 0; bestStreak = 0; dist = 0; elapsed = 0;
-    py = 0; vy = 0; spawnIn = 900;
+    py = 0; vy = 0; spawnIn = 1100; dead = false;
     playing = true;
     updateHud();
     $("#overlay").hidden = true;
@@ -1952,7 +2155,7 @@
     var tries = triesFor(WEEK);
     var attempt = myRuns().length + 1;
     var left = Math.max(0, tries - attempt);
-    $("#end-title").textContent = left > 0 ? "TIME'S UP!" : "LAST CREDIT SPENT!";
+    $("#end-title").textContent = left <= 0 ? "LAST CREDIT SPENT!" : (elapsed >= MAX_MS ? "YOU OUTRAN THE MESS!" : "WIPED OUT!");
     if (left > 0) {
       againBtn.hidden = false;
       againBtn.textContent = "PLAY AGAIN — " + left + " CREDIT" + (left === 1 ? "" : "S") + " LEFT";
