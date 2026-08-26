@@ -13,11 +13,14 @@ This branch (`games-lab`) is the workshop: the idea backlog, up to **5 games in 
 | W1 | Fur Frenzy | 3 | 2000 | Tap fur, dodge socks, streak bonuses. 23 players day one. |
 
 ## 🛠️ Now developing (max 5)
-1. **W2 — Uproot Brand Blitz (trivia)** — 10 rapid-fire questions about Uproot products/brand, 8s each; score = speed × correct. Dharmesh promised Jackie trivia! Needs a question list from the team.
-2. **W3 — Stain Sniper** — stains flash on a rug grid for a blink; tap dead-center for bullseye bonus. Precision under time pressure.
+1. **W2 — Stain Sniper** ✅ BUILT — free-aim precision: snipe stains (bullseye +50 / hit +25 / graze +10), dodge paws 🐾, air-shots cost. Lives in `week-02-stain-sniper/` on main; unlocks Monday (client gate) and auto-launches via the `weekly-launch` GitHub Action. Sus limit 2400.
+2. **W3 — Uproot Brand Blitz (trivia)** — 10 rapid-fire questions about Uproot products/brand, 8s each; score = speed × correct. Dharmesh promised Jackie trivia! NEEDS: question list from the team this week.
 3. **W4 — Suds Stack** — falling soap bars, tap to drop, stack them straight. Height + neatness = score. One mistimed drop = wobble.
 4. **W5 — Lint Line (Simon)** — glowing lint tiles play a growing sequence; repeat it. Season 1 finale — memory game crowns the champion.
 5. **W6 — Mop Hop** — side-scrolling mop hops over buckets and cats for 30s; near-misses give style points. Season 2 opener.
+
+## 🤖 Auto-launch
+The `weekly-launch` GitHub Action runs every Monday 00:00 EDT: it computes the week number (anchor: Mon 2026-08-24), finds `week-NN-*/index.html`, and promotes it to the site root. Build each game in its folder any time before its Monday; games are client-gated ("unlocks Monday") so early visitors can't bank runs. Remember: each new week also needs its `games` table row (week/name/tries) — add it when the game is built.
 
 ## 💡 Backlog
 - Fur-nado Dodge (survive the swirling fur tornado)
