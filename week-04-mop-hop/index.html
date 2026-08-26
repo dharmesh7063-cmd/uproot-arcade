@@ -2117,6 +2117,7 @@
     var m = me();
     if (!m) { renderAll(); return; }
     if (currentCalendarWeek() < WEEK) { toast("EARLY BIRD! THIS GAME UNLOCKS SATURDAY 🐦"); return; }
+    if (currentCalendarWeek() > WEEK) { toast("THIS GAME'S WEEK IS OVER — THE NEW GAME AWAITS! 🏁"); return; }
     if (currentCalendarWeek() === WEEK && dayIndex() === 6) { toast("CEREMONY DAY — NO RUNS, JUST GLORY. NEW GAME TOMORROW! 🎉"); return; }
     if (myRuns().length >= triesFor(WEEK)) { justFinished = false; renderAll(); toast("OUT OF CREDITS THIS WEEK!"); return; }
     stopTimers();
