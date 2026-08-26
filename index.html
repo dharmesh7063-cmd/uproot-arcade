@@ -390,27 +390,56 @@
     background:rgba(44,224,222,.07);
     font-size:14.5px; color:var(--lav);
   }
-  /* Week leader banner (hall-of-fame style) */
+  /* Week leader banner — the golden marquee */
   .week-champ{
-    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
     font-family:"Silkscreen","Courier New",monospace;
-    font-size:11px; color:var(--muted);
-    padding:8px 10px; margin-bottom:8px;
-    border:2px solid var(--gold); border-radius:8px;
-    background:rgba(255,210,63,.07);
+    font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;
+    padding:11px 12px; margin-bottom:10px;
+    border:2px solid var(--gold); border-radius:10px;
+    background:linear-gradient(90deg, rgba(255,210,63,.18), rgba(255,210,63,.04));
+    animation:glowpulse 2.6s ease-in-out infinite;
   }
-  .week-champ .champ{ color:var(--gold); }
+  .week-champ .champ{
+    font-family:"Press Start 2P","Courier New",monospace;
+    font-size:12px; color:var(--gold);
+    text-shadow:0 0 10px rgba(255,210,63,.55);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .week-champ .wc-score{
+    font-family:"Press Start 2P","Courier New",monospace;
+    font-size:13px; color:var(--gold);
+    font-variant-numeric:tabular-nums;
+  }
+  @keyframes glowpulse{
+    0%, 100%{ box-shadow:0 0 8px rgba(255,210,63,.2); }
+    50%{ box-shadow:0 0 20px rgba(255,210,63,.5); }
+  }
+  .days-left{ color:var(--cyan); }
   /* Hall of fame */
+  .hof-h{
+    font-size:13px; color:var(--gold);
+    text-shadow:0 0 12px rgba(255,210,63,.5);
+    letter-spacing:.14em;
+  }
   .hof{ list-style:none; margin:0; padding:0; }
   .hof li{
     display:flex; align-items:center; justify-content:space-between; gap:8px;
     font-family:"Silkscreen","Courier New",monospace;
-    font-size:11px; color:var(--muted);
-    padding:7px 10px; margin-bottom:6px;
+    font-size:12px; color:var(--muted);
+    padding:8px 12px; margin-bottom:6px;
     border:2px dashed var(--line); border-radius:8px;
   }
   .hof li .champ{ color:var(--gold); }
-  .hof li.latest{ border-style:solid; border-color:var(--gold); }
+  .hof li.latest{
+    border-style:solid; border-color:var(--gold);
+    background:linear-gradient(90deg, rgba(255,210,63,.14), transparent);
+    box-shadow:0 0 12px rgba(255,210,63,.3);
+  }
+  .hof li.latest .champ{
+    font-family:"Press Start 2P","Courier New",monospace;
+    font-size:11px; text-shadow:0 0 10px rgba(255,210,63,.5);
+  }
   .hof .empty{ display:block; text-align:center; font-family:"Pixelify Sans",sans-serif; font-size:14px; padding:12px; }
   /* Wide screens: the two panels sit side by side in a wider sidebar */
   @media (min-width:1240px){
@@ -499,7 +528,7 @@
   @keyframes toastin{ from{ transform:translate(-50%,14px); opacity:0; } }
 
   @media (prefers-reduced-motion: reduce){
-    .pop-in, .float-score, .toast, .blink{ animation:none; }
+    .pop-in, .float-score, .toast, .blink, .week-champ{ animation:none; }
     .float-score{ opacity:0; }
   }
 </style>
@@ -631,7 +660,7 @@
           <h2 class="cardtitle">THIS WEEK</h2>
           <button class="sec-toggle" id="th-week" aria-expanded="true" title="Collapse / expand">▾</button>
         </div>
-        <p class="lb-sub2">W1 · FUR FRENZY · <span id="roster-count"></span></p>
+        <p class="lb-sub2">W1 · FUR FRENZY · <span id="roster-count"></span> · <span id="week-days" class="days-left"></span></p>
         <div class="board-body">
           <div id="week-champ" class="week-champ" hidden></div>
           <ol id="week-list" class="wlist"></ol>
@@ -647,7 +676,7 @@
         <p class="lb-sub2" id="season-progress"></p>
         <div class="board-body">
           <div id="season" class="season"></div>
-          <h3 class="sec-h">👑 HALL OF FAME</h3>
+          <h3 class="sec-h hof-h">👑 HALL OF FAME</h3>
           <ol id="hof" class="hof"></ol>
         </div>
       </section>
@@ -667,6 +696,7 @@
   /* ============ weekly config (tune per game) ============ */
   var WEEK = 1;
   var GAME_NAME = "FUR FRENZY";
+  var WEEK_ENDS = "2026-09-01T00:00:00-04:00"; // when this week's game closes — set in each weekly build
   var FALLBACK_TRIES = 3; // server value in the `games` table wins
   /* Seasons: every 5 weeks a champion is crowned and a new season begins. */
   var SEASON_LEN = 5;
@@ -1066,6 +1096,20 @@
     });
     $("#sus-box").innerHTML = callouts.join("");
 
+    /* Days-left countdown on the week bar. */
+    var daysEl = $("#week-days");
+    var msLeft = new Date(WEEK_ENDS).getTime() - Date.now();
+    if (isNaN(msLeft)) {
+      daysEl.textContent = "";
+    } else if (msLeft <= 0) {
+      daysEl.textContent = "⏳ NEW GAME LOADING…";
+    } else if (msLeft <= 86400000) {
+      daysEl.textContent = "⏳ FINAL DAY!";
+    } else {
+      var d = Math.ceil(msLeft / 86400000);
+      daysEl.textContent = "⏳ " + d + " DAYS LEFT";
+    }
+
     /* Week leader banner — first clean human on the board wears the crown. */
     var leader = null;
     for (var wl = 0; wl < wk.length; wl++) {
@@ -1074,9 +1118,9 @@
     var champBox = $("#week-champ");
     if (leader) {
       champBox.hidden = false;
-      champBox.innerHTML = '<span>W' + WEEK + " LEADER</span>" +
+      champBox.innerHTML = "<span>W" + WEEK + " LEADER</span>" +
         '<span class="champ">👑 ' + esc(nameFor(leader.email, leader.gen)) + "</span>" +
-        "<span>" + leader.score + "</span>";
+        '<span class="wc-score">' + leader.score + "</span>";
     } else {
       champBox.hidden = true;
       champBox.innerHTML = "";
