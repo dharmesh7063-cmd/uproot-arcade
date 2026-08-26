@@ -390,6 +390,16 @@
     background:rgba(44,224,222,.07);
     font-size:14.5px; color:var(--lav);
   }
+  /* Week leader banner (hall-of-fame style) */
+  .week-champ{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:11px; color:var(--muted);
+    padding:8px 10px; margin-bottom:8px;
+    border:2px solid var(--gold); border-radius:8px;
+    background:rgba(255,210,63,.07);
+  }
+  .week-champ .champ{ color:var(--gold); }
   /* Hall of fame */
   .hof{ list-style:none; margin:0; padding:0; }
   .hof li{
@@ -623,6 +633,7 @@
         </div>
         <p class="lb-sub2">W1 · FUR FRENZY · <span id="roster-count"></span></p>
         <div class="board-body">
+          <div id="week-champ" class="week-champ" hidden></div>
           <ol id="week-list" class="wlist"></ol>
           <div id="sus-box"></div>
         </div>
@@ -1054,6 +1065,22 @@
         BOT_EMAILS[s.email] + " — it plays for the love of fur. Scores on the board, but no crown, no medals. Beat it if you can!</div>");
     });
     $("#sus-box").innerHTML = callouts.join("");
+
+    /* Week leader banner — first clean human on the board wears the crown. */
+    var leader = null;
+    for (var wl = 0; wl < wk.length; wl++) {
+      if (!isBot(wk[wl]) && !isSus(wk[wl])) { leader = wk[wl]; break; }
+    }
+    var champBox = $("#week-champ");
+    if (leader) {
+      champBox.hidden = false;
+      champBox.innerHTML = '<span>W' + WEEK + " LEADER</span>" +
+        '<span class="champ">👑 ' + esc(nameFor(leader.email, leader.gen)) + "</span>" +
+        "<span>" + leader.score + "</span>";
+    } else {
+      champBox.hidden = true;
+      champBox.innerHTML = "";
+    }
 
     /* --- SEASON panel: current season only, cheat-free --- */
     $("#season-title").textContent = "SEASON " + SEASON;
