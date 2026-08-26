@@ -430,6 +430,12 @@
     border-radius:4px; padding:1px 5px; margin-left:6px;
     vertical-align:2px;
   }
+  .slack-callout{
+    margin-top:10px; padding:9px 12px;
+    border:2px dashed var(--purple); border-radius:10px;
+    background:rgba(140,75,255,.08);
+    font-size:14.5px; color:var(--lav);
+  }
   .bot-callout{
     margin-top:10px; padding:9px 12px;
     border:2px dashed var(--cyan); border-radius:10px;
@@ -1254,6 +1260,18 @@
     return Object.keys(by).map(function(k){ return by[k]; })
       .sort(function(a, b){ return b.total - a.total; });
   }
+  /* Weekly Slacker Watch: lovingly roast the week's lowest effort. */
+  var SLACK_ROASTS = [
+    "💤 {N} scored {S} this week — the couch is winning. The fur remains UNBOTHERED.",
+    "🐌 {N}'s mighty {S} points… our robot vacuum just requested a 1v1.",
+    "🧹 {N} swept a grand total of {S}. The dust has filed a complaint for neglect.",
+    "😴 {S} points, {N}? Even the socks are disappointed. And they're SOCKS."
+  ];
+  function slackRoast(name, sc){
+    var key = name + "|" + WEEK, h = 0;
+    for (var i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+    return SLACK_ROASTS[h % SLACK_ROASTS.length].split("{N}").join(name).split("{S}").join(sc);
+  }
   function renderScoreboard(){
     var boardNote = $("#board-note");
     boardNote.textContent = !CONFIGURED
@@ -1300,6 +1318,18 @@
       return '<div class="sus-callout">🚨 ' + roastFor(n) +
         " Prove yourself, legend — replay it live, or lose the crown. The Arcade Committee never blinks.</div>";
     });
+    /* Slacker Watch: needs a real field (4+ clean humans) and a truly low score. */
+    var cleanWk = wk.filter(function(s){ return !isBot(s) && !isSus(s); });
+    if (cleanWk.length >= 4) {
+      var lowP = cleanWk[cleanWk.length - 1], topP = cleanWk[0];
+      if (lowP.score <= topP.score * 0.35) {
+        var ln = esc(nameFor(lowP.email, lowP.gen));
+        var unused = Math.max(0, triesFor(WEEK) - lowP.attempts);
+        callouts.push('<div class="slack-callout">' + slackRoast(ln, lowP.score) +
+          (unused > 0 ? " And " + unused + " credit" + (unused === 1 ? "" : "s") + " still in their pocket. EFFORT, we beg. 🙏" : "") +
+          "</div>");
+      }
+    }
     wk.filter(isBot).forEach(function(s){
       callouts.push('<div class="bot-callout">🤖 ' + esc(nameFor(s.email, s.gen)) + " is " +
         BOT_EMAILS[s.email] + " — it plays for the love of the game. Scores on the board, but no crown, no medals. Beat it if you can!</div>");
