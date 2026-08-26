@@ -46,7 +46,7 @@
     background:repeating-linear-gradient(0deg, rgba(0,0,0,.13) 0 1px, transparent 1px 3px);
     mix-blend-mode:multiply;
   }
-  .wrap{ max-width:920px; margin:0 auto; display:flex; flex-direction:column; gap:18px; }
+  .wrap{ max-width:1280px; margin:0 auto; display:flex; flex-direction:column; gap:18px; }
 
   /* ---------- Layout: game column + collapsible scoreboard sidebar ---------- */
   .layout{ display:flex; align-items:flex-start; justify-content:center; gap:18px; }
@@ -321,12 +321,27 @@
     font-family:"Silkscreen","Courier New",monospace;
     font-size:11px; color:var(--muted); letter-spacing:.1em;
   }
+  .boards{ display:grid; grid-template-columns:1fr; gap:2px 18px; align-items:start; }
   .sec-h{
     font-family:"Silkscreen","Courier New",monospace;
     font-size:12px; letter-spacing:.12em; color:var(--gold);
-    margin:16px 0 8px; text-transform:uppercase;
+    margin:14px 0 8px; text-transform:uppercase;
   }
-  .sec-h:first-of-type{ margin-top:4px; }
+  .sec-toggle{
+    display:block; width:100%; text-align:left;
+    background:none; border:none; padding:2px 0; cursor:pointer;
+  }
+  .sec-toggle:hover{ color:var(--cyan); }
+  .sec-toggle:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
+  .board-sec.collapsed .wlist, .board-sec.collapsed .season{ display:none; }
+  .wlist, .season{ max-height:460px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
+  .wlist::-webkit-scrollbar, .season::-webkit-scrollbar{ width:6px; }
+  .wlist::-webkit-scrollbar-thumb, .season::-webkit-scrollbar-thumb{ background:var(--line); border-radius:3px; }
+  /* Wide screens: the two boards sit side by side in a wider sidebar */
+  @media (min-width:1240px){
+    .layout.sb-open .sidebar{ width:680px; }
+    .boards{ grid-template-columns:1fr 1fr; }
+  }
   .wlist{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:7px; }
   .wlist .empty, .season .empty{
     text-align:center; color:var(--muted);
@@ -537,10 +552,16 @@
         <h2 class="cardtitle">SCOREBOARD</h2>
         <span class="lb-sub" id="roster-count"></span>
       </div>
-      <h3 class="sec-h">This week · W1 Fur Frenzy</h3>
-      <ol id="week-list" class="wlist"></ol>
-      <h3 class="sec-h">Season standings</h3>
-      <div id="season" class="season"></div>
+      <div class="boards">
+        <section class="board-sec" id="sec-week">
+          <h3 class="sec-h" style="margin:0"><button class="sec-h sec-toggle" id="th-week" aria-expanded="true" aria-controls="week-list">▾ This week · W1 Fur Frenzy</button></h3>
+          <ol id="week-list" class="wlist"></ol>
+        </section>
+        <section class="board-sec" id="sec-season">
+          <h3 class="sec-h" style="margin:0"><button class="sec-h sec-toggle" id="th-season" aria-expanded="true" aria-controls="season">▾ Season standings</button></h3>
+          <div id="season" class="season"></div>
+        </section>
+      </div>
       <p class="note" id="board-note"></p>
     </section>
   </aside>
@@ -1380,6 +1401,24 @@
     try { wide = window.matchMedia("(min-width: 880px)").matches; } catch (e) {}
     setSidebar(pref ? pref === "open" : wide);
   })();
+
+  /* Each board section collapses like the 🏆 toggle, remembered per device. */
+  [["sec-week", "th-week", "ua-sec-week"], ["sec-season", "th-season", "ua-sec-season"]]
+    .forEach(function(cfg){
+      var sec = $("#" + cfg[0]), head = $("#" + cfg[1]);
+      var label = head.textContent.replace(/^[▾▸]\s*/, "");
+      function apply(open){
+        sec.classList.toggle("collapsed", !open);
+        head.setAttribute("aria-expanded", String(open));
+        head.textContent = (open ? "▾ " : "▸ ") + label;
+      }
+      head.addEventListener("click", function(){
+        var opening = sec.classList.contains("collapsed");
+        apply(opening);
+        store(false, cfg[2], opening ? "open" : "closed");
+      });
+      apply((store(true, cfg[2]) || "open") !== "closed");
+    });
 
   /* ================= boot ================= */
   renderAll(); // instant paint with loading states
