@@ -12,6 +12,9 @@ on conflict (week) do update set name = excluded.name, tries = excluded.tries;
 insert into games (week, name, tries) values (3, 'Suds Stack', 3)
 on conflict (week) do update set name = excluded.name, tries = excluded.tries;
 
+insert into games (week, name, tries) values (4, 'Mop Hop', 3)
+on conflict (week) do update set name = excluded.name, tries = excluded.tries;
+
 create table if not exists reactions (
   id bigint generated always as identity primary key,
   target text not null check (char_length(target) between 1 and 40),
