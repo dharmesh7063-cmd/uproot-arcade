@@ -638,6 +638,48 @@
   .frame-actions{ display:flex; gap:10px; justify-content:center; margin-top:8px; align-items:center; }
   .frame-actions .btn{ font-size:11px; padding:10px 14px; }
 
+  /* Friday ceremony: hide panels, shine the hero, rain confetti */
+  body.ceremony .sidebar, body.ceremony .sb-toggle{ display:none !important; }
+  body.ceremony .main{ flex-basis:640px; }
+  .overlay{ overflow:hidden; }
+  .hero-label{
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:12px; letter-spacing:.16em; color:var(--gold);
+    margin:0 0 6px;
+  }
+  .hero-name{
+    font-family:"Press Start 2P","Courier New",monospace;
+    font-size:clamp(22px, 6vw, 40px);
+    line-height:1.25; margin:6px 0 8px;
+    background:linear-gradient(100deg, #FFD23F 20%, #FFF6CE 40%, #F52C87 50%, #FFF6CE 60%, #FFD23F 80%);
+    background-size:220% 100%;
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation:shine-name 2.4s linear infinite;
+    filter:drop-shadow(0 0 16px rgba(255,210,63,.55));
+    word-break:break-word;
+  }
+  @keyframes shine-name{ to{ background-position:-220% 0; } }
+  .hero-score{
+    font-family:"Press Start 2P","Courier New",monospace;
+    font-size:15px; color:var(--cyan); margin:0 0 12px;
+    font-variant-numeric:tabular-nums;
+  }
+  .digi{
+    display:inline-block; margin:10px 0 4px;
+    font-family:"Press Start 2P","Courier New",monospace;
+    font-size:24px; color:var(--gold);
+    background:#0B0718; border:2px solid var(--line); border-radius:10px;
+    padding:12px 18px; letter-spacing:2px;
+    text-shadow:0 0 12px rgba(255,210,63,.6);
+    font-variant-numeric:tabular-nums;
+  }
+  .confetti{
+    position:absolute; top:-16px; z-index:5; pointer-events:none;
+    animation:confetti-fall linear forwards;
+  }
+  @keyframes confetti-fall{ to{ transform:translateY(600px) rotate(720deg); opacity:.85; } }
+  @media (prefers-reduced-motion: reduce){ .confetti{ display:none; } }
+
   footer{
     text-align:center; color:var(--muted);
     font-family:"Silkscreen","Courier New",monospace;
@@ -659,7 +701,7 @@
   @keyframes toastin{ from{ transform:translate(-50%,14px); opacity:0; } }
 
   @media (prefers-reduced-motion: reduce){
-    .pop-in, .float-score, .toast, .blink, .week-champ::before, .ticker-track, .logo, .w-row.sus .w-rank, .days-left, .loadbar-fill{ animation:none; }
+    .pop-in, .float-score, .toast, .blink, .week-champ::before, .ticker-track, .logo, .w-row.sus .w-rank, .days-left, .loadbar-fill, .hero-name{ animation:none; }
     .float-score{ opacity:0; }
   }
 </style>
@@ -784,13 +826,15 @@
           </div>
 
           <div class="panel" id="screen-loading" hidden>
-            <h2 id="loading-week">LOADING…</h2>
-            <div class="loadbar"><div class="loadbar-fill"></div></div>
-            <p class="credit" id="loading-count"></p>
-            <p class="sub" id="loading-hero"></p>
+            <p class="hero-label">👑 REAL HERO OF THE WEEK 👑</p>
+            <div class="hero-name" id="hero-name">—</div>
+            <div class="hero-score" id="hero-score"></div>
             <p class="sub" id="loading-season"></p>
             <button class="btn pink" id="frame-open">🖼️ DOWNLOAD CHAMPION FRAME</button>
-            <p class="sub">Friday is ceremony day — no runs, just glory. Scout the boards!</p>
+            <h2 id="loading-week" style="margin-top:20px">LOADING…</h2>
+            <div class="loadbar"><div class="loadbar-fill"></div></div>
+            <div class="digi" id="digi-clock">00:00:00</div>
+            <p class="credit" id="loading-count">UNTIL SATURDAY — GAME DAY</p>
           </div>
         </div>
       </div>
@@ -1361,7 +1405,48 @@
       : '<li><span class="empty">The first champion is crowned after Week ' + SEASON_END + '. Legends load here… ⏳</span></li>';
   }
 
-  /* Friday ceremony: crown the week's real hero and the season leader. */
+  /* Friday ceremony: full-screen shrine for the week's real hero. */
+  var digiTimer = null, confettiTimer = null;
+  function easternHMS(){
+    try {
+      var p = new Intl.DateTimeFormat("en-US",
+        { timeZone: "America/New_York", hour: "numeric", minute: "numeric", second: "numeric", hourCycle: "h23" })
+        .formatToParts(new Date());
+      var o = {};
+      p.forEach(function(x){ o[x.type] = x.value; });
+      return { h: +o.hour, m: +o.minute, s: +o.second };
+    } catch (e) { return { h: 12, m: 0, s: 0 }; }
+  }
+  function pad2(n){ return (n < 10 ? "0" : "") + n; }
+  function tickClock(){
+    var el = $("#digi-clock");
+    if (!el) return;
+    var t = easternHMS();
+    var left = 86400 - (t.h * 3600 + t.m * 60 + t.s);
+    if (!isFinite(left) || left < 0 || left > 86400) left = 0;
+    el.textContent = pad2(Math.floor(left / 3600)) + ":" + pad2(Math.floor(left % 3600 / 60)) + ":" + pad2(left % 60);
+  }
+  function startCeremonyFx(){
+    if (!digiTimer) { tickClock(); digiTimer = setInterval(tickClock, 1000); }
+    if (!confettiTimer) {
+      var colors = ["#FFD23F", "#F52C87", "#2CE0DE", "#8C4BFF", "#FFF3D9"];
+      confettiTimer = setInterval(function(){
+        if (document.hidden) return;
+        var ov = $("#overlay");
+        if (!ov || ov.hidden || ov.querySelectorAll(".confetti").length > 70) return;
+        for (var i = 0; i < 2; i++) {
+          var c = document.createElement("i");
+          c.className = "confetti";
+          c.style.left = (Math.random() * 100) + "%";
+          c.style.width = c.style.height = (6 + Math.random() * 7) + "px";
+          c.style.background = colors[Math.floor(Math.random() * colors.length)];
+          c.style.animationDuration = (2.6 + Math.random() * 2.6) + "s";
+          ov.appendChild(c);
+          c.addEventListener("animationend", function(){ this.remove(); });
+        }
+      }, 240);
+    }
+  }
   function renderCeremony(){
     var bests = bestPerWeek(state.scores);
     var wk = bests.filter(function(s){ return s.week === WEEK; })
@@ -1371,15 +1456,17 @@
       if (!isBot(wk[i]) && !isSus(wk[i])) { hero = wk[i]; break; }
     }
     var season = standingsFor(bests, SEASON_START, SEASON_END)[0] || null;
-    $("#loading-week").textContent = "W" + (WEEK + 1) + " LOADING…";
-    var hrs = Math.max(1, 24 - easternHour());
-    $("#loading-count").textContent = "NEW GAME IN ~" + hrs + "H — SATURDAY IS GAME DAY";
-    $("#loading-hero").innerHTML = hero
-      ? "REAL HERO OF W" + WEEK + ": <b>👑 " + esc(nameFor(hero.email, hero.gen)) + " — " + hero.score + "</b>"
-      : "No hero emerged this week…";
+    var m = me();
+    $("#hero-name").textContent = hero
+      ? nameFor(hero.email, hero.gen).replace(" 👻", "").toUpperCase()
+      : "NO HERO THIS WEEK";
+    $("#hero-score").textContent = hero ? hero.score + " PTS · " + GAME_NAME : "";
     $("#loading-season").innerHTML = season
       ? "SEASON LEADER: <b>🏆 " + esc(nameFor(season.email, season.gen)) + " — " + season.total + "</b>"
       : "";
+    $("#frame-open").hidden = !(hero && m && m.email === hero.email);
+    $("#loading-week").textContent = "W" + (WEEK + 1) + " LOADING…";
+    startCeremonyFx();
   }
 
   function showPanel(id){
@@ -1396,6 +1483,8 @@
     $("#greet").hidden = !m;
     $("#game-card").hidden = !m;
     if (m) $("#greet-name").textContent = m.name.toUpperCase();
+    document.body.classList.toggle("ceremony",
+      !!m && !playing && currentCalendarWeek() === WEEK && dayIndex() === 6);
     if (m && !playing && !justFinished) {
       if (currentCalendarWeek() === WEEK && dayIndex() === 6) {
         renderCeremony();
@@ -1988,6 +2077,8 @@
   function openFrameStudio(){
     frameHero = weekHero();
     if (!frameHero) { toast("NO CHAMPION YET — GO MAKE HISTORY!"); return; }
+    var m = me();
+    if (!m || m.email !== frameHero.email) { toast("ONLY THE CHAMPION CAN CLAIM THIS FRAME 👑"); return; }
     $("#frame-modal").hidden = false;
     drawFrame();
     setTimeout(drawFrame, 600); // redraw once pixel fonts are surely ready
