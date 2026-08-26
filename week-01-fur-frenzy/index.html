@@ -321,23 +321,52 @@
     font-family:"Silkscreen","Courier New",monospace;
     font-size:11px; color:var(--muted); letter-spacing:.1em;
   }
-  .boards{ display:grid; grid-template-columns:1fr; gap:2px 18px; align-items:start; }
+  .boards{ display:grid; grid-template-columns:1fr; gap:18px; align-items:start; }
+  .board-card{ padding:16px; }
+  .board-card .lb-head{ align-items:center; margin-bottom:2px; }
+  .lb-sub2{
+    margin:0 0 12px;
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:10.5px; letter-spacing:.1em; color:var(--muted); text-transform:uppercase;
+  }
   .sec-h{
     font-family:"Silkscreen","Courier New",monospace;
     font-size:12px; letter-spacing:.12em; color:var(--gold);
     margin:14px 0 8px; text-transform:uppercase;
   }
   .sec-toggle{
-    display:block; width:100%; text-align:left;
-    background:none; border:none; padding:2px 0; cursor:pointer;
+    width:34px; height:30px; flex:none;
+    background:var(--panel-2); border:2px solid var(--line); border-radius:8px;
+    color:var(--gold); font-size:13px; line-height:1; cursor:pointer; padding:0;
   }
-  .sec-toggle:hover{ color:var(--cyan); }
+  .sec-toggle:hover{ border-color:var(--cyan); color:var(--cyan); }
   .sec-toggle:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
-  .board-sec.collapsed .wlist, .board-sec.collapsed .season{ display:none; }
-  .wlist, .season{ max-height:460px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
+  .board-sec.collapsed .board-body, .board-sec.collapsed .lb-sub2{ display:none; }
+  .wlist, .season{ max-height:440px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
   .wlist::-webkit-scrollbar, .season::-webkit-scrollbar{ width:6px; }
   .wlist::-webkit-scrollbar-thumb, .season::-webkit-scrollbar-thumb{ background:var(--line); border-radius:3px; }
-  /* Wide screens: the two boards sit side by side in a wider sidebar */
+  /* Cheat-smell detector */
+  .w-row.sus{ border-color:var(--pink); background:#3A1740; }
+  .w-row.sus .w-score{ color:var(--pink); }
+  .sus-callout{
+    margin-top:10px; padding:9px 12px;
+    border:2px dashed var(--pink); border-radius:10px;
+    background:rgba(245,44,135,.08);
+    font-size:14.5px; color:var(--lav);
+  }
+  /* Hall of fame */
+  .hof{ list-style:none; margin:0; padding:0; }
+  .hof li{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:11px; color:var(--muted);
+    padding:7px 10px; margin-bottom:6px;
+    border:2px dashed var(--line); border-radius:8px;
+  }
+  .hof li .champ{ color:var(--gold); }
+  .hof li.latest{ border-style:solid; border-color:var(--gold); }
+  .hof .empty{ display:block; text-align:center; font-family:"Pixelify Sans",sans-serif; font-size:14px; padding:12px; }
+  /* Wide screens: the two panels sit side by side in a wider sidebar */
   @media (min-width:1240px){
     .layout.sb-open .sidebar{ width:680px; }
     .boards{ grid-template-columns:1fr 1fr; }
@@ -547,23 +576,33 @@
   </div><!-- /.main -->
 
   <aside class="sidebar" id="sidebar" aria-label="Scoreboard sidebar">
-    <section class="card" aria-label="Scoreboard">
-      <div class="lb-head">
-        <h2 class="cardtitle">SCOREBOARD</h2>
-        <span class="lb-sub" id="roster-count"></span>
-      </div>
-      <div class="boards">
-        <section class="board-sec" id="sec-week">
-          <h3 class="sec-h" style="margin:0"><button class="sec-h sec-toggle" id="th-week" aria-expanded="true" aria-controls="week-list">▾ This week · W1 Fur Frenzy</button></h3>
+    <div class="boards">
+      <section class="card board-card board-sec" id="sec-week" aria-label="This week's scoreboard">
+        <div class="lb-head">
+          <h2 class="cardtitle">THIS WEEK</h2>
+          <button class="sec-toggle" id="th-week" aria-expanded="true" title="Collapse / expand">▾</button>
+        </div>
+        <p class="lb-sub2">W1 · FUR FRENZY · <span id="roster-count"></span></p>
+        <div class="board-body">
           <ol id="week-list" class="wlist"></ol>
-        </section>
-        <section class="board-sec" id="sec-season">
-          <h3 class="sec-h" style="margin:0"><button class="sec-h sec-toggle" id="th-season" aria-expanded="true" aria-controls="season">▾ Season standings</button></h3>
+          <div id="sus-box"></div>
+        </div>
+      </section>
+
+      <section class="card board-card board-sec" id="sec-season" aria-label="Season standings">
+        <div class="lb-head">
+          <h2 class="cardtitle" id="season-title">SEASON 1</h2>
+          <button class="sec-toggle" id="th-season" aria-expanded="true" title="Collapse / expand">▾</button>
+        </div>
+        <p class="lb-sub2" id="season-progress"></p>
+        <div class="board-body">
           <div id="season" class="season"></div>
-        </section>
-      </div>
-      <p class="note" id="board-note"></p>
-    </section>
+          <h3 class="sec-h">👑 HALL OF FAME</h3>
+          <ol id="hof" class="hof"></ol>
+        </div>
+      </section>
+    </div>
+    <p class="note" id="board-note"></p>
   </aside>
   </div><!-- /.layout -->
 
@@ -579,6 +618,16 @@
   var WEEK = 1;
   var GAME_NAME = "FUR FRENZY";
   var FALLBACK_TRIES = 3; // server value in the `games` table wins
+  /* Seasons: every 5 weeks a champion is crowned and a new season begins. */
+  var SEASON_LEN = 5;
+  var SEASON = Math.floor((WEEK - 1) / SEASON_LEN) + 1;
+  var SEASON_START = (SEASON - 1) * SEASON_LEN + 1;
+  var SEASON_END = SEASON_START + SEASON_LEN - 1;
+  var HOF_KEEP = 6; // hall of fame shows the last 6 champions
+  /* Cheat-smell detector: per-week plausibility ceiling (add a line per game).
+     Scores above it stay visible but get publicly roasted and are excluded
+     from medals, weekly wins, and the season championship. */
+  var SUS_LIMITS = { 1: 2000 };
 
   /* ============ backend (Supabase — anon key is public by design) ============ */
   var SUPABASE_URL = "https://cofdyguyfltehvbdigok.supabase.co";
@@ -847,6 +896,45 @@
     });
     return Object.keys(map).map(function(k){ return map[k]; });
   }
+  /* Cheat-smell detector: flagged scores stay visible, get roasted, and are
+     excluded from medals, weekly wins, and the championship. */
+  function isSus(s){
+    var lim = SUS_LIMITS[s.week];
+    return !!lim && s.score > lim;
+  }
+  var ROASTS = [
+    "🕵️ {N}'s score just broke our fur-physics engine. The Arcade Committee has opened a VERY serious investigation.",
+    "👃 Something smells around here… and it isn't the pet hair. {N}, blink twice if you're human.",
+    "🤖 {N} cleans like a robot vacuum on triple espresso. Suspiciously spotless. SUSPICIOUSLY.",
+    "🚨 {N}'s score has more red flags than a dog park has tennis balls. The Fur Police are en route."
+  ];
+  function roastFor(name){
+    var h = 0;
+    for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+    return ROASTS[h % ROASTS.length].split("{N}").join(name);
+  }
+  /* Standings from clean bests within a week window (one season, usually). */
+  function standingsFor(bests, fromWeek, toWeek){
+    var by = {};
+    var pool = bests.filter(function(s){
+      return s.week >= fromWeek && s.week <= toWeek && !isSus(s);
+    });
+    pool.forEach(function(s){
+      var k = s.email + "|" + s.gen;
+      var b = by[k] || (by[k] = { email: s.email, gen: s.gen, total: 0, weeks: 0, wins: 0 });
+      b.total += s.score; b.weeks++;
+    });
+    var weekNums = [];
+    pool.forEach(function(s){ if (weekNums.indexOf(s.week) === -1) weekNums.push(s.week); });
+    weekNums.forEach(function(w){
+      var ws = pool.filter(function(s){ return s.week === w; });
+      var max = -1;
+      ws.forEach(function(s){ if (s.score > max) max = s.score; });
+      ws.forEach(function(s){ if (s.score === max) by[s.email + "|" + s.gen].wins++; });
+    });
+    return Object.keys(by).map(function(k){ return by[k]; })
+      .sort(function(a, b){ return b.total - a.total; });
+  }
   function renderScoreboard(){
     var boardNote = $("#board-note");
     boardNote.textContent = !CONFIGURED
@@ -860,37 +948,41 @@
     $("#roster-count").textContent = nPlayers ? nPlayers + " PLAYER" + (nPlayers === 1 ? "" : "S") : "";
 
     var bests = bestPerWeek(state.scores);
+
+    /* --- THIS WEEK panel --- */
     var wk = bests.filter(function(s){ return s.week === WEEK; })
       .sort(function(a, b){ return b.score - a.score; });
+    var cleanRank = 0;
     $("#week-list").innerHTML = wk.length
-      ? wk.map(function(s, i){
-          return '<li class="w-row' + (i === 0 ? " t1" : "") + '">' +
-            (medal(i) ? '<span class="w-rank">' + medal(i) + "</span>"
-                      : '<span class="w-rank n">' + (i + 1) + "</span>") +
+      ? wk.map(function(s){
+          var sus = isSus(s);
+          var rankHtml;
+          if (sus) {
+            rankHtml = '<span class="w-rank">🤖</span>';
+          } else {
+            rankHtml = medal(cleanRank)
+              ? '<span class="w-rank">' + medal(cleanRank) + "</span>"
+              : '<span class="w-rank n">' + (cleanRank + 1) + "</span>";
+            cleanRank++;
+          }
+          return '<li class="w-row' + (!sus && cleanRank === 1 ? " t1" : "") + (sus ? " sus" : "") + '">' +
+            rankHtml +
             '<span class="w-name">' + esc(nameFor(s.email, s.gen)) + "</span>" +
             '<span class="w-streak">' + s.attempts + "/" + triesFor(s.week) + " 🪙 · x" + s.streak + "</span>" +
             '<span class="w-score">' + s.score + "</span></li>";
         }).join("")
       : '<li class="empty">' + (state.loaded || !CONFIGURED
           ? "No runs yet this week — spend a credit! 🪙" : "Loading scores…") + "</li>";
+    $("#sus-box").innerHTML = wk.filter(isSus).map(function(s){
+      return '<div class="sus-callout">' + roastFor(esc(nameFor(s.email, s.gen))) + "</div>";
+    }).join("");
 
-    var by = {};
-    bests.forEach(function(s){
-      var k = s.email + "|" + s.gen;
-      var b = by[k] || (by[k] = { email: s.email, gen: s.gen, total: 0, weeks: 0, wins: 0 });
-      b.total += s.score; b.weeks++;
-    });
-    var weekNums = [];
-    bests.forEach(function(s){ if (weekNums.indexOf(s.week) === -1) weekNums.push(s.week); });
-    weekNums.forEach(function(w){
-      var ws = bests.filter(function(s){ return s.week === w; });
-      var max = -1;
-      ws.forEach(function(s){ if (s.score > max) max = s.score; });
-      ws.forEach(function(s){ if (s.score === max) by[s.email + "|" + s.gen].wins++; });
-    });
-    var rows = Object.keys(by).map(function(k){ return by[k]; })
-      .sort(function(a, b){ return b.total - a.total; });
-
+    /* --- SEASON panel: current season only, cheat-free --- */
+    $("#season-title").textContent = "SEASON " + SEASON;
+    $("#season-progress").textContent =
+      "WEEK " + (WEEK - SEASON_START + 1) + " OF " + SEASON_LEN +
+      (WEEK === SEASON_END ? " · FINAL WEEK — CHAMPION CROWNED!" : " · CHAMPION CROWNED AFTER W" + SEASON_END);
+    var rows = standingsFor(bests, SEASON_START, SEASON_END);
     $("#season").innerHTML = rows.length
       ? '<div class="s-row head"><span class="s-rank">#</span><span class="s-name">Player</span>' +
         '<span class="s-wins">Wins</span><span class="s-weeks">Games</span><span class="s-total">Total</span></div>' +
@@ -903,6 +995,20 @@
             '<span class="s-total">' + r.total + "</span></div>";
         }).join("")
       : '<div class="empty">Season starts with the first run. Make history!</div>';
+
+    /* --- HALL OF FAME: champions of completed seasons --- */
+    var champs = [];
+    for (var sn = SEASON - 1; sn >= 1 && champs.length < HOF_KEEP; sn--) {
+      var from = (sn - 1) * SEASON_LEN + 1;
+      var top = standingsFor(bests, from, from + SEASON_LEN - 1)[0];
+      if (top) champs.push({ season: sn, name: nameFor(top.email, top.gen), total: top.total });
+    }
+    $("#hof").innerHTML = champs.length
+      ? champs.map(function(c, i){
+          return '<li' + (i === 0 ? ' class="latest"' : "") + '><span>S' + c.season + "</span>" +
+            '<span class="champ">👑 ' + esc(c.name) + "</span><span>" + c.total + "</span></li>";
+        }).join("")
+      : '<li><span class="empty">The first champion is crowned after Week ' + SEASON_END + '. Legends load here… ⏳</span></li>';
   }
 
   function showPanel(id){
@@ -1406,11 +1512,10 @@
   [["sec-week", "th-week", "ua-sec-week"], ["sec-season", "th-season", "ua-sec-season"]]
     .forEach(function(cfg){
       var sec = $("#" + cfg[0]), head = $("#" + cfg[1]);
-      var label = head.textContent.replace(/^[▾▸]\s*/, "");
       function apply(open){
         sec.classList.toggle("collapsed", !open);
         head.setAttribute("aria-expanded", String(open));
-        head.textContent = (open ? "▾ " : "▸ ") + label;
+        head.textContent = open ? "▾" : "▸";
       }
       head.addEventListener("click", function(){
         var opening = sec.classList.contains("collapsed");
