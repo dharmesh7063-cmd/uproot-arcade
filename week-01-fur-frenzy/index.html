@@ -354,6 +354,22 @@
     background:rgba(245,44,135,.08);
     font-size:14.5px; color:var(--lav);
   }
+  /* House bot (exhibition player) */
+  .w-row.bot{ border-style:dashed; border-color:var(--cyan); }
+  .botchip{
+    display:inline-block;
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:9px; letter-spacing:.08em;
+    color:var(--bg); background:var(--cyan);
+    border-radius:4px; padding:1px 5px; margin-left:6px;
+    vertical-align:2px;
+  }
+  .bot-callout{
+    margin-top:10px; padding:9px 12px;
+    border:2px dashed var(--cyan); border-radius:10px;
+    background:rgba(44,224,222,.07);
+    font-size:14.5px; color:var(--lav);
+  }
   /* Hall of fame */
   .hof{ list-style:none; margin:0; padding:0; }
   .hof li{
@@ -628,6 +644,9 @@
      Scores above it stay visible but get publicly roasted and are excluded
      from medals, weekly wins, and the season championship. */
   var SUS_LIMITS = { 1: 2000 };
+  /* House bots (e.g. Viktor the chatbot): they play every game and keep their
+     scores as fun score-holders, but never take medals, wins, or the crown. */
+  var BOT_EMAILS = { "ai@uprootclean.com": "Viktor, our house chatbot" };
 
   /* ============ backend (Supabase — anon key is public by design) ============ */
   var SUPABASE_URL = "https://cofdyguyfltehvbdigok.supabase.co";
@@ -902,6 +921,7 @@
     var lim = SUS_LIMITS[s.week];
     return !!lim && s.score > lim;
   }
+  function isBot(s){ return !!BOT_EMAILS[s.email]; }
   var ROASTS = [
     "🕵️ {N}'s score just broke our fur-physics engine. The Arcade Committee has opened a VERY serious investigation.",
     "👃 Something smells around here… and it isn't the pet hair. {N}, blink twice if you're human.",
@@ -917,7 +937,7 @@
   function standingsFor(bests, fromWeek, toWeek){
     var by = {};
     var pool = bests.filter(function(s){
-      return s.week >= fromWeek && s.week <= toWeek && !isSus(s);
+      return s.week >= fromWeek && s.week <= toWeek && !isSus(s) && !isBot(s);
     });
     pool.forEach(function(s){
       var k = s.email + "|" + s.gen;
@@ -955,27 +975,35 @@
     var cleanRank = 0;
     $("#week-list").innerHTML = wk.length
       ? wk.map(function(s){
-          var sus = isSus(s);
+          var bot = isBot(s);
+          var sus = !bot && isSus(s);
           var rankHtml;
-          if (sus) {
+          if (bot) {
             rankHtml = '<span class="w-rank">🤖</span>';
+          } else if (sus) {
+            rankHtml = '<span class="w-rank">🚨</span>';
           } else {
             rankHtml = medal(cleanRank)
               ? '<span class="w-rank">' + medal(cleanRank) + "</span>"
               : '<span class="w-rank n">' + (cleanRank + 1) + "</span>";
             cleanRank++;
           }
-          return '<li class="w-row' + (!sus && cleanRank === 1 ? " t1" : "") + (sus ? " sus" : "") + '">' +
+          return '<li class="w-row' + (!bot && !sus && cleanRank === 1 ? " t1" : "") + (sus ? " sus" : "") + (bot ? " bot" : "") + '">' +
             rankHtml +
-            '<span class="w-name">' + esc(nameFor(s.email, s.gen)) + "</span>" +
+            '<span class="w-name">' + esc(nameFor(s.email, s.gen)) + (bot ? ' <span class="botchip">BOT</span>' : "") + "</span>" +
             '<span class="w-streak">' + s.attempts + "/" + triesFor(s.week) + " 🪙 · x" + s.streak + "</span>" +
             '<span class="w-score">' + s.score + "</span></li>";
         }).join("")
       : '<li class="empty">' + (state.loaded || !CONFIGURED
           ? "No runs yet this week — spend a credit! 🪙" : "Loading scores…") + "</li>";
-    $("#sus-box").innerHTML = wk.filter(isSus).map(function(s){
+    var callouts = wk.filter(function(s){ return !isBot(s) && isSus(s); }).map(function(s){
       return '<div class="sus-callout">' + roastFor(esc(nameFor(s.email, s.gen))) + "</div>";
-    }).join("");
+    });
+    wk.filter(isBot).forEach(function(s){
+      callouts.push('<div class="bot-callout">🤖 ' + esc(nameFor(s.email, s.gen)) + " is " +
+        BOT_EMAILS[s.email] + " — it plays for the love of fur. Scores on the board, but no crown, no medals. Beat it if you can!</div>");
+    });
+    $("#sus-box").innerHTML = callouts.join("");
 
     /* --- SEASON panel: current season only, cheat-free --- */
     $("#season-title").textContent = "SEASON " + SEASON;
