@@ -413,6 +413,35 @@
     background:rgba(44,224,222,.07);
     font-size:14.5px; color:var(--lav);
   }
+  /* Arcade Noticeboard — pinned notes above the boards */
+  .notice-sec{ margin-bottom:18px; }
+  .notice-body{ display:flex; flex-wrap:wrap; gap:14px; padding-top:8px; }
+  .notice-card{
+    position:relative; flex:1 1 230px; min-width:0;
+    padding:12px 13px 11px; border-radius:10px;
+    border:2px dashed var(--purple); background:rgba(140,75,255,.08);
+    font-size:14.5px; color:var(--lav);
+    transform:rotate(-.5deg);
+  }
+  .notice-card:nth-child(even){ transform:rotate(.6deg); }
+  .notice-card::before{
+    content:"📌"; position:absolute; top:-12px; left:14px; font-size:16px;
+    filter:drop-shadow(0 2px 2px rgba(0,0,0,.55));
+  }
+  .notice-card:nth-child(even)::before{ left:auto; right:14px; }
+  .notice-k{
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+    margin-bottom:6px; color:var(--purple);
+    text-shadow:0 0 8px rgba(140,75,255,.5);
+  }
+  .notice-card.sus{ border-color:#FF6262; background:rgba(255,98,98,.07); }
+  .notice-card.sus .notice-k{ color:#FF7A7A; text-shadow:0 0 8px rgba(255,98,98,.5); }
+  .notice-card.bounty{ border-color:var(--gold); background:rgba(255,210,63,.08); }
+  .notice-card.bounty .notice-k{ color:var(--gold); text-shadow:0 0 8px rgba(255,210,63,.5); }
+  .notice-card.bounty b{ color:var(--gold); }
+  .notice-card.bot{ border-color:var(--cyan); background:rgba(44,224,222,.07); }
+  .notice-card.bot .notice-k{ color:var(--cyan); text-shadow:0 0 8px rgba(44,224,222,.5); }
   /* Week leader banner — the golden marquee with a shine rolling the outline */
   @property --ang{ syntax:"<angle>"; initial-value:0deg; inherits:false; }
   .week-champ{
@@ -843,6 +872,13 @@
   </div><!-- /.main -->
 
   <aside class="sidebar" id="sidebar" aria-label="Scoreboard sidebar">
+    <section class="card board-card board-sec notice-sec" id="sec-notice" aria-label="Arcade noticeboard" hidden>
+      <div class="lb-head">
+        <h2 class="cardtitle">📌 NOTICEBOARD</h2>
+        <button class="sec-toggle" id="th-notice" aria-expanded="true" title="Collapse / expand">▾</button>
+      </div>
+      <div class="board-body notice-body" id="notice-box"></div>
+    </section>
     <div class="boards">
       <section class="card board-card board-sec" id="sec-week" aria-label="This week's scoreboard">
         <div class="lb-head">
@@ -853,7 +889,6 @@
         <div class="board-body">
           <div id="week-champ" class="week-champ" hidden></div>
           <ol id="week-list" class="wlist"></ol>
-          <div id="sus-box"></div>
         </div>
       </section>
 
@@ -1357,7 +1392,7 @@
           ? "No runs yet this week — spend a credit! 🪙" : "Loading scores…") + "</li>";
     var callouts = wk.filter(function(s){ return !isBot(s) && isSus(s); }).map(function(s){
       var n = esc(nameFor(s.email, s.gen));
-      return '<div class="sus-callout">🚨 ' + roastFor(n) +
+      return '<div class="notice-card sus"><div class="notice-k">🚨 CHEAT SMELL DETECTOR</div>' + roastFor(n) +
         " Prove yourself, legend — replay it live, or lose the crown. The Arcade Committee never blinks.</div>";
     });
     /* Slacker Watch: needs a real field (4+ clean humans) and a truly low score. */
@@ -1367,7 +1402,7 @@
       if (lowP.score <= topP.score * 0.35) {
         var ln = esc(nameFor(lowP.email, lowP.gen));
         var unused = Math.max(0, triesFor(WEEK) - lowP.attempts);
-        callouts.push('<div class="slack-callout">' + slackRoast(ln, lowP.score) +
+        callouts.push('<div class="notice-card slacker"><div class="notice-k">SLACKER WATCH</div>' + slackRoast(ln, lowP.score) +
           (unused > 0 ? " And " + unused + " credit" + (unused === 1 ? "" : "s") + " still in their pocket. EFFORT, we beg. 🙏" : "") +
           "</div>");
       }
@@ -1375,16 +1410,17 @@
     if (state.bonuses) {
       state.bonuses.forEach(function(bb){
         if (bb.week !== WEEK) return;
-        callouts.push('<div class="bounty-callout">🛠️ BUG BOUNTY: <b>' + esc(nameFor(bb.email, latestGen(bb.email))) +
+        callouts.push('<div class="notice-card bounty"><div class="notice-k">🛠️ BUG BOUNTY</div><b>' + esc(nameFor(bb.email, latestGen(bb.email))) +
           "</b> found a gap in the arcade walls and earned +" + bb.extra + " CREDIT" + (bb.extra === 1 ? "" : "S") +
           ". The Committee punishes cheaters… and PAYS hackers. Choose wisely.</div>");
       });
     }
     wk.filter(isBot).forEach(function(s){
-      callouts.push('<div class="bot-callout">🤖 ' + esc(nameFor(s.email, s.gen)) + " is " +
+      callouts.push('<div class="notice-card bot"><div class="notice-k">🤖 HOUSE BOT</div>' + esc(nameFor(s.email, s.gen)) + " is " +
         BOT_EMAILS[s.email] + " — it plays for the love of fur. Scores on the board, but no crown, no medals. Beat it if you can!</div>");
     });
-    $("#sus-box").innerHTML = callouts.join("");
+    $("#notice-box").innerHTML = callouts.join("");
+    $("#sec-notice").hidden = callouts.length === 0;
 
     /* Countdown on the Eastern calendar: Sat-Thu are play days, Friday is ceremony. */
     var days = daysSinceAnchor();
@@ -2432,7 +2468,7 @@
   })();
 
   /* Each board section collapses like the 🏆 toggle, remembered per device. */
-  [["sec-week", "th-week", "ua-sec-week"], ["sec-season", "th-season", "ua-sec-season"]]
+  [["sec-week", "th-week", "ua-sec-week"], ["sec-season", "th-season", "ua-sec-season"], ["sec-notice", "th-notice", "ua-sec-notice"]]
     .forEach(function(cfg){
       var sec = $("#" + cfg[0]), head = $("#" + cfg[1]);
       function apply(open){
