@@ -1490,6 +1490,9 @@
       $("#" + p).hidden = (p !== id);
     });
     $("#overlay").hidden = false;
+    // grow the stage to fit the panel so nothing ever clips
+    var panel = $("#" + id), stage = document.querySelector(".stage");
+    if (panel && stage) stage.style.minHeight = (panel.scrollHeight + 44) + "px";
   }
 
   function renderAll(){
@@ -2172,6 +2175,7 @@
     playing = true;
     updateHud();
     $("#overlay").hidden = true;
+    document.querySelector(".stage").style.minHeight = ""; // game board back to design size
     blip(520, 0.1); setTimeout(function(){ blip(780, 0.12); }, 110);
     lastT = performance.now();
     rafId = requestAnimationFrame(tick);
