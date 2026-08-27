@@ -2158,12 +2158,11 @@
     var nm = (m ? m.name : "PLAYER").replace(" 👻", "").toUpperCase();
     g.clearRect(0, 0, W, H);
     g.fillStyle = t.bg; g.fillRect(0, 0, W, H);
-    var gl = g.createRadialGradient(W / 2, 320, 60, W / 2, 320, 640);
+    var gl = g.createRadialGradient(W / 2, 340, 60, W / 2, 340, 660);
     gl.addColorStop(0, t.glow);
     gl.addColorStop(1, "rgba(0,0,0,0)");
     g.fillStyle = gl; g.fillRect(0, 0, W, H);
     // texture
-    g.globalAlpha = 1;
     if (t.tex === "scan") {
       g.fillStyle = "rgba(0,0,0,.15)";
       for (var y = 0; y < H; y += 6) g.fillRect(0, y, W, 2);
@@ -2179,8 +2178,8 @@
     }
     // confetti
     var cols = [t.frameA, t.frameB, t.score, t.text];
-    for (var i = 0; i < 44; i++) {
-      g.globalAlpha = 0.12 + Math.random() * 0.18;
+    for (var i = 0; i < 40; i++) {
+      g.globalAlpha = 0.10 + Math.random() * 0.16;
       g.fillStyle = cols[i % 4];
       g.save();
       g.translate(52 + Math.random() * (W - 104), 52 + Math.random() * (H - 104));
@@ -2189,11 +2188,20 @@
       g.fillRect(-sz / 2, -sz / 2, sz, sz);
       g.restore();
     }
+    // sparkle stars (4-point)
+    for (var sp = 0; sp < 9; sp++) {
+      g.globalAlpha = 0.35 + Math.random() * 0.35;
+      g.fillStyle = t.text;
+      var sx = 70 + Math.random() * (W - 140), sy = 70 + Math.random() * (H - 200);
+      var sl = 5 + Math.random() * 8;
+      g.fillRect(sx - 1, sy - sl, 2, sl * 2);
+      g.fillRect(sx - sl, sy - 1, sl * 2, 2);
+    }
     g.globalAlpha = 1;
     // vignette
     var vg = g.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.75);
     vg.addColorStop(0, "rgba(0,0,0,0)");
-    vg.addColorStop(1, "rgba(0,0,0,.42)");
+    vg.addColorStop(1, "rgba(0,0,0,.45)");
     g.fillStyle = vg; g.fillRect(0, 0, W, H);
     // frames + corner gems
     g.lineWidth = 8; g.strokeStyle = t.frameA; g.strokeRect(16, 16, W - 32, H - 32);
@@ -2204,49 +2212,94 @@
       g.fillStyle = t.bg; g.fillRect(-6, -6, 12, 12);
       g.restore();
     });
+    // pixel crown
+    var CROWN = [
+      "..X...X...X..",
+      "..X..XXX..X..",
+      ".XX.XXXXX.XX.",
+      "XXXXXXXXXXXXX",
+      "XXXXXXXXXXXXX",
+      ".XXXXXXXXXXX."
+    ];
+    var px = 9, cx0 = W / 2 - (13 * px) / 2, cy0 = 58;
+    g.save();
+    g.shadowColor = t.frameA; g.shadowBlur = 26;
+    for (var cr = 0; cr < CROWN.length; cr++) {
+      for (var cc = 0; cc < 13; cc++) {
+        if (CROWN[cr][cc] !== "X") continue;
+        g.fillStyle = t.frameA;
+        g.fillRect(cx0 + cc * px, cy0 + cr * px, px, px);
+      }
+    }
+    g.restore();
+    g.fillStyle = t.frameB; // crown jewels
+    g.fillRect(cx0 + 2 * px, cy0 + 3 * px, px, px);
+    g.fillRect(cx0 + 6 * px, cy0 + 3 * px, px, px);
+    g.fillRect(cx0 + 10 * px, cy0 + 3 * px, px, px);
     g.textAlign = "center";
     g.fillStyle = t.frameA;
     g.font = '40px "Press Start 2P", monospace';
-    g.fillText("UPROOT ARCADE", W / 2, 122);
+    g.fillText("UPROOT ARCADE", W / 2, 172);
     g.fillStyle = t.sub;
     g.font = '13px "Press Start 2P", monospace';
-    g.fillText("— " + t.name + " EDITION —", W / 2, 156);
+    g.fillText("— " + t.name + " EDITION —", W / 2, 204);
     var chip = "W" + WEEK + " ★ " + GAME_NAME;
     g.font = '20px "Press Start 2P", monospace';
     var cw = g.measureText(chip).width + 48;
-    g.fillStyle = t.chipBg; g.fillRect(W / 2 - cw / 2, 178, cw, 46);
-    g.strokeStyle = t.frameB; g.lineWidth = 3; g.strokeRect(W / 2 - cw / 2, 178, cw, 46);
-    g.fillStyle = t.chipTx; g.fillText(chip, W / 2, 210);
+    g.fillStyle = t.chipBg; g.fillRect(W / 2 - cw / 2, 226, cw, 46);
+    g.strokeStyle = t.frameB; g.lineWidth = 3; g.strokeRect(W / 2 - cw / 2, 226, cw, 46);
+    g.fillStyle = t.chipTx; g.fillText(chip, W / 2, 258);
     g.fillStyle = t.sub; g.font = '18px "Press Start 2P", monospace';
-    g.fillText("PLAYER", W / 2, 308);
+    g.fillText("PLAYER", W / 2, 340);
     g.fillStyle = t.text;
     g.font = (nm.length > 10 ? 34 : 46) + 'px "Press Start 2P", monospace';
-    g.fillText(nm, W / 2, 372);
+    g.fillText(nm, W / 2, 402);
     g.strokeStyle = t.frameB; g.lineWidth = 3;
-    g.beginPath(); g.moveTo(W / 2 - 120, 394); g.lineTo(W / 2 + 120, 394); g.stroke();
+    g.beginPath(); g.moveTo(W / 2 - 120, 424); g.lineTo(W / 2 + 120, 424); g.stroke();
+    // sunburst of glory behind the score
+    g.save();
+    g.globalAlpha = 0.14;
+    g.strokeStyle = t.score; g.lineWidth = 7;
+    for (var ray = 0; ray < 22; ray++) {
+      var ang = (ray / 22) * Math.PI * 2;
+      g.beginPath();
+      g.moveTo(W / 2 + Math.cos(ang) * 96, 596 + Math.sin(ang) * 96);
+      g.lineTo(W / 2 + Math.cos(ang) * 220, 596 + Math.sin(ang) * 220);
+      g.stroke();
+    }
+    g.restore();
+    // score plate
+    g.fillStyle = "rgba(0,0,0,.38)";
+    g.fillRect(W / 2 - 200, 508, 400, 150);
+    g.strokeStyle = t.frameB; g.lineWidth = 2;
+    g.strokeRect(W / 2 - 200, 508, 400, 150);
     g.fillStyle = t.sub; g.font = '18px "Press Start 2P", monospace';
-    g.fillText("SCORE", W / 2, 466);
+    g.fillText("SCORE", W / 2, 496);
     var ss = String(score);
     g.save();
     g.shadowColor = t.score; g.shadowBlur = 60;
     g.fillStyle = t.score;
-    g.font = (ss.length > 4 ? 92 : 118) + 'px "Press Start 2P", monospace';
-    g.fillText(ss, W / 2, 614);
-    g.shadowBlur = 24;
-    g.fillText(ss, W / 2, 614);
+    g.font = (ss.length > 4 ? 88 : 112) + 'px "Press Start 2P", monospace';
+    g.fillText(ss, W / 2, 626);
+    g.shadowBlur = 22;
+    g.fillText(ss, W / 2, 626);
     g.restore();
     var rk = "★ " + rankTitle(score) + " ★";
     g.font = '22px "Press Start 2P", monospace';
     var rw = g.measureText(rk).width + 56;
-    g.fillStyle = t.badge; g.fillRect(W / 2 - rw / 2, 664, rw, 54);
-    g.strokeStyle = t.frameA; g.lineWidth = 3; g.strokeRect(W / 2 - rw / 2, 664, rw, 54);
-    g.fillStyle = "#FFFFFF"; g.fillText(rk, W / 2, 701);
-    g.fillStyle = t.frameA; g.font = '26px "Press Start 2P", monospace';
-    g.fillText("CAN YOU BEAT IT?", W / 2, 848);
-    g.fillStyle = t.sub; g.font = '14px "Press Start 2P", monospace';
-    g.fillText("DHARMESH7063-CMD.GITHUB.IO/UPROOT-ARCADE", W / 2, 912);
+    g.fillStyle = t.badge; g.fillRect(W / 2 - rw / 2, 692, rw, 54);
+    g.strokeStyle = t.frameA; g.lineWidth = 3; g.strokeRect(W / 2 - rw / 2, 692, rw, 54);
+    g.fillStyle = "#FFFFFF"; g.fillText(rk, W / 2, 729);
+    // pennant flags flanking the challenge line
+    g.fillStyle = t.frameA;
+    g.beginPath(); g.moveTo(120, 846); g.lineTo(180, 862); g.lineTo(120, 878); g.closePath(); g.fill();
+    g.beginPath(); g.moveTo(W - 120, 846); g.lineTo(W - 180, 862); g.lineTo(W - 120, 878); g.closePath(); g.fill();
+    g.font = '26px "Press Start 2P", monospace';
+    g.fillText("CAN YOU BEAT IT?", W / 2, 872);
+    g.fillStyle = t.sub; g.font = '13px "Press Start 2P", monospace';
+    g.fillText("★ AN UPROOT ARCADE ORIGINAL ★", W / 2, 918);
     g.font = '12px "Press Start 2P", monospace';
-    g.fillText("POSTER #" + posterSerial + " · 1 OF 1", W / 2, 952);
+    g.fillText("POSTER #" + posterSerial + " · 1 OF 1", W / 2, 950);
   }
   function posterFile(){
     var a = document.createElement("a");
