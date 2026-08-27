@@ -630,6 +630,13 @@
   @keyframes loadslide{ from{ transform:translateX(-30%); } to{ transform:translateX(200%); } }
 
   .week-champ{ cursor:pointer; }
+  #poster-canvas{ width:100%; max-width:250px; height:auto; border-radius:8px; margin:4px 0; background:#150F2B; }
+  .poster-caption{
+    font-size:13.5px; color:var(--lav); text-align:left;
+    border:2px dashed var(--line); border-radius:8px;
+    padding:8px 10px; margin:6px 0 8px;
+  }
+  #brag-btn{ margin:12px 4px 0; }
   .frame-modal{
     position:fixed; inset:0; z-index:200;
     background:rgba(10,6,24,.85);
@@ -823,6 +830,7 @@
             <p class="sub" id="end-streak"></p>
             <p class="note" id="save-note"></p>
             <button class="btn cyan" id="again-btn" hidden>PLAY AGAIN</button>
+            <button class="btn pink" id="brag-btn">📣 BRAG IN SLACK</button>
           </div>
 
           <div class="panel" id="screen-locked" hidden>
@@ -881,6 +889,23 @@
   </div><!-- /.layout -->
 
 
+
+  <div class="frame-modal" id="poster-modal" hidden>
+    <div class="frame-card">
+      <h2 class="cardtitle">BRAG POSTER</h2>
+      <canvas id="poster-canvas" width="800" height="1000"></canvas>
+      <p class="poster-caption" id="poster-caption"></p>
+      <div class="frame-actions">
+        <button class="btn cyan" id="poster-copy">COPY POSTER</button>
+        <button class="btn pink" id="poster-text">COPY HYPE</button>
+      </div>
+      <div class="linkrow">
+        <button class="linkbtn" id="poster-shuffle">shuffle the hype</button>
+        <button class="linkbtn" id="poster-download">download</button>
+        <button class="linkbtn" id="poster-close">close</button>
+      </div>
+    </div>
+  </div>
   <div class="frame-modal" id="frame-modal" hidden>
     <div class="frame-card">
       <h2 class="cardtitle">CHAMPION FRAME</h2>
@@ -2062,6 +2087,126 @@
     b.setAttribute("aria-pressed", String(open));
     b.classList.toggle("on", open);
   }
+  /* ---- Brag Poster: a Slack-ready score card after every run ---- */
+  var CAPTIONS = [
+    "🚨 NEW SCORE DROPPED: {S} on {G}. The couch feared me today. Beat it or sweep it. 🧹",
+    "Just went full {R} on {G}: {S} points. My thumbs are now insured. 😤",
+    "{S}. That's it. That's the post. (W{W} {G} — come take it from me.)",
+    "POV: your leaderboard spot was never safe. {G} · {S} pts. See you on the board. 👑",
+    "Breaking: local legend scores {S} on {G}. The Fur Police are investigating whether it's even legal. 🚔"
+  ];
+  var posterCaption = "";
+  function makeCaption(){
+    return CAPTIONS[Math.floor(Math.random() * CAPTIONS.length)]
+      .split("{S}").join(score)
+      .split("{G}").join(GAME_NAME)
+      .split("{R}").join(rankTitle(score))
+      .split("{W}").join(WEEK);
+  }
+  function drawPoster(){
+    var cvp = $("#poster-canvas"), g = cvp.getContext("2d");
+    var W = 800, H = 1000;
+    var m = me();
+    var nm = (m ? m.name : "PLAYER").replace(" 👻", "").toUpperCase();
+    g.clearRect(0, 0, W, H);
+    g.fillStyle = "#150F2B"; g.fillRect(0, 0, W, H);
+    var gl = g.createRadialGradient(W / 2, 320, 60, W / 2, 320, 640);
+    gl.addColorStop(0, "rgba(140,75,255,.28)");
+    gl.addColorStop(1, "rgba(140,75,255,0)");
+    g.fillStyle = gl; g.fillRect(0, 0, W, H);
+    g.fillStyle = "rgba(0,0,0,.15)";
+    for (var y = 0; y < H; y += 6) g.fillRect(0, y, W, 2);
+    var cols = ["#FFD23F", "#F52C87", "#2CE0DE", "#8C4BFF", "#FFF3D9"];
+    for (var i = 0; i < 46; i++) {
+      g.globalAlpha = 0.14 + Math.random() * 0.2;
+      g.fillStyle = cols[i % 5];
+      g.save();
+      g.translate(48 + Math.random() * (W - 96), 48 + Math.random() * (H - 96));
+      g.rotate(Math.random() * 3.14);
+      var sz = 7 + Math.random() * 9;
+      g.fillRect(-sz / 2, -sz / 2, sz, sz);
+      g.restore();
+    }
+    g.globalAlpha = 1;
+    g.lineWidth = 8; g.strokeStyle = "#FFD23F"; g.strokeRect(16, 16, W - 32, H - 32);
+    g.lineWidth = 3; g.strokeStyle = "#F52C87"; g.strokeRect(34, 34, W - 68, H - 68);
+    g.textAlign = "center";
+    g.fillStyle = "#FFD23F";
+    g.font = '40px "Press Start 2P", monospace';
+    g.fillText("UPROOT ARCADE", W / 2, 130);
+    var chip = "W" + WEEK + " ★ " + GAME_NAME;
+    g.font = '20px "Press Start 2P", monospace';
+    var cw = g.measureText(chip).width + 48;
+    g.fillStyle = "#FFD23F"; g.fillRect(W / 2 - cw / 2, 162, cw, 46);
+    g.strokeStyle = "#F52C87"; g.lineWidth = 3; g.strokeRect(W / 2 - cw / 2, 162, cw, 46);
+    g.fillStyle = "#150F2B"; g.fillText(chip, W / 2, 194);
+    g.fillStyle = "#9D8FC7"; g.font = '18px "Press Start 2P", monospace';
+    g.fillText("PLAYER", W / 2, 300);
+    g.fillStyle = "#FFFFFF";
+    g.font = (nm.length > 10 ? 34 : 46) + 'px "Press Start 2P", monospace';
+    g.fillText(nm, W / 2, 368);
+    g.fillStyle = "#9D8FC7"; g.font = '18px "Press Start 2P", monospace';
+    g.fillText("SCORE", W / 2, 462);
+    g.save();
+    g.shadowColor = "#2CE0DE"; g.shadowBlur = 44;
+    g.fillStyle = "#2CE0DE";
+    var ss = String(score);
+    g.font = (ss.length > 4 ? 92 : 118) + 'px "Press Start 2P", monospace';
+    g.fillText(ss, W / 2, 612);
+    g.restore();
+    var rk = "★ " + rankTitle(score) + " ★";
+    g.font = '22px "Press Start 2P", monospace';
+    var rw = g.measureText(rk).width + 56;
+    g.fillStyle = "#F52C87"; g.fillRect(W / 2 - rw / 2, 662, rw, 54);
+    g.strokeStyle = "#FFF3D9"; g.lineWidth = 3; g.strokeRect(W / 2 - rw / 2, 662, rw, 54);
+    g.fillStyle = "#FFFFFF"; g.fillText(rk, W / 2, 699);
+    g.fillStyle = "#FFD23F"; g.font = '26px "Press Start 2P", monospace';
+    g.fillText("CAN YOU BEAT IT?", W / 2, 852);
+    g.fillStyle = "#9D8FC7"; g.font = '14px "Press Start 2P", monospace';
+    g.fillText("DHARMESH7063-CMD.GITHUB.IO/UPROOT-ARCADE", W / 2, 930);
+  }
+  function posterFile(){
+    var a = document.createElement("a");
+    a.download = "uproot-arcade-w" + WEEK + "-score.png";
+    a.href = $("#poster-canvas").toDataURL("image/png");
+    a.click();
+  }
+  $("#brag-btn").addEventListener("click", function(){
+    if (!me()) return;
+    posterCaption = makeCaption();
+    $("#poster-caption").textContent = posterCaption;
+    $("#poster-modal").hidden = false;
+    drawPoster();
+    setTimeout(drawPoster, 600); // pixel fonts settle
+  });
+  $("#poster-shuffle").addEventListener("click", function(){
+    posterCaption = makeCaption();
+    $("#poster-caption").textContent = posterCaption;
+  });
+  $("#poster-close").addEventListener("click", function(){ $("#poster-modal").hidden = true; });
+  $("#poster-copy").addEventListener("click", function(){
+    $("#poster-canvas").toBlob(function(blob){
+      if (blob && navigator.clipboard && window.ClipboardItem) {
+        navigator.clipboard.write([new ClipboardItem({ "image/png": blob })])
+          .then(function(){ toast("POSTER COPIED — PASTE IT IN SLACK 📣"); })
+          .catch(function(){ posterFile(); toast("COPY BLOCKED — DOWNLOADED INSTEAD"); });
+      } else {
+        posterFile();
+        toast("COPY NOT SUPPORTED HERE — DOWNLOADED INSTEAD");
+      }
+    });
+  });
+  $("#poster-text").addEventListener("click", function(){
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(posterCaption)
+        .then(function(){ toast("HYPE TEXT COPIED ✍️"); });
+    }
+  });
+  $("#poster-download").addEventListener("click", function(){
+    posterFile();
+    toast("POSTER SAVED 📣");
+  });
+
   /* ---- Champion Frame studio: the winner's downloadable Slack avatar ---- */
   var frameImg = null, frameHero = null;
   function weekHero(){
