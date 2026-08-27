@@ -404,6 +404,19 @@
     border-radius:4px; padding:1px 5px; margin-left:6px;
     vertical-align:2px;
   }
+  .bounty-callout{
+    margin-top:10px; padding:9px 12px;
+    border:2px dashed var(--gold); border-radius:10px;
+    background:rgba(255,210,63,.08);
+    font-size:14.5px; color:var(--lav);
+  }
+  .bounty-callout b{ color:var(--gold); }
+  .bounty-line{
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:12px; letter-spacing:.06em; color:var(--gold);
+    margin:6px 0 10px;
+    text-shadow:0 0 10px rgba(255,210,63,.5);
+  }
   .slack-callout{
     margin-top:10px; padding:9px 12px;
     border:2px dashed var(--purple); border-radius:10px;
@@ -767,6 +780,7 @@
             </ul>
             <p class="credit" id="credit-line">🪙 CREDITS LEFT: — OF —</p>
             <p class="sub" id="best-so-far" hidden></p>
+            <p class="bounty-line" id="bounty-line" hidden>🛠️ BUG BOUNTY ACTIVE: +1 credit awarded by the Committee. Hack responsibly, legend.</p>
             <button class="btn cyan big blink" id="start">PRESS START</button>
           </div>
 
@@ -995,7 +1009,7 @@
   }
 
   /* ================= shared state ================= */
-  var state = { roster: [], scores: [], games: {}, reactions: null, loaded: false, error: null };
+  var state = { roster: [], scores: [], games: {}, reactions: null, bonuses: null, loaded: false, error: null };
 
   function loadData(){
     if (!CONFIGURED) { state.error = "setup"; renderAll(); return Promise.resolve(); }
@@ -1003,13 +1017,15 @@
       sb("roster?select=email,name,gen,has_pin"),
       sb("scores?select=email,gen,week,attempt,score,streak"),
       sb("games?select=week,name,tries"),
-      sb("reactions?select=target,email").catch(function(){ return null; }) // table may not exist yet
+      sb("reactions?select=target,email").catch(function(){ return null; }), // table may not exist yet
+      sb("credit_bonuses?select=email,week,extra,reason").catch(function(){ return null; })
     ]).then(function(res){
       state.roster = res[0] || [];
       state.scores = res[1] || [];
       state.games = {};
       (res[2] || []).forEach(function(g){ state.games[g.week] = g; });
       state.reactions = res[3];
+      state.bonuses = res[4];
       state.loaded = true;
       state.error = null;
       renderAll();
@@ -1022,6 +1038,14 @@
     var g = state.games[week];
     return (g && g.tries) ? g.tries : FALLBACK_TRIES;
   }
+  /* Bug bounties: extra credits granted to specific players for a week. */
+  function bonusFor(email, week){
+    if (!state.bonuses) return 0;
+    var b = 0;
+    state.bonuses.forEach(function(x){ if (x.email === email && x.week === week) b = x.extra || 0; });
+    return b;
+  }
+  function triesForMe(email, week){ return triesFor(week) + bonusFor(email, week); }
   function gensFor(email){
     return state.roster.filter(function(r){ return r.email === email; })
       .sort(function(a, b){ return b.gen - a.gen; });
@@ -1170,7 +1194,7 @@
     roster.forEach(function(r){
       var b = document.createElement("button");
       b.className = "chip";
-      b.innerHTML = esc(r.name) + ((used[r.email] || 0) >= triesFor(WEEK) ? ' <span class="done">✔</span>' : "");
+      b.innerHTML = esc(r.name) + ((used[r.email] || 0) >= triesForMe(r.email, WEEK) ? ' <span class="done">✔</span>' : "");
       b.addEventListener("click", function(){ selectAccount(r.email); });
       box.appendChild(b);
     });
@@ -1282,7 +1306,7 @@
           return '<li class="w-row' + (!bot && !sus && cleanRank === 1 ? " t1" : "") + (sus ? " sus" : "") + (bot ? " bot" : "") + '">' +
             rankHtml +
             '<span class="w-name">' + esc(nameFor(s.email, s.gen)) + (bot ? ' <span class="botchip">BOT</span>' : "") + "</span>" +
-            '<span class="w-streak">' + s.attempts + "/" + triesFor(s.week) + " 🪙 · x" + s.streak + "</span>" +
+            '<span class="w-streak">' + s.attempts + "/" + (triesFor(s.week) + bonusFor(s.email, s.week)) + " 🪙 · x" + s.streak + "</span>" +
             '<span class="w-score">' + s.score + "</span></li>";
         }).join("")
       : '<li class="empty">' + (state.loaded || !CONFIGURED
@@ -1303,6 +1327,14 @@
           (unused > 0 ? " And " + unused + " credit" + (unused === 1 ? "" : "s") + " still in their pocket. EFFORT, we beg. 🙏" : "") +
           "</div>");
       }
+    }
+    if (state.bonuses) {
+      state.bonuses.forEach(function(bb){
+        if (bb.week !== WEEK) return;
+        callouts.push('<div class="bounty-callout">🛠️ BUG BOUNTY: <b>' + esc(nameFor(bb.email, latestGen(bb.email))) +
+          "</b> found a gap in the arcade walls and earned +" + bb.extra + " CREDIT" + (bb.extra === 1 ? "" : "S") +
+          ". The Committee punishes cheaters… and PAYS hackers. Choose wisely.</div>");
+      });
     }
     wk.filter(isBot).forEach(function(s){
       callouts.push('<div class="bot-callout">🤖 ' + esc(nameFor(s.email, s.gen)) + " is " +
@@ -1479,7 +1511,7 @@
       }
       var runs = myRuns();
       var b = bestOf(runs);
-      var tries = triesFor(WEEK);
+      var tries = triesForMe(m.email, WEEK);
       if (runs.length >= tries) {
         $("#locked-score").textContent = String(b ? b.score : 0);
         $("#locked-rank").textContent = rankTitle(b ? b.score : 0);
@@ -1489,6 +1521,7 @@
         var bsf = $("#best-so-far");
         bsf.hidden = !b;
         if (b) bsf.textContent = "Your best so far: " + b.score + " (" + rankTitle(b.score) + ")";
+        $("#bounty-line").hidden = !(bonusFor(m.email, WEEK) > 0);
         showPanel("screen-start");
       }
     }
@@ -2130,7 +2163,7 @@
     if (currentCalendarWeek() < WEEK) { toast("EARLY BIRD! THIS GAME UNLOCKS SATURDAY 🐦"); return; }
     if (currentCalendarWeek() > WEEK) { toast("THIS GAME'S WEEK IS OVER — THE NEW GAME AWAITS! 🏁"); return; }
     if (currentCalendarWeek() === WEEK && dayIndex() === 6) { toast("CEREMONY DAY — NO RUNS, JUST GLORY. NEW GAME TOMORROW! 🎉"); return; }
-    if (myRuns().length >= triesFor(WEEK)) { justFinished = false; renderAll(); toast("OUT OF CREDITS THIS WEEK!"); return; }
+    if (myRuns().length >= triesForMe(m.email, WEEK)) { justFinished = false; renderAll(); toast("OUT OF CREDITS THIS WEEK!"); return; }
     stopTimers();
     initCanvas();
     obstacles = []; popups = [];
@@ -2164,7 +2197,7 @@
     againBtn.hidden = true;
     if (!m) { saveNote("No player selected — score not recorded.", "err"); return; }
 
-    var tries = triesFor(WEEK);
+    var tries = triesForMe(m.email, WEEK);
     var attempt = myRuns().length + 1;
     var left = Math.max(0, tries - attempt);
     $("#end-title").textContent = left <= 0 ? "LAST CREDIT SPENT!" : (elapsed >= MAX_MS ? "YOU OUTRAN THE MESS!" : "WIPED OUT!");
