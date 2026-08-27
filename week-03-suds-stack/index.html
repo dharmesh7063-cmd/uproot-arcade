@@ -636,7 +636,7 @@
     border:2px dashed var(--line); border-radius:8px;
     padding:8px 10px; margin:6px 0 8px;
   }
-  #brag-btn{
+  #brag-btn, #brag-btn-start, #brag-btn-locked{
     margin:14px 4px 0;
     position:relative; overflow:hidden;
     transform-origin:center;
@@ -644,14 +644,14 @@
       brag-slam .6s cubic-bezier(.2, 1.4, .4, 1) both,
       brag-pump 2.4s ease-in-out .9s infinite;
   }
-  #brag-btn::after{
+  #brag-btn::after, #brag-btn-start::after, #brag-btn-locked::after{
     content:""; position:absolute; top:-20%; bottom:-20%; width:36%; left:-60%;
     transform:skewX(-20deg);
     background:linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
     animation:brag-shine 2.4s ease-in-out .9s infinite;
     pointer-events:none;
   }
-  #brag-btn:hover{ filter:brightness(1.15); }
+  #brag-btn:hover, #brag-btn-start:hover, #brag-btn-locked:hover{ filter:brightness(1.15); }
   @keyframes brag-slam{
     0%{ transform:scale(2.6) rotate(-5deg); opacity:0; filter:blur(2px); }
     55%{ transform:scale(.9) rotate(2deg); opacity:1; filter:blur(0); }
@@ -748,7 +748,7 @@
   @keyframes toastin{ from{ transform:translate(-50%,14px); opacity:0; } }
 
   @media (prefers-reduced-motion: reduce){
-    .pop-in, .float-score, .toast, .blink, .week-champ::before, .logo, .w-row.sus .w-rank, .days-left, .loadbar-fill, .hero-name, #brag-btn, #brag-btn::after{ animation:none; }
+    .pop-in, .float-score, .toast, .blink, .week-champ::before, .logo, .w-row.sus .w-rank, .days-left, .loadbar-fill, .hero-name, #brag-btn, #brag-btn::after, #brag-btn-start, #brag-btn-start::after, #brag-btn-locked, #brag-btn-locked::after{ animation:none; }
     .float-score{ opacity:0; }
   }
 </style>
@@ -855,6 +855,7 @@
             <p class="bounty-line" id="bounty-line" hidden>🛠️ BUG BOUNTY ACTIVE: +1 credit awarded by the Committee. Hack responsibly, legend.</p>
             <p class="tip-line">💡 TIP: SPACEBAR WORKS TOO — CLICK OR SPACE, SAME MOVE</p>
             <button class="btn cyan big blink" id="start">PRESS START</button>
+            <button class="btn pink" id="brag-btn-start" hidden>📣 BRAG IN SLACK</button>
           </div>
 
           <div class="panel" id="screen-end" hidden>
@@ -872,6 +873,7 @@
             <div class="final" id="locked-score">0</div>
             <div class="ranktitle" id="locked-rank">DUST ROOKIE</div>
             <p class="sub">All credits spent — your best run is on the board. New game drops next week, same link. Scout the scoreboard!</p>
+            <button class="btn pink" id="brag-btn-locked">📣 BRAG IN SLACK</button>
           </div>
 
           <div class="panel" id="screen-loading" hidden>
@@ -1616,6 +1618,7 @@
         bsf.hidden = !b;
         if (b) bsf.textContent = "Your best so far: " + b.score + " (" + rankTitle(b.score) + ")";
         $("#bounty-line").hidden = !(bonusFor(m.email, WEEK) > 0);
+        $("#brag-btn-start").hidden = !b;
         showPanel("screen-start");
       }
     }
@@ -2139,12 +2142,12 @@
     { name:"BUBBLEGUM", bg:"#230A1C", glow:"rgba(255,122,200,.28)", frameA:"#FF7AC8", frameB:"#FFF3D9", score:"#FFFFFF", chipBg:"#FF7AC8", chipTx:"#230A1C", badge:"#F52C87", text:"#FFE9F6", sub:"#C98BB2", tex:"scan" },
     { name:"ROYAL CABINET", bg:"#0B0E2A", glow:"rgba(140,75,255,.32)", frameA:"#8C4BFF", frameB:"#FFD23F", score:"#B08CFF", chipBg:"#8C4BFF", chipTx:"#0B0E2A", badge:"#3D2B70", text:"#EFE9FF", sub:"#8B86B8", tex:"diag" }
   ];
-  var posterCaption = "", posterTheme = POSTER_THEMES[0], posterSerial = "0000";
+  var posterCaption = "", posterTheme = POSTER_THEMES[0], posterSerial = "0000", posterScore = 0;
   function rollPoster(){
     posterCaption = CAPTIONS[Math.floor(Math.random() * CAPTIONS.length)]
-      .split("{S}").join(score)
+      .split("{S}").join(posterScore)
       .split("{G}").join(GAME_NAME)
-      .split("{R}").join(rankTitle(score))
+      .split("{R}").join(rankTitle(posterScore))
       .split("{W}").join(WEEK);
     posterTheme = POSTER_THEMES[Math.floor(Math.random() * POSTER_THEMES.length)];
     posterSerial = ("0000" + Math.floor(Math.random() * 65536).toString(16).toUpperCase()).slice(-4);
@@ -2285,7 +2288,7 @@
     g.restore();
     g.fillStyle = t.sub; g.font = '16px "Press Start 2P", monospace';
     g.fillText("FINAL SCORE", W / 2, 470);
-    var ss = String(score);
+    var ss = String(posterScore);
     g.save();
     g.shadowColor = t.score; g.shadowBlur = 60;
     g.fillStyle = t.score;
@@ -2301,7 +2304,7 @@
       g.restore();
     });
     // rank badge
-    var rk = "★ " + rankTitle(score) + " ★";
+    var rk = "★ " + rankTitle(posterScore) + " ★";
     g.font = '19px "Press Start 2P", monospace';
     var rw = g.measureText(rk).width + 48;
     g.fillStyle = t.badge; g.fillRect(W / 2 - rw / 2, 632, rw, 46);
@@ -2332,12 +2335,22 @@
     a.href = $("#poster-canvas").toDataURL("image/png");
     a.click();
   }
-  $("#brag-btn").addEventListener("click", function(){
+  function openPoster(s){
     if (!me()) return;
+    posterScore = s;
     rollPoster();
     $("#poster-modal").hidden = false;
     drawPoster();
     setTimeout(drawPoster, 600); // pixel fonts settle
+  }
+  $("#brag-btn").addEventListener("click", function(){ openPoster(score); });
+  $("#brag-btn-start").addEventListener("click", function(){
+    var b = bestOf(myRuns());
+    openPoster(b ? b.score : 0);
+  });
+  $("#brag-btn-locked").addEventListener("click", function(){
+    var b = bestOf(myRuns());
+    openPoster(b ? b.score : 0);
   });
   $("#poster-shuffle").addEventListener("click", function(){
     rollPoster();
