@@ -2264,66 +2264,17 @@
     g.fillStyle = "#0B0916";
     g.beginPath(); g.arc(16, 712, 24, 0, 7); g.fill();
     g.beginPath(); g.arc(W - 16, 712, 24, 0, 7); g.fill();
-    // stub — left block
-    g.textAlign = "left";
-    g.fillStyle = t.frameA; g.font = '22px "Press Start 2P", monospace';
-    g.fillText("CAN YOU", 84, 792);
-    g.fillText("BEAT IT?", 84, 826);
-    g.fillStyle = t.sub; g.font = '12px "Press Start 2P", monospace';
-    g.fillText("LIMITED CREDITS", 84, 866);
-    g.fillText("BEST RUN COUNTS", 84, 890);
-    g.fillText("AN UPROOT ARCADE ORIGINAL", 84, 926);
-    g.fillText("POSTER #" + posterSerial + " · 1 OF 1", 84, 950);
-    // stub — real QR (opens the arcade)
-    var QR = [
-      "111111100000001010111101001111111",
-      "100000100001000100101000001000001",
-      "101110101110001100001110001011101",
-      "101110101010100000110011101011101",
-      "101110101001001110001101001011101",
-      "100000101111101001110110101000001",
-      "111111101010101010101010101111111",
-      "000000001010101010011111100000000",
-      "101111100100011001010010101111100",
-      "101010010111010011110111001101101",
-      "111101110000111101001100111010110",
-      "111100001111110111110111111011110",
-      "001000110101001110001010010111001",
-      "010101010100010101100101001001011",
-      "000110111011001110001000011111010",
-      "110111001101110100000110111100100",
-      "010011111111111111001010010110001",
-      "101110010111111010110101001101101",
-      "001111111000011110100110011110110",
-      "101010000011100100011100111111101",
-      "101010111001110000100010110011011",
-      "100100001111010110001001011001001",
-      "100110100101010000010100010101010",
-      "101111010001110010111100000101110",
-      "101010100000011001111001111111000",
-      "000000001111110011110110100010101",
-      "111111100101010111000111101010100",
-      "100000101110110011100111100011101",
-      "101110101110000110000000111111000",
-      "101110101000011101100100110011111",
-      "101110101110110111001010001101100",
-      "100000100100000100111110010011100",
-      "111111101111011101011000100101010"
-    ];
-    var qn = QR.length, qm = 5, quiet = 18;
-    var qw = qn * qm + quiet * 2;
-    var qx = 640 - qw / 2, qy = 744;
-    g.textAlign = "center";
-    g.fillStyle = t.sub; g.font = '11px "Press Start 2P", monospace';
-    g.fillText("SCAN TO PLAY", 640, 736);
-    g.fillStyle = "#FFFFFF"; g.fillRect(qx, qy, qw, qw);
-    g.strokeStyle = t.frameB; g.lineWidth = 3; g.strokeRect(qx, qy, qw, qw);
-    g.fillStyle = "#0B0916";
-    for (var qr = 0; qr < qn; qr++) {
-      for (var qc = 0; qc < qn; qc++) {
-        if (QR[qr][qc] === "1") g.fillRect(qx + quiet + qc * qm, qy + quiet + qr * qm, qm, qm);
-      }
-    }
+    // stub
+    g.fillStyle = t.frameA;
+    g.beginPath(); g.moveTo(140, 782); g.lineTo(196, 796); g.lineTo(140, 810); g.closePath(); g.fill();
+    g.beginPath(); g.moveTo(W - 140, 782); g.lineTo(W - 196, 796); g.lineTo(W - 140, 810); g.closePath(); g.fill();
+    g.font = '26px "Press Start 2P", monospace';
+    g.fillText("CAN YOU BEAT IT?", W / 2, 806);
+    g.fillStyle = t.sub; g.font = '13px "Press Start 2P", monospace';
+    g.fillText("LIMITED CREDITS · BEST RUN COUNTS", W / 2, 852);
+    g.fillText("★ AN UPROOT ARCADE ORIGINAL ★", W / 2, 904);
+    g.font = '12px "Press Start 2P", monospace';
+    g.fillText("POSTER #" + posterSerial + " · 1 OF 1", W / 2, 936);
   }
   function posterFile(){
     var a = document.createElement("a");
