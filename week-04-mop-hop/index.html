@@ -133,7 +133,7 @@
     text-shadow:2px 2px 0 rgba(0,0,0,.6);
     letter-spacing:.02em;
   }
-  .sub{ margin:10px 0 12px; color:var(--muted); font-size:15px; }
+  .sub{ margin:8px 0 10px; color:var(--muted); font-size:15px; }
   .note{ min-height:20px; margin:8px 0 0; font-size:14.5px; color:var(--muted); }
   .note.ok{ color:var(--cyan); }
   .note.err{ color:var(--pink); }
@@ -320,18 +320,18 @@
     display:flex; align-items:center; justify-content:center;
     padding:14px;
   }
-  .panel{ text-align:center; width:100%; max-width:360px; }
+  .panel{ text-align:center; width:100%; max-width:360px; margin:auto 0; padding:8px 0; }
   .panel h2{
     font-family:"Press Start 2P","Courier New",monospace;
-    font-size:16px; line-height:1.5; margin:0 0 14px;
+    font-size:15px; line-height:1.5; margin:0 0 10px;
     color:var(--lav); text-wrap:balance;
     text-shadow:2px 2px 0 rgba(0,0,0,.6);
   }
-  .howto{ list-style:none; margin:0 0 14px; padding:0; display:flex; flex-direction:column; gap:8px; text-align:left; }
+  .howto{ list-style:none; margin:0 0 12px; padding:0; display:flex; flex-direction:column; gap:6px; text-align:left; }
   .howto li{
     display:flex; align-items:center; gap:10px;
     background:var(--panel); border:2px solid var(--line); border-radius:10px;
-    padding:7px 12px; font-size:15px;
+    padding:6px 12px; font-size:14.5px;
   }
   .howto .demo{ width:30px; height:30px; flex:none; display:flex; align-items:center; justify-content:center; }
   .howto .demo .fuzz{ width:24px; height:24px; }
@@ -341,7 +341,7 @@
     font-family:"Silkscreen","Courier New",monospace;
     font-size:13px; letter-spacing:.08em;
     color:var(--gold);
-    margin:0 0 14px;
+    margin:0 0 10px;
   }
   .final{
     font-family:"Press Start 2P","Courier New",monospace;
@@ -413,8 +413,8 @@
   .bounty-callout b{ color:var(--gold); }
   .bounty-line{
     font-family:"Silkscreen","Courier New",monospace;
-    font-size:12px; letter-spacing:.06em; color:var(--gold);
-    margin:6px 0 10px;
+    font-size:11px; letter-spacing:.06em; color:var(--gold);
+    margin:2px 0 8px;
     text-shadow:0 0 10px rgba(255,210,63,.5);
   }
   .slack-callout{
@@ -616,7 +616,7 @@
   /* Friday ceremony: hide panels, shine the hero, rain confetti */
   body.ceremony .sidebar, body.ceremony .sb-toggle{ display:none !important; }
   body.ceremony .main{ flex-basis:640px; }
-  .overlay{ overflow:hidden; }
+  .overlay{ overflow-x:hidden; overflow-y:auto; }
   .hero-label{
     font-family:"Silkscreen","Courier New",monospace;
     font-size:12px; letter-spacing:.16em; color:var(--gold);
