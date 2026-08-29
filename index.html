@@ -251,8 +251,45 @@
     width:44px; height:44px; font-size:19px; cursor:pointer; color:var(--lav);
   }
 
-  /* ---------- Board ---------- */
+  /* ---------- Board: four lint tiles (Simon) ---------- */
   .stage{ position:relative; }
+  .simon{
+    position:relative;
+    display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr;
+    gap:12px;
+    height:clamp(340px, 56vh, 440px);
+    padding:12px;
+    border:2px solid var(--line); border-radius:10px;
+    background:var(--bg);
+    user-select:none; -webkit-user-select:none; touch-action:manipulation;
+  }
+  .stile{
+    border:2px solid var(--line); border-radius:14px;
+    cursor:pointer; padding:0;
+    transition:filter .12s ease, box-shadow .12s ease;
+    filter:brightness(.42) saturate(.75);
+  }
+  .stile:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
+  .stile.t0{ background:var(--cyan); }
+  .stile.t1{ background:var(--pink); }
+  .stile.t2{ background:var(--gold); }
+  .stile.t3{ background:var(--purple); }
+  .stile.lit{
+    filter:brightness(1.15) saturate(1.1);
+    box-shadow:0 0 26px rgba(242,233,255,.5);
+  }
+  .simon-status{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    font-family:"Press Start 2P","Courier New",monospace;
+    font-size:11px; letter-spacing:.08em; color:var(--lav);
+    background:var(--panel); border:2px solid var(--line); border-radius:999px;
+    padding:8px 16px; pointer-events:none;
+    text-shadow:1px 1px 0 rgba(0,0,0,.6);
+  }
+  .demo-tile{
+    display:inline-block; width:22px; height:22px; border-radius:6px;
+    background:var(--cyan); box-shadow:0 0 10px rgba(44,224,222,.7);
+  }
   .grid{
     display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
     user-select:none; -webkit-user-select:none; touch-action:manipulation;
@@ -743,7 +780,7 @@
       <span class="l1" data-text="UPROOT">UPROOT</span>
       <span class="l2" data-text="ARCADE">ARCADE</span>
     </h1>
-    <div class="weekchip">WEEK 1 ★ FUR FRENZY</div>
+    <div class="weekchip">WEEK 2 ★ LINT LINE</div>
     <p class="tagline">One game a week · Limited credits · Best run counts · Scores live forever</p>
   </header>
 
@@ -811,24 +848,30 @@
       </div>
     </section>
 
-    <section class="card" id="game-card" aria-label="Fur Frenzy game" hidden>
+    <section class="card" id="game-card" aria-label="Lint Line memory game" hidden>
       <div class="hud">
-        <div class="pill time" id="time-pill"><span class="lab">Time</span><span class="val" id="hud-time">30</span></div>
+        <div class="pill time" id="time-pill"><span class="lab">Round</span><span class="val" id="hud-time">0</span></div>
         <div class="pill"><span class="lab">Score</span><span class="val" id="hud-score">0</span></div>
-        <div class="pill"><span class="lab">Streak</span><span class="val" id="hud-streak">0</span></div>
+        <div class="pill"><span class="lab">Best Rd</span><span class="val" id="hud-streak">0</span></div>
         <button class="mute" id="mute" aria-pressed="false" title="Toggle sound">🔊</button>
       </div>
       <div class="stage">
-        <div class="grid" id="board" aria-hidden="true"></div>
+        <div class="simon" id="board" aria-hidden="true">
+          <button class="stile t0" data-i="0"></button>
+          <button class="stile t1" data-i="1"></button>
+          <button class="stile t2" data-i="2"></button>
+          <button class="stile t3" data-i="3"></button>
+          <div class="simon-status" id="simon-status">WATCH…</div>
+        </div>
 
         <div class="overlay" id="overlay">
           <div class="panel" id="screen-start">
-            <h2>THE COUCH IS COVERED IN FUR!</h2>
+            <h2>WATCH THE LINT. REPEAT THE LINT.</h2>
             <ul class="howto">
-              <li><span class="demo"><span class="fuzz"></span></span><span>Tap fur tufts <b class="plus">+10</b></span></li>
-              <li><span class="demo"><span class="fuzz gold"></span></span><span>Golden fluff <b class="plus">+40</b></span></li>
-              <li><span class="demo"><span class="sock">🧦</span></span><span>That's laundry, not fur <b class="minus">−15</b></span></li>
-              <li><span class="demo">⚡</span><span>Chain cleans for <b>streak bonuses</b> · 30 seconds</span></li>
+              <li><span class="demo">👀</span><span>Glowing lint flashes in a pattern — <b>memorize it</b></span></li>
+              <li><span class="demo">👆</span><span>Repeat it by tapping the tiles in order</span></li>
+              <li><span class="demo"><span class="demo-tile"></span></span><span>Each round adds one flash · <b class="plus">+10 × round</b></span></li>
+              <li><span class="demo">💀</span><span>One wrong tap ends the run · beat round 16 to <b>beat the machine</b></span></li>
             </ul>
             <p class="credit" id="credit-line">🪙 CREDITS LEFT: — OF —</p>
             <p class="sub" id="best-so-far" hidden></p>
@@ -885,7 +928,7 @@
           <h2 class="cardtitle">THIS WEEK</h2>
           <button class="sec-toggle" id="th-week" aria-expanded="true" title="Collapse / expand">▾</button>
         </div>
-        <p class="lb-sub2">W1 · FUR FRENZY · <span id="roster-count"></span> · <span id="week-days" class="days-left"></span></p>
+        <p class="lb-sub2">W2 · LINT LINE · <span id="roster-count"></span> · <span id="week-days" class="days-left"></span></p>
         <div class="board-body">
           <div id="week-champ" class="week-champ" hidden></div>
           <ol id="week-list" class="wlist"></ol>
@@ -949,8 +992,8 @@
 (function(){
   "use strict";
   /* ============ weekly config (tune per game) ============ */
-  var WEEK = 1;
-  var GAME_NAME = "FUR FRENZY";
+  var WEEK = 2;
+  var GAME_NAME = "LINT LINE";
   var FALLBACK_TRIES = 3; // server value in the `games` table wins
   /* Arcade clock: US Eastern (America/New_York, DST-aware). Weeks run
      Saturday→Friday on the EASTERN calendar (Sat = game day, Fri = ceremony), anchored Sat 2026-08-22. */
@@ -966,15 +1009,15 @@
   function daysSinceAnchor(){
     return Math.round((easternDateUTC() - ANCHOR_UTC) / 86400000);
   }
-  function currentCalendarWeek(){
-    return Math.floor(daysSinceAnchor() / 7) + 1;
-  }
   function dayIndex(){ return ((daysSinceAnchor() % 7) + 7) % 7; } // 0=Sat ... 6=Fri
   function easternHour(){
     try {
       return +new Intl.DateTimeFormat("en-US",
         { timeZone: "America/New_York", hour: "numeric", hourCycle: "h23" }).format(new Date());
     } catch (e) { return 12; }
+  }
+  function currentCalendarWeek(){
+    return Math.floor(daysSinceAnchor() / 7) + 1;
   }
   /* Seasons: every 5 weeks a champion is crowned and a new season begins. */
   var SEASON_LEN = 5;
@@ -985,7 +1028,7 @@
   /* Cheat-smell detector: per-week plausibility ceiling (add a line per game).
      Scores above it stay visible but get publicly roasted and are excluded
      from medals, weekly wins, and the season championship. */
-  var SUS_LIMITS = { 1: 2000 };
+  var SUS_LIMITS = { 1: 2000, 2: 1500 };
   /* House bots (e.g. Viktor the chatbot): they play every game and keep their
      scores as fun score-holders, but never take medals, wins, or the crown. */
   var BOT_EMAILS = { "ai@uprootclean.com": "Viktor, our house chatbot" };
@@ -996,7 +1039,6 @@
   var CONFIGURED = SUPABASE_URL.indexOf("http") === 0;
 
   var DURATION = 30;
-  var COLS = 4, ROWS = 5, TILES = COLS * ROWS;
   var ME_KEY = "ua-me", LAST_KEY = "ua-last", PENDING_KEY = "ua-pending-v4", SB_KEY = "ua-sb";
 
   var $ = function(s){ return document.querySelector(s); };
@@ -1215,11 +1257,11 @@
 
   /* ================= rank titles ================= */
   function rankTitle(s){
-    if (s <= 0) return "THE FUR WON";
-    if (s >= 300) return "GRIME REAPER";
-    if (s >= 200) return "FUR-MINATOR";
-    if (s >= 100) return "LINT LIFTER";
-    return "DUST ROOKIE";
+    if (s <= 0) return "MEMORY NOT FOUND (404)";
+    if (s >= 900) return "THE ELEPHANT";
+    if (s >= 500) return "MIND SWEEPER";
+    if (s >= 200) return "PATTERN PUPIL";
+    return "GOLDFISH MEMORY";
   }
 
   /* ================= render ================= */
@@ -1417,7 +1459,7 @@
     }
     wk.filter(isBot).forEach(function(s){
       callouts.push('<div class="notice-card bot"><div class="notice-k">🤖 HOUSE BOT</div>' + esc(nameFor(s.email, s.gen)) + " is " +
-        BOT_EMAILS[s.email] + " — it plays for the love of fur. Scores on the board, but no crown, no medals. Beat it if you can!</div>");
+        BOT_EMAILS[s.email] + " — it plays for the love of the game. Scores on the board, but no crown, no medals. Beat it if you can!</div>");
     });
     $("#notice-box").innerHTML = callouts.join("");
     $("#sec-notice").hidden = callouts.length === 0;
@@ -1883,91 +1925,88 @@
   var board = $("#board");
   var hudTime = $("#hud-time"), hudScore = $("#hud-score"), hudStreak = $("#hud-streak");
   var timePill = $("#time-pill");
-  var score = 0, streak = 0, bestStreak = 0, timeLeft = DURATION, playing = false;
-  var startedAt = 0, spawnTimer = null, tickTimer = null;
-  var items = {};
+  var score = 0, round = 0, bestStreak = 0, playing = false, showing = false;
+  var seq = [], inputPos = 0;
+  var showTimer = null, idleTimer = null, roundTimer = null;
+  var MAX_ROUND = 16;
+  var TONES = [523, 659, 784, 988]; // one note per lint tile
+  var statusEl = $("#simon-status");
+  var tiles = Array.prototype.slice.call(board.querySelectorAll(".stile"));
 
-  var tiles = [];
-  for (var i = 0; i < TILES; i++) {
-    var t = document.createElement("div");
-    t.className = "tile";
-    t.dataset.idx = String(i);
-    board.appendChild(t);
-    tiles.push(t);
-  }
   board.addEventListener("contextmenu", function(e){ e.preventDefault(); });
 
   function updateHud(){
+    hudTime.textContent = String(round);
     hudScore.textContent = String(score);
-    hudStreak.textContent = String(streak);
-    hudTime.textContent = String(timeLeft);
-    timePill.classList.toggle("hot", playing && timeLeft <= 5);
+    hudStreak.textContent = String(bestStreak);
+    timePill.classList.toggle("hot", playing && !showing); // hot = your turn
   }
-  function clearItem(idx){
-    var it = items[idx];
-    if (!it) return;
-    clearTimeout(it.timeout);
-    delete items[idx];
-    tiles[idx].innerHTML = "";
+  function setStatus(msg){ statusEl.textContent = msg; }
+  function flash(i, ms){
+    var el = tiles[i];
+    el.classList.add("lit");
+    blip(TONES[i], Math.min(0.3, ms / 1000), "triangle", 0.05);
+    setTimeout(function(){ el.classList.remove("lit"); }, ms * 0.75);
   }
-  function spawnOne(){
-    var empty = [];
-    for (var i = 0; i < TILES; i++) if (!items[i]) empty.push(i);
-    if (!empty.length) return;
-    var idx = empty[Math.floor(Math.random() * empty.length)];
-    var r = Math.random();
-    var type = r < 0.62 ? "fur" : (r < 0.76 ? "gold" : "sock");
-    var elapsed = (Date.now() - startedAt) / 1000;
-    var life = Math.max(1050, 1700 - elapsed * 18);
-    var holder = document.createElement("div");
-    holder.className = "item pop-in";
-    holder.innerHTML = type === "sock"
-      ? '<span class="sock">🧦</span>'
-      : '<span class="fuzz' + (type === "gold" ? " gold" : "") + '"></span>';
-    tiles[idx].appendChild(holder);
-    items[idx] = { type: type, timeout: setTimeout(function(){ clearItem(idx); }, life) };
+  function stopTimers(){
+    clearTimeout(showTimer); clearTimeout(idleTimer); clearTimeout(roundTimer);
   }
-  function scheduleSpawn(){
-    if (!playing) return;
-    var elapsed = (Date.now() - startedAt) / 1000;
-    spawnOne();
-    if (elapsed > 15 && Math.random() < 0.35) spawnOne();
-    spawnTimer = setTimeout(scheduleSpawn, Math.max(360, 700 - elapsed * 11));
+  function armIdle(){
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(function(){
+      if (playing && !showing) { setStatus("LINT WAITS FOR NO ONE…"); endGame(); }
+    }, 12000);
   }
-  function floatScore(tile, text, good){
-    var f = document.createElement("span");
-    f.className = "float-score " + (good ? "good" : "bad");
-    f.textContent = text;
-    tile.appendChild(f);
-    setTimeout(function(){ f.remove(); }, 620);
+  function showSeq(){
+    showing = true;
+    setStatus("WATCH… ROUND " + round);
+    updateHud();
+    var step = Math.max(230, 540 - round * 22);
+    seq.forEach(function(tileIdx, n){
+      setTimeout(function(){ if (playing) flash(tileIdx, step); }, 450 + n * step);
+    });
+    showTimer = setTimeout(function(){
+      if (!playing) return;
+      showing = false;
+      inputPos = 0;
+      setStatus("YOUR TURN");
+      updateHud();
+      armIdle();
+    }, 450 + seq.length * step + 120);
+  }
+  function nextRound(){
+    round++;
+    seq.push(Math.floor(Math.random() * 4));
+    showSeq();
   }
   board.addEventListener("pointerdown", function(e){
-    if (!playing) return;
-    var tile = e.target.closest(".tile");
+    if (!playing || showing) return;
+    var tile = e.target.closest ? e.target.closest(".stile") : null;
     if (!tile) return;
-    var idx = +tile.dataset.idx;
-    var it = items[idx];
-    if (!it) { streak = 0; updateHud(); return; }
-    clearItem(idx);
-    if (it.type === "sock") {
-      score = Math.max(0, score - 15);
-      streak = 0;
-      tile.classList.add("oops");
-      setTimeout(function(){ tile.classList.remove("oops"); }, 250);
-      floatScore(tile, "-15", false);
-      blip(140, 0.22, "sawtooth", 0.06);
+    var i = +tile.dataset.i;
+    armIdle();
+    if (i === seq[inputPos]) {
+      flash(i, 220);
+      inputPos++;
+      if (inputPos === seq.length) {
+        score += 10 * round;
+        bestStreak = round;
+        updateHud();
+        clearTimeout(idleTimer);
+        if (round >= MAX_ROUND) {
+          setStatus("YOU BEAT THE MACHINE!");
+          roundTimer = setTimeout(endGame, 800);
+        } else {
+          setStatus("NICE! +" + (10 * round));
+          roundTimer = setTimeout(nextRound, 750);
+        }
+      }
     } else {
-      streak++;
-      bestStreak = Math.max(bestStreak, streak);
-      var bonus = (streak >= 10 ? 10 : (streak >= 5 ? 5 : 0));
-      var gain = (it.type === "gold" ? 40 : 10) + bonus;
-      score += gain;
-      tile.classList.add("zap");
-      setTimeout(function(){ tile.classList.remove("zap"); }, 160);
-      floatScore(tile, "+" + gain, true);
-      blip(it.type === "gold" ? 980 : 620 + Math.min(streak, 12) * 22, 0.1, "square", 0.04);
+      flash(i, 320);
+      blip(150, 0.3, "sawtooth", 0.06);
+      setStatus("WRONG LINT!");
+      roundTimer = setTimeout(endGame, 600);
     }
-    updateHud();
   });
 
   function saveNote(msg, kind){
@@ -1979,23 +2018,19 @@
   function startRun(){
     var m = me();
     if (!m) { renderAll(); return; }
+    if (currentCalendarWeek() < WEEK) { toast("EARLY BIRD! THIS GAME UNLOCKS SATURDAY 🐦"); return; }
     if (currentCalendarWeek() > WEEK) { toast("THIS GAME'S WEEK IS OVER — THE NEW GAME AWAITS! 🏁"); return; }
     if (currentCalendarWeek() === WEEK && dayIndex() === 6) { toast("CEREMONY DAY — NO RUNS, JUST GLORY. NEW GAME TOMORROW! 🎉"); return; }
     if (myRuns().length >= triesForMe(m.email, WEEK)) { justFinished = false; renderAll(); toast("OUT OF CREDITS THIS WEEK!"); return; }
-    score = 0; streak = 0; bestStreak = 0; timeLeft = DURATION;
-    playing = true; startedAt = Date.now();
-    for (var i = 0; i < TILES; i++) clearItem(i);
+    stopTimers();
+    score = 0; round = 0; bestStreak = 0; seq = []; inputPos = 0;
+    playing = true; showing = false;
+    setStatus("GET READY…");
     updateHud();
     $("#overlay").hidden = true;
     document.querySelector(".stage").style.minHeight = ""; // game board back to design size
     blip(520, 0.1); setTimeout(function(){ blip(780, 0.12); }, 110);
-    scheduleSpawn();
-    tickTimer = setInterval(function(){
-      timeLeft--;
-      updateHud();
-      if (timeLeft <= 5 && timeLeft > 0) blip(880, 0.05, "square", 0.03);
-      if (timeLeft <= 0) endGame();
-    }, 1000);
+    roundTimer = setTimeout(nextRound, 600);
   }
   $("#start").addEventListener("click", startRun);
   $("#again-btn").addEventListener("click", startRun);
@@ -2003,14 +2038,13 @@
   function endGame(){
     playing = false;
     justFinished = true;
-    clearTimeout(spawnTimer); clearInterval(tickTimer);
-    for (var i = 0; i < TILES; i++) clearItem(i);
+    stopTimers();
     updateHud();
     blip(660, 0.12); setTimeout(function(){ blip(440, 0.25); }, 130);
 
     $("#final-score").textContent = String(score);
     $("#rank-title").textContent = rankTitle(score);
-    $("#end-streak").textContent = "Best streak: x" + bestStreak;
+    $("#end-streak").textContent = "Reached round " + bestStreak + " of " + MAX_ROUND;
     showPanel("screen-end");
 
     var m = me();
