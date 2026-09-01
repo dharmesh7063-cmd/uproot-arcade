@@ -388,6 +388,18 @@
     border-radius:4px; padding:1px 5px; margin-left:6px;
     vertical-align:2px;
   }
+  .claim-crown{
+    background:none; border:none; cursor:pointer;
+    font-size:19px; line-height:1; margin-left:8px; padding:0;
+    vertical-align:-3px;
+    filter:drop-shadow(0 0 7px rgba(255,210,63,.85));
+    animation:crown-pulse 1.5s ease-in-out infinite;
+  }
+  .claim-crown:hover{ filter:drop-shadow(0 0 12px rgba(255,210,63,1)); }
+  @keyframes crown-pulse{ 0%,100%{ transform:scale(1) rotate(-4deg); } 50%{ transform:scale(1.25) rotate(6deg); } }
+  #archive-line{ display:block; margin-bottom:6px; }
+  #archive-line:empty{ display:none; }
+  #archive-line a{ color:var(--cyan); text-decoration:underline; }
   .bounty-callout{
     margin-top:10px; padding:9px 12px;
     border:2px dashed var(--gold); border-radius:10px;
@@ -730,7 +742,7 @@
   @keyframes toastin{ from{ transform:translate(-50%,14px); opacity:0; } }
 
   @media (prefers-reduced-motion: reduce){
-    .pop-in, .float-score, .toast, .blink, .week-champ::before, .logo, .w-row.sus .w-rank, .days-left, .loadbar-fill, .hero-name, #brag-btn, #brag-btn::after, #brag-btn-start, #brag-btn-start::after, #brag-btn-locked, #brag-btn-locked::after{ animation:none; }
+    .pop-in, .float-score, .toast, .blink, .week-champ::before, .logo, .w-row.sus .w-rank, .days-left, .loadbar-fill, .hero-name, #brag-btn, #brag-btn::after, #brag-btn-start, #brag-btn-start::after, #brag-btn-locked, #brag-btn-locked::after, .claim-crown{ animation:none; }
     .float-score{ opacity:0; }
   }
 </style>
@@ -750,7 +762,7 @@
   <div class="layout" id="layout">
   <div class="main">
     <div class="greet" id="greet" hidden>
-      <span>PLAYER: <b id="greet-name"></b></span>
+      <span>PLAYER: <b id="greet-name"></b><button id="claim-crown" class="claim-crown" hidden title="CLAIM YOUR CHAMPION FRAME">👑</button></span>
       <button class="linkbtn" id="switch-btn">switch player</button>
     </div>
 
@@ -942,7 +954,7 @@
 
   <button class="sb-toggle" id="sb-toggle" aria-pressed="false" title="Show / hide scoreboard">🏆</button>
 
-  <footer>NEW GAME EVERY WEEK · SCORES NEVER RESET<br>MADE WITH 🧹 BY <b>DHARMESH</b> FOR THE UPROOT TEAM</footer>
+  <footer><span id="archive-line"></span>NEW GAME EVERY WEEK · SCORES NEVER RESET<br>MADE WITH 🧹 BY <b>DHARMESH</b> FOR THE UPROOT TEAM</footer>
 </div>
 
 <script>
@@ -1582,6 +1594,8 @@
     $("#greet").hidden = !m;
     $("#game-card").hidden = !m;
     if (m) $("#greet-name").textContent = m.name.toUpperCase();
+    var crownHero = m && weekDecided() ? weekHero() : null;
+    $("#claim-crown").hidden = !(crownHero && m.email === crownHero.email);
     document.body.classList.toggle("ceremony",
       !!m && !playing && currentCalendarWeek() === WEEK && dayIndex() === 6);
     if (m && !playing && !justFinished) {
@@ -2405,7 +2419,12 @@
     ctx.font = '13px "Press Start 2P", monospace';
     ctx.fillText("★ UPROOT ARCADE ★", cx, 768);
   }
+  function weekDecided(){
+    var wkNow = currentCalendarWeek();
+    return wkNow > WEEK || (wkNow === WEEK && dayIndex() === 6);
+  }
   function openFrameStudio(){
+    if (!weekDecided()) { toast("THE CROWN ISN'T DECIDED YET — FRAME UNLOCKS ON CEREMONY FRIDAY 👑"); return; }
     frameHero = weekHero();
     if (!frameHero) { toast("NO CHAMPION YET — GO MAKE HISTORY!"); return; }
     var m = me();
@@ -2415,6 +2434,16 @@
     setTimeout(drawFrame, 600); // redraw once pixel fonts are surely ready
   }
   $("#week-champ").addEventListener("click", openFrameStudio);
+  $("#claim-crown").addEventListener("click", openFrameStudio);
+  (function(){
+    var FOLDERS = { 1: "week-01-fur-frenzy", 2: "week-02-lint-line", 3: "week-03-suds-stack", 4: "week-04-mop-hop" };
+    var wkNow = currentCalendarWeek(), parts = [];
+    for (var w = 1; w <= 4; w++) {
+      if (w === WEEK || w > wkNow || !FOLDERS[w]) continue;
+      parts.push('<a href="/uproot-arcade/' + FOLDERS[w] + '/">W' + w + "</a>");
+    }
+    $("#archive-line").innerHTML = parts.length ? "🕹️ TIME MACHINE: " + parts.join(" · ") : "";
+  })();
   $("#frame-open").addEventListener("click", openFrameStudio);
   $("#frame-close").addEventListener("click", function(){ $("#frame-modal").hidden = true; });
   $("#frame-photo").addEventListener("change", function(){
