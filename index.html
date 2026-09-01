@@ -278,6 +278,11 @@
     filter:brightness(1.15) saturate(1.1);
     box-shadow:0 0 26px rgba(242,233,255,.5);
   }
+  /* GHOST round: the lights barely whisper */
+  #board.ghost .stile.lit{
+    filter:brightness(.62) saturate(.9);
+    box-shadow:none;
+  }
   .simon-status{
     position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
     font-family:"Press Start 2P","Courier New",monospace;
@@ -883,7 +888,8 @@
               <li><span class="demo">👀</span><span>Glowing lint flashes in a pattern — <b>memorize it</b></span></li>
               <li><span class="demo">👆</span><span>Repeat it by tapping the tiles in order</span></li>
               <li><span class="demo"><span class="demo-tile"></span></span><span>Each round adds one flash · <b class="plus">+10 × round</b></span></li>
-              <li><span class="demo">💀</span><span>One wrong tap ends the run · beat round 16 to <b>beat the machine</b></span></li>
+              <li><span class="demo">💀</span><span>One wrong tap ends the run · survive all <b>25 rounds</b> to beat the machine</span></li>
+              <li><span class="demo">🔥</span><span>Rounds 23–25: <b>THE GAUNTLET</b> — turbo speed, ghost lights, mirror mode</span></li>
             </ul>
             <p class="credit" id="credit-line">🪙 CREDITS LEFT: — OF —</p>
             <p class="sub" id="best-so-far" hidden></p>
@@ -1040,7 +1046,7 @@
   /* Cheat-smell detector: per-week plausibility ceiling (add a line per game).
      Scores above it stay visible but get publicly roasted and are excluded
      from medals, weekly wins, and the season championship. */
-  var SUS_LIMITS = { 1: 2000, 2: 1500 };
+  var SUS_LIMITS = { 1: 2000, 2: 3300 };
   /* House bots (e.g. Viktor the chatbot): they play every game and keep their
      scores as fun score-holders, but never take medals, wins, or the crown. */
   var BOT_EMAILS = { "ai@uprootclean.com": "Viktor, our house chatbot" };
@@ -1270,6 +1276,8 @@
   /* ================= rank titles ================= */
   function rankTitle(s){
     if (s <= 0) return "MEMORY NOT FOUND (404)";
+    if (s >= 2600) return "THE MAINFRAME";
+    if (s >= 1800) return "MEMORY PALACE";
     if (s >= 900) return "THE ELEPHANT";
     if (s >= 500) return "MIND SWEEPER";
     if (s >= 200) return "PATTERN PUPIL";
@@ -1464,9 +1472,14 @@
     if (state.bonuses) {
       state.bonuses.forEach(function(bb){
         if (bb.week !== WEEK) return;
-        callouts.push('<div class="notice-card bounty"><div class="notice-k">🛠️ BUG BOUNTY</div><b>' + esc(nameFor(bb.email, latestGen(bb.email))) +
-          "</b> found a gap in the arcade walls and earned +" + bb.extra + " CREDIT" + (bb.extra === 1 ? "" : "S") +
-          ". The Committee punishes cheaters… and PAYS hackers. Choose wisely.</div>");
+        var bn = esc(nameFor(bb.email, latestGen(bb.email)));
+        var hack = (bb.reason || "").indexOf("Bug bounty") === 0;
+        callouts.push(hack
+          ? '<div class="notice-card bounty"><div class="notice-k">🛠️ BUG BOUNTY</div><b>' + bn +
+            "</b> found a gap in the arcade walls and earned +" + bb.extra + " CREDIT" + (bb.extra === 1 ? "" : "S") +
+            ". The Committee punishes cheaters… and PAYS hackers. Choose wisely.</div>"
+          : '<div class="notice-card bounty"><div class="notice-k">⚔️ COMMITTEE DECREE</div><b>' + bn +
+            "</b> +" + bb.extra + " CREDIT" + (bb.extra === 1 ? "" : "S") + " — " + esc(bb.reason || "for services to the arcade") + "</div>");
       });
     }
     wk.filter(isBot).forEach(function(s){
@@ -1942,7 +1955,7 @@
   var score = 0, round = 0, bestStreak = 0, playing = false, showing = false;
   var seq = [], inputPos = 0;
   var showTimer = null, idleTimer = null, roundTimer = null;
-  var MAX_ROUND = 16;
+  var MAX_ROUND = 25;
   var TONES = [523, 659, 784, 988]; // one note per lint tile
   var statusEl = $("#simon-status");
   var tiles = Array.prototype.slice.call(board.querySelectorAll(".stile"));
@@ -1956,10 +1969,10 @@
     timePill.classList.toggle("hot", playing && !showing); // hot = your turn
   }
   function setStatus(msg){ statusEl.textContent = msg; }
-  function flash(i, ms){
+  function flash(i, ms, silent){
     var el = tiles[i];
     el.classList.add("lit");
-    blip(TONES[i], Math.min(0.3, ms / 1000), "triangle", 0.05);
+    if (!silent) blip(TONES[i], Math.min(0.3, ms / 1000), "triangle", 0.05);
     setTimeout(function(){ el.classList.remove("lit"); }, ms * 0.75);
   }
   function stopTimers(){
@@ -1971,22 +1984,37 @@
       if (playing && !showing) { setStatus("LINT WAITS FOR NO ONE…"); endGame(); }
     }, 12000);
   }
+  var TWISTS = {
+    23: "⚡ TURBO",
+    24: "👻 GHOST",
+    25: "🌀 MIRROR — BACKWARD!"
+  };
+  function stepFor(r){
+    if (r <= 16) return Math.max(230, 540 - r * 22);
+    if (r === 23) return 120;
+    if (r >= 24) return 150;
+    return 230 - (r - 16) * 14;
+  }
   function showSeq(){
     showing = true;
-    setStatus("WATCH… ROUND " + round);
+    var twist = TWISTS[round];
+    board.classList.toggle("ghost", round === 24);
+    setStatus(twist ? "ROUND " + round + " — " + twist : "WATCH… ROUND " + round);
     updateHud();
-    var step = Math.max(230, 540 - round * 22);
+    var step = stepFor(round);
+    var lead = twist ? 1250 : 450;
     seq.forEach(function(tileIdx, n){
-      setTimeout(function(){ if (playing) flash(tileIdx, step); }, 450 + n * step);
+      setTimeout(function(){ if (playing) flash(tileIdx, step, round === 24); }, lead + n * step);
     });
     showTimer = setTimeout(function(){
       if (!playing) return;
       showing = false;
+      board.classList.remove("ghost");
       inputPos = 0;
-      setStatus("YOUR TURN");
+      setStatus(round === 25 ? "YOUR TURN — BACKWARD! 🌀" : "YOUR TURN");
       updateHud();
       armIdle();
-    }, 450 + seq.length * step + 120);
+    }, lead + seq.length * step + 120);
   }
   function nextRound(){
     round++;
@@ -1999,7 +2027,8 @@
     if (!tile) return;
     var i = +tile.dataset.i;
     armIdle();
-    if (i === seq[inputPos]) {
+    var expect = (round === 25) ? seq[seq.length - 1 - inputPos] : seq[inputPos];
+    if (i === expect) {
       flash(i, 220);
       inputPos++;
       if (inputPos === seq.length) {
@@ -2008,7 +2037,7 @@
         updateHud();
         clearTimeout(idleTimer);
         if (round >= MAX_ROUND) {
-          setStatus("YOU BEAT THE MACHINE!");
+          setStatus("THE MACHINE KNEELS — PERFECT " + score + "!");
           roundTimer = setTimeout(endGame, 800);
         } else {
           setStatus("NICE! +" + (10 * round));
@@ -2032,6 +2061,7 @@
   function startRun(){
     var m = me();
     if (!m) { renderAll(); return; }
+    board.classList.remove("ghost");
     if (currentCalendarWeek() < WEEK) { toast("EARLY BIRD! THIS GAME UNLOCKS SATURDAY 🐦"); return; }
     if (currentCalendarWeek() > WEEK) { toast("THIS GAME'S WEEK IS OVER — THE NEW GAME AWAITS! 🏁"); return; }
     if (currentCalendarWeek() === WEEK && dayIndex() === 6) { toast("CEREMONY DAY — NO RUNS, JUST GLORY. NEW GAME TOMORROW! 🎉"); return; }

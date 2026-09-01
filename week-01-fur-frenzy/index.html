@@ -1422,9 +1422,14 @@
     if (state.bonuses) {
       state.bonuses.forEach(function(bb){
         if (bb.week !== WEEK) return;
-        callouts.push('<div class="notice-card bounty"><div class="notice-k">🛠️ BUG BOUNTY</div><b>' + esc(nameFor(bb.email, latestGen(bb.email))) +
-          "</b> found a gap in the arcade walls and earned +" + bb.extra + " CREDIT" + (bb.extra === 1 ? "" : "S") +
-          ". The Committee punishes cheaters… and PAYS hackers. Choose wisely.</div>");
+        var bn = esc(nameFor(bb.email, latestGen(bb.email)));
+        var hack = (bb.reason || "").indexOf("Bug bounty") === 0;
+        callouts.push(hack
+          ? '<div class="notice-card bounty"><div class="notice-k">🛠️ BUG BOUNTY</div><b>' + bn +
+            "</b> found a gap in the arcade walls and earned +" + bb.extra + " CREDIT" + (bb.extra === 1 ? "" : "S") +
+            ". The Committee punishes cheaters… and PAYS hackers. Choose wisely.</div>"
+          : '<div class="notice-card bounty"><div class="notice-k">⚔️ COMMITTEE DECREE</div><b>' + bn +
+            "</b> +" + bb.extra + " CREDIT" + (bb.extra === 1 ? "" : "S") + " — " + esc(bb.reason || "for services to the arcade") + "</div>");
       });
     }
     wk.filter(isBot).forEach(function(s){
