@@ -1046,7 +1046,7 @@
   /* Cheat-smell detector: per-week plausibility ceiling (add a line per game).
      Scores above it stay visible but get publicly roasted and are excluded
      from medals, weekly wins, and the season championship. */
-  var SUS_LIMITS = { 1: 2000, 2: 3300 };
+  var SUS_LIMITS = { 1: 2000, 2: 3300, 3: 1400, 4: 1600, 5: 850 };
   /* House bots (e.g. Viktor the chatbot): they play every game and keep their
      scores as fun score-holders, but never take medals, wins, or the crown. */
   var BOT_EMAILS = { "ai@uprootclean.com": "Viktor, our house chatbot" };
@@ -2515,9 +2515,9 @@
   $("#week-champ").addEventListener("click", openFrameStudio);
   $("#claim-crown").addEventListener("click", openFrameStudio);
   (function(){
-    var FOLDERS = { 1: "week-01-fur-frenzy", 2: "week-02-lint-line", 3: "week-03-suds-stack", 4: "week-04-mop-hop" };
+    var FOLDERS = { 1: "week-01-fur-frenzy", 2: "week-02-lint-line", 3: "week-03-suds-stack", 4: "week-04-mop-hop", 5: "week-05-brand-blitz" };
     var wkNow = currentCalendarWeek(), parts = [];
-    for (var w = 1; w <= 4; w++) {
+    for (var w = 1; w <= 5; w++) {
       if (w === WEEK || w > wkNow || !FOLDERS[w]) continue;
       parts.push('<a href="/uproot-arcade/' + FOLDERS[w] + '/">W' + w + "</a>");
     }
