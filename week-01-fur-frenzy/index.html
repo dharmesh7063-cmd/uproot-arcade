@@ -1420,16 +1420,27 @@
       }
     }
     if (state.bonuses) {
-      state.bonuses.forEach(function(bb){
-        if (bb.week !== WEEK) return;
-        var bn = esc(nameFor(bb.email, latestGen(bb.email)));
-        var hack = (bb.reason || "").indexOf("Bug bounty") === 0;
-        callouts.push(hack
-          ? '<div class="notice-card bounty"><div class="notice-k">🛠️ BUG BOUNTY</div><b>' + bn +
-            "</b> found a gap in the arcade walls and earned +" + bb.extra + " CREDIT" + (bb.extra === 1 ? "" : "S") +
-            ". The Committee punishes cheaters… and PAYS hackers. Choose wisely.</div>"
-          : '<div class="notice-card bounty"><div class="notice-k">⚔️ COMMITTEE DECREE</div><b>' + bn +
-            "</b> +" + bb.extra + " CREDIT" + (bb.extra === 1 ? "" : "S") + " — " + esc(bb.reason || "for services to the arcade") + "</div>");
+      var wkB = state.bonuses.filter(function(bb){ return bb.week === WEEK; });
+      var byReason = {};
+      wkB.forEach(function(bb){ (byReason[bb.reason || ""] = byReason[bb.reason || ""] || []).push(bb); });
+      Object.keys(byReason).forEach(function(rsn){
+        var grp = byReason[rsn];
+        var hack = rsn.indexOf("Bug bounty") === 0;
+        if (grp.length >= 4) {
+          callouts.push('<div class="notice-card bounty"><div class="notice-k">⚔️ COMMITTEE DECREE</div>' +
+            "<b>THE WHOLE ARCADE</b> (" + grp.length + " players) gets +" + grp[0].extra +
+            " CREDIT this week — " + esc(rsn || "the Committee is feeling generous") + "</div>");
+          return;
+        }
+        grp.forEach(function(bb){
+          var bn = esc(nameFor(bb.email, latestGen(bb.email)));
+          callouts.push(hack
+            ? '<div class="notice-card bounty"><div class="notice-k">🛠️ BUG BOUNTY</div><b>' + bn +
+              "</b> found a gap in the arcade walls and earned +" + bb.extra + " CREDIT" + (bb.extra === 1 ? "" : "S") +
+              ". The Committee punishes cheaters… and PAYS hackers. Choose wisely.</div>"
+            : '<div class="notice-card bounty"><div class="notice-k">⚔️ COMMITTEE DECREE</div><b>' + bn +
+              "</b> +" + bb.extra + " CREDIT" + (bb.extra === 1 ? "" : "S") + " — " + esc(bb.reason || "for services to the arcade") + "</div>");
+        });
       });
     }
     wk.filter(isBot).forEach(function(s){
@@ -1623,7 +1634,11 @@
         var bsf = $("#best-so-far");
         bsf.hidden = !b;
         if (b) bsf.textContent = "Your best so far: " + b.score + " (" + rankTitle(b.score) + ")";
-        $("#bounty-line").hidden = !(bonusFor(m.email, WEEK) > 0);
+        var myBonus = (state.bonuses || []).filter(function(bb){ return bb.week === WEEK && bb.email === m.email; })[0];
+        $("#bounty-line").hidden = !myBonus;
+        if (myBonus) $("#bounty-line").textContent = ((myBonus.reason || "").indexOf("Bug bounty") === 0)
+          ? "🛠️ BUG BOUNTY ACTIVE: +" + myBonus.extra + " credit awarded by the Committee. Hack responsibly, legend."
+          : "🎁 COMMITTEE GIFT: +" + myBonus.extra + " extra credit this week. Spend it loudly.";
         $("#brag-btn-start").hidden = !b;
         showPanel("screen-start");
       }
