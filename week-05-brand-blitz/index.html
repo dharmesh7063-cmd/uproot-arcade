@@ -903,10 +903,10 @@
           <div class="panel" id="screen-start">
             <h2>KNOW YOUR BRAND. PROVE IT FAST.</h2>
             <ul class="howto">
-              <li><span class="demo">❓</span><span><b>8 questions</b> about Uproot, drawn from a secret pool — every run is different</span></li>
-              <li><span class="demo">⏱️</span><span><b>10 seconds</b> each · speed pays: <b class="plus">+50 + 5 × seconds left</b></span></li>
-              <li><span class="demo">⌨️</span><span>Tap an answer or press <b>1 – 4</b> on your keyboard</span></li>
-              <li><span class="demo">🏆</span><span>Wrong answers score zero but the show goes on · a perfect run is <b>800</b></span></li>
+              <li><span class="demo">🪜</span><span><b>All 25 questions</b>, 5 tiers: WARM-UP → EMPLOYEE → MANAGER → DIRECTOR → FOUNDER · every tier is worth more (<b class="plus">×1 … ×5</b>)</span></li>
+              <li><span class="demo">⏱️</span><span><b>14 seconds</b> to start, the clock slides down to <b>7 seconds</b> for the final seven · speed pays</span></li>
+              <li><span class="demo">➖</span><span>Right = points · <b>wrong = −50%</b> of that question's value · letting the clock run out costs nothing</span></li>
+              <li><span class="demo">⌨️</span><span>Tap an answer or press <b>1 – 4</b> · a perfect ladder is <b>2757</b></span></li>
             </ul>
             <p class="credit" id="credit-line">🪙 CREDITS LEFT: — OF —</p>
             <p class="sub" id="best-so-far" hidden></p>
@@ -1063,7 +1063,7 @@
   /* Cheat-smell detector: per-week plausibility ceiling (add a line per game).
      Scores above it stay visible but get publicly roasted and are excluded
      from medals, weekly wins, and the season championship. */
-  var SUS_LIMITS = { 1: 2000, 2: 3300, 3: 1400, 4: 1600, 5: 850 };
+  var SUS_LIMITS = { 1: 2000, 2: 3300, 3: 1400, 4: 1600, 5: 2850 };
   /* House bots (e.g. Viktor the chatbot): they play every game and keep their
      scores as fun score-holders, but never take medals, wins, or the crown. */
   var BOT_EMAILS = { "ai@uprootclean.com": "Viktor, our house chatbot" };
@@ -1293,10 +1293,10 @@
   /* ================= rank titles ================= */
   function rankTitle(s){
     if (s <= 0) return "INTERN (FIRED)";
-    if (s >= 750) return "BRAND OVERLORD";
-    if (s >= 600) return "CMO MATERIAL";
-    if (s >= 400) return "TEAM PLAYER";
-    if (s >= 200) return "NEW HIRE";
+    if (s >= 2300) return "BRAND OVERLORD";
+    if (s >= 1650) return "CMO MATERIAL";
+    if (s >= 950) return "TEAM PLAYER";
+    if (s >= 350) return "NEW HIRE";
     return "MARKETING INTERN";
   }
 
@@ -1985,32 +1985,55 @@
   var timePill = $("#time-pill");
   var score = 0, round = 0, bestStreak = 0, playing = false;
   var streak = 0, correctCount = 0, locked = true;
-  var QUESTIONS_PER_RUN = 8, Q_SECONDS = 10;
+  var TIER_SIZE = 5;
+  var TIER_NAMES = ["WARM-UP", "EMPLOYEE", "MANAGER", "DIRECTOR", "FOUNDER"];
+  var QUESTIONS_PER_RUN = TIER_SIZE * 5;
+  function timeFor(q){ // q = 1-based question number: 14s to open, sliding down, 7s for the final seven
+    if (q <= 3) return 14;
+    if (q >= 19) return 7;
+    return Math.round((14 - (q - 3) * (7 / 16)) * 2) / 2;
+  }
+  var Q_SECONDS = timeFor(1), qLimit = Q_SECONDS, endTitle = "LADDER CLEARED!", wrongCount = 0;
   var quiz = [], current = null, qStart = 0, tickTimer = null, roundTimer = null;
   var statusEl = $("#simon-status");
   var qText = $("#q-text"), qNum = $("#q-num"), qClock = $("#q-clock"), qFill = $("#q-fill");
   var answerBtns = Array.prototype.slice.call(board.querySelectorAll(".qa"));
 
-  /* ⚠️ QUESTION POOL — placeholders until Dharmesh supplies the real set.
-     Format: { q: "question", a: ["A", "B", "C", "D"], c: <index of the correct answer> }
-     Answers are shuffled per run, so the correct one can sit in any slot here.
-     8 are drawn at random each run; keep the pool at 12–20 for variety. */
+  /* ⚠️ QUESTION POOL — the 25-question ladder. Tiers 4-5 are placeholders until Dharmesh supplies them.
+     Format: { t: <tier 1-5>, q: "question", a: ["A", "B", "C", "D"], c: <index of the correct answer> }
+     Every run asks all five tiers in order (5 questions each, shuffled within the tier);
+     answers are shuffled per run. Add more than 5 per tier and the run picks 5 at random. */
   var QUESTIONS = [
-    { q: "What is Uproot Clean famous for removing?", a: ["Pet hair", "Bad vibes", "Wi-Fi lag", "Mondays"], c: 0 },
-    { q: "What powers the Uproot Cleaner?", a: ["Pure elbow grease", "Two AA batteries", "A tiny hamster", "Positive affirmations"], c: 0 },
-    { q: "Who was crowned Week 1 Fur Frenzy champion?", a: ["Jared", "Viktor the bot", "Dini", "The couch"], c: 0 },
-    { q: "DINI's legendary Week 1 score that 'broke the fur-physics engine'?", a: ["9999", "1360", "404", "42"], c: 0 },
-    { q: "Who is the arcade's eternal house bot?", a: ["Viktor", "HAL", "Clippy", "Roomba"], c: 0 },
-    { q: "A perfect 16-round Lint Line run scored exactly…", a: ["1360", "1000", "1265", "9999"], c: 0 },
-    { q: "How many play days does an arcade week have (Sat–Thu)?", a: ["6", "5", "7", "3"], c: 0 },
-    { q: "What happens at the arcade every Friday?", a: ["Ceremony lockdown — no runs, just glory", "Double credits", "Nothing, it's Friday", "Server maintenance"], c: 0 },
-    { q: "The arcade runs on which timezone?", a: ["US Eastern", "IST", "UTC", "Whatever your laptop says"], c: 0 },
-    { q: "Week 3's game was…", a: ["Suds Stack", "Soap Opera", "Bubble Trouble", "Foam Party"], c: 0 },
-    { q: "Week 4's pixel runner starred a heroic…", a: ["Mop", "Sponge", "Vacuum", "Cat"], c: 0 },
-    { q: "How many champions does the Hall of Fame remember?", a: ["The last 6", "All of them", "Only 1", "None — memory not found"], c: 0 },
-    { q: "PLACEHOLDER — insider question #1 (Dharmesh to supply)", a: ["Correct answer", "Wrong", "Wronger", "Wrongest"], c: 0 },
-    { q: "PLACEHOLDER — insider question #2 (Dharmesh to supply)", a: ["Correct answer", "Wrong", "Wronger", "Wrongest"], c: 0 },
-    { q: "PLACEHOLDER — insider question #3 (Dharmesh to supply)", a: ["Correct answer", "Wrong", "Wronger", "Wrongest"], c: 0 }
+    // ---- TIER 1: WARM-UP ----
+    { t: 1, q: "What is Uproot Clean famous for removing?", a: ["Pet hair", "Bad vibes", "Wi-Fi lag", "Mondays"], c: 0 },
+    { t: 1, q: "What powers the Uproot Cleaner?", a: ["Pure elbow grease", "Two AA batteries", "A tiny hamster", "Positive affirmations"], c: 0 },
+    { t: 1, q: "A new arcade game drops on which day?", a: ["Saturday", "Monday", "Friday", "Whenever Dharmesh feels like it"], c: 0 },
+    { t: 1, q: "Who is the arcade's eternal house bot?", a: ["Viktor", "HAL", "Clippy", "Roomba"], c: 0 },
+    { t: 1, q: "How many credits does a normal arcade week give you?", a: ["3", "1", "10", "Unlimited"], c: 0 },
+    // ---- TIER 2: EMPLOYEE ----
+    { t: 2, q: "Who was crowned Week 1 Fur Frenzy champion?", a: ["Jared", "Viktor the bot", "Dini", "The couch"], c: 0 },
+    { t: 2, q: "DINI's legendary Week 1 score that 'broke the fur-physics engine'?", a: ["9999", "1360", "404", "42"], c: 0 },
+    { t: 2, q: "What happens at the arcade every Friday?", a: ["Ceremony lockdown — no runs, just glory", "Double credits", "Nothing, it's Friday", "Server maintenance"], c: 0 },
+    { t: 2, q: "The arcade runs on which timezone?", a: ["US Eastern", "IST", "UTC", "Whatever your laptop says"], c: 0 },
+    { t: 2, q: "A perfect 16-round Lint Line run scored exactly…", a: ["1360", "1000", "1265", "9999"], c: 0 },
+    // ---- TIER 3: MANAGER ----
+    { t: 3, q: "Week 3's game was…", a: ["Suds Stack", "Soap Opera", "Bubble Trouble", "Foam Party"], c: 0 },
+    { t: 3, q: "Week 4's pixel runner starred a heroic…", a: ["Mop", "Sponge", "Vacuum", "Cat"], c: 0 },
+    { t: 3, q: "How many champions does the Hall of Fame remember?", a: ["The last 6", "All of them", "Only 1", "None — memory not found"], c: 0 },
+    { t: 3, q: "Lint Line's round 25 twist made you enter the pattern…", a: ["Backward", "Blindfolded", "Twice", "In Morse code"], c: 0 },
+    { t: 3, q: "How many play days does an arcade week have (Sat–Thu)?", a: ["6", "5", "7", "3"], c: 0 },
+    // ---- TIER 4: DIRECTOR ----
+    { t: 4, q: "PLACEHOLDER — director-level insider question #1 (Dharmesh to supply)", a: ["Correct answer", "Wrong", "Wronger", "Wrongest"], c: 0 },
+    { t: 4, q: "PLACEHOLDER — director-level insider question #2 (Dharmesh to supply)", a: ["Correct answer", "Wrong", "Wronger", "Wrongest"], c: 0 },
+    { t: 4, q: "PLACEHOLDER — director-level insider question #3 (Dharmesh to supply)", a: ["Correct answer", "Wrong", "Wronger", "Wrongest"], c: 0 },
+    { t: 4, q: "PLACEHOLDER — director-level insider question #4 (Dharmesh to supply)", a: ["Correct answer", "Wrong", "Wronger", "Wrongest"], c: 0 },
+    { t: 4, q: "PLACEHOLDER — director-level insider question #5 (Dharmesh to supply)", a: ["Correct answer", "Wrong", "Wronger", "Wrongest"], c: 0 },
+    // ---- TIER 5: FOUNDER ----
+    { t: 5, q: "PLACEHOLDER — founder-level question #1 (Dharmesh to supply)", a: ["Correct answer", "Wrong", "Wronger", "Wrongest"], c: 0 },
+    { t: 5, q: "PLACEHOLDER — founder-level question #2 (Dharmesh to supply)", a: ["Correct answer", "Wrong", "Wronger", "Wrongest"], c: 0 },
+    { t: 5, q: "PLACEHOLDER — founder-level question #3 (Dharmesh to supply)", a: ["Correct answer", "Wrong", "Wronger", "Wrongest"], c: 0 },
+    { t: 5, q: "PLACEHOLDER — founder-level question #4 (Dharmesh to supply)", a: ["Correct answer", "Wrong", "Wronger", "Wrongest"], c: 0 },
+    { t: 5, q: "PLACEHOLDER — founder-level question #5 (Dharmesh to supply)", a: ["Correct answer", "Wrong", "Wronger", "Wrongest"], c: 0 }
   ];
 
   function updateHud(){
@@ -2027,20 +2050,39 @@
     }
     return arr;
   }
-  function secondsLeft(){ return Math.max(0, Q_SECONDS - (performance.now() - qStart) / 1000); }
+  function secondsLeft(){ return Math.max(0, qLimit - (performance.now() - qStart) / 1000); }
   function paintClock(){
     var sLeft = secondsLeft();
     qClock.textContent = sLeft.toFixed(1);
-    qFill.style.width = (sLeft / Q_SECONDS * 100) + "%";
+    qFill.style.width = (sLeft / qLimit * 100) + "%";
     var low = sLeft <= 3;
     qClock.classList.toggle("low", low); qFill.classList.toggle("low", low);
     if (sLeft <= 0 && !locked) resolve(-1);
   }
+  function tierOf(n){ return Math.floor((n - 1) / TIER_SIZE) + 1; } // n = 1-based question number
   function nextRound(){
-    if (round >= QUESTIONS_PER_RUN) { endGame(); return; }
+    if (round >= QUESTIONS_PER_RUN) { endTitle = "LADDER CLEARED!"; endGame(); return; }
+    var upcoming = round + 1, tier = tierOf(upcoming);
+    if ((upcoming - 1) % TIER_SIZE === 0) {
+      // tier card: a breath before the ladder gets steeper
+      qNum.textContent = "TIER " + tier + " / 5";
+      qClock.textContent = timeFor(upcoming).toFixed(1); qFill.style.width = "100%";
+      qClock.classList.remove("low"); qFill.classList.remove("low");
+      qText.textContent = "TIER " + tier + " — " + TIER_NAMES[tier - 1] + " LEVEL";
+      answerBtns.forEach(function(b){ b.className = "qa dim"; b.disabled = true; b.querySelector(".qa-txt").textContent = "…"; });
+      setStatus("×" + tier + " POINTS · WRONG = −50%");
+      blip(440 + tier * 80, 0.12); setTimeout(function(){ blip(660 + tier * 80, 0.14); }, 120);
+      roundTimer = setTimeout(loadQuestion, 1500);
+      return;
+    }
+    loadQuestion();
+  }
+  function loadQuestion(){
+    if (!playing) return;
     current = quiz[round]; round++;
+    qLimit = timeFor(round);
     locked = false;
-    qNum.textContent = "Q " + round + " / " + QUESTIONS_PER_RUN;
+    qNum.textContent = "Q " + round + " / " + QUESTIONS_PER_RUN + " · TIER " + current.t;
     qText.textContent = current.q;
     answerBtns.forEach(function(b, i){
       b.className = "qa"; b.disabled = false;
@@ -2066,14 +2108,20 @@
       else b.classList.add("dim");
     });
     if (right) {
-      var pts = 50 + 5 * Math.ceil(left);
+      var pts = current.t * (10 + 3 * Math.ceil(left)); // tier multiplies everything
       score += pts; streak++; correctCount++;
       if (streak > bestStreak) bestStreak = streak;
       setStatus("CORRECT! +" + pts);
       blip(784, 0.12); setTimeout(function(){ blip(1046, 0.16); }, 90);
     } else {
       streak = 0;
-      setStatus(i < 0 ? "TIME'S UP! ⏰" : "NOPE! IT WAS " + (current.c + 1));
+      if (i < 0) {
+        setStatus("TIME'S UP ⏰ · NO PENALTY");
+      } else {
+        var pen = Math.round(0.5 * current.t * (10 + 3 * Math.ceil(qLimit))); // half of this question's full value
+        score = Math.max(0, score - pen); wrongCount++;
+        setStatus("NOPE! IT WAS " + (current.c + 1) + " · −" + pen);
+      }
       blip(150, 0.3, "sawtooth", 0.06);
     }
     updateHud();
@@ -2105,9 +2153,14 @@
     if (myRuns().length >= triesForMe(m.email, WEEK)) { justFinished = false; renderAll(); toast("OUT OF CREDITS THIS WEEK!"); return; }
     stopTimers();
     score = 0; round = 0; bestStreak = 0; streak = 0; correctCount = 0; locked = true;
-    quiz = shuffle(QUESTIONS.slice()).slice(0, QUESTIONS_PER_RUN).map(function(item){
+    wrongCount = 0; qLimit = Q_SECONDS; endTitle = "LADDER CLEARED!";
+    quiz = [];
+    for (var tt = 1; tt <= 5; tt++) { // five tiers, easy → brutal, shuffled inside each tier
+      quiz = quiz.concat(shuffle(QUESTIONS.filter(function(it){ return it.t === tt; })).slice(0, TIER_SIZE));
+    }
+    quiz = quiz.map(function(item){
       var order = shuffle([0, 1, 2, 3]); // the right answer never lives in a fixed slot
-      return { q: item.q, a: order.map(function(k){ return item.a[k]; }), c: order.indexOf(item.c) };
+      return { t: item.t, q: item.q, a: order.map(function(k){ return item.a[k]; }), c: order.indexOf(item.c) };
     });
     playing = true;
     qText.textContent = "GET READY…";
@@ -2134,7 +2187,7 @@
 
     $("#final-score").textContent = String(score);
     $("#rank-title").textContent = rankTitle(score);
-    $("#end-streak").textContent = "Answered " + correctCount + " of " + QUESTIONS_PER_RUN + " correctly · best streak " + bestStreak;
+    $("#end-streak").textContent = correctCount + " right · " + wrongCount + " wrong · " + (round - correctCount - wrongCount) + " skipped · best streak " + bestStreak;
     showPanel("screen-end");
 
     var m = me();
@@ -2145,7 +2198,7 @@
     var tries = triesForMe(m.email, WEEK);
     var attempt = myRuns().length + 1;
     var left = Math.max(0, tries - attempt);
-    $("#end-title").textContent = left > 0 ? "QUIZ COMPLETE!" : "LAST CREDIT SPENT!";
+    $("#end-title").textContent = left > 0 ? endTitle : "LAST CREDIT SPENT!";
     if (left > 0) {
       againBtn.hidden = false;
       againBtn.textContent = "PLAY AGAIN — " + left + " CREDIT" + (left === 1 ? "" : "S") + " LEFT";
