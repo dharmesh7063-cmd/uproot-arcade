@@ -726,7 +726,7 @@
   .frame-actions{ display:flex; gap:10px; justify-content:center; margin-top:8px; align-items:center; }
   .frame-actions .btn{ font-size:11px; padding:10px 14px; }
 
-  /* Friday ceremony: hide panels, shine the hero, rain confetti */
+  /* Monday ceremony: hide panels, shine the hero, rain confetti */
   body.ceremony .sidebar, body.ceremony .sb-toggle{ display:none !important; }
   body.ceremony .main{ flex-basis:640px; }
   .overlay{ overflow-x:hidden; overflow-y:auto; }
@@ -926,7 +926,7 @@
             <h2 id="loading-week" style="margin-top:20px">LOADING…</h2>
             <div class="loadbar"><div class="loadbar-fill"></div></div>
             <div class="digi" id="digi-clock">00:00:00</div>
-            <p class="credit" id="loading-count">UNTIL SATURDAY — GAME DAY</p>
+            <p class="credit" id="loading-count">UNTIL TUESDAY — GAME DAY</p>
           </div>
         </div>
       </div>
@@ -1015,8 +1015,8 @@
   var GAME_NAME = "SUDS STACK";
   var FALLBACK_TRIES = 3; // server value in the `games` table wins
   /* Arcade clock: US Eastern (America/New_York, DST-aware). Weeks run
-     Saturday→Friday on the EASTERN calendar (Sat = game day, Fri = ceremony), anchored Sat 2026-08-22. */
-  var ANCHOR_UTC = Date.UTC(2026, 7, 22);
+     Tuesday→Monday on the EASTERN calendar (Tue = game day, Mon = ceremony), anchored Tue 2026-08-25. */
+  var ANCHOR_UTC = Date.UTC(2026, 7, 25);
   function easternDateUTC(){
     var parts = new Intl.DateTimeFormat("en-US",
       { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" })
@@ -1499,7 +1499,7 @@
     $("#notice-box").innerHTML = callouts.join("");
     $("#sec-notice").hidden = callouts.length === 0;
 
-    /* Countdown on the Eastern calendar: Sat-Thu are play days, Friday is ceremony. */
+    /* Countdown on the Eastern calendar: Tue-Sun are play days, Monday is ceremony. */
     var days = daysSinceAnchor();
     var wkNow = Math.floor(days / 7) + 1;
     var di = dayIndex();
@@ -1578,7 +1578,7 @@
       : '<li><span class="empty">The first champion is crowned after Week ' + SEASON_END + '. Legends load here… ⏳</span></li>';
   }
 
-  /* Friday ceremony: full-screen shrine for the week's real hero. */
+  /* Monday ceremony: full-screen shrine for the week's real hero. */
   var digiTimer = null, confettiTimer = null;
   function easternHMS(){
     try {
@@ -2093,7 +2093,7 @@
   function startRun(){
     var m = me();
     if (!m) { renderAll(); return; }
-    if (currentCalendarWeek() < WEEK) { toast("EARLY BIRD! THIS GAME UNLOCKS SATURDAY 🐦"); return; }
+    if (currentCalendarWeek() < WEEK) { toast("EARLY BIRD! THIS GAME UNLOCKS TUESDAY 🐦"); return; }
     if (currentCalendarWeek() > WEEK) { toast("THIS GAME'S WEEK IS OVER — THE NEW GAME AWAITS! 🏁"); return; }
     if (currentCalendarWeek() === WEEK && dayIndex() === 6) { toast("CEREMONY DAY — NO RUNS, JUST GLORY. NEW GAME TOMORROW! 🎉"); return; }
     if (myRuns().length >= triesForMe(m.email, WEEK)) { justFinished = false; renderAll(); toast("OUT OF CREDITS THIS WEEK!"); return; }
@@ -2528,7 +2528,7 @@
     return wkNow > WEEK || (wkNow === WEEK && dayIndex() === 6);
   }
   function openFrameStudio(){
-    if (!weekDecided()) { toast("THE CROWN ISN'T DECIDED YET — FRAME UNLOCKS ON CEREMONY FRIDAY 👑"); return; }
+    if (!weekDecided()) { toast("THE CROWN ISN'T DECIDED YET — FRAME UNLOCKS ON CEREMONY MONDAY 👑"); return; }
     frameHero = weekHero();
     if (!frameHero) { toast("NO CHAMPION YET — GO MAKE HISTORY!"); return; }
     var m = me();

@@ -1,12 +1,12 @@
 name: weekly-launch
 
-# Every SATURDAY at 09:00 UTC (4-5am US Eastern — past midnight in both
+# Every TUESDAY at 09:00 UTC (4-5am US Eastern — past midnight in both
 # EST and EDT), promote this week's game folder to the site root. Safe
 # to run any time: it no-ops when the right game is already live or the
 # week's folder doesn't exist yet.
 on:
   schedule:
-    - cron: "0 9 * * 6"
+    - cron: "0 9 * * 2"
   workflow_dispatch: {}
 
 permissions:
@@ -20,7 +20,7 @@ jobs:
       - name: Promote this week's game
         run: |
           set -e
-          anchor="2026-08-22"   # Saturday of Week 1 (weeks run Sat→Fri)
+          anchor="2026-08-25"   # Tuesday of Week 1 (weeks run Tue→Mon)
           days=$(( ( $(date -u +%s) - $(date -u -d "$anchor" +%s) ) / 86400 ))
           week=$(( days / 7 + 1 ))
           printf -v glob "week-%02d-*" "$week"
