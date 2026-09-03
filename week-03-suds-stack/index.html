@@ -501,6 +501,8 @@
   .notice-card.bounty b{ color:var(--gold); }
   .notice-card.bot{ border-color:var(--cyan); background:rgba(44,224,222,.07); }
   .notice-card.bot .notice-k{ color:var(--cyan); text-shadow:0 0 8px rgba(44,224,222,.5); }
+  .notice-card.news{ border-color:var(--cyan); border-style:solid; background:rgba(44,224,222,.08); }
+  .notice-card.news .notice-k{ color:var(--cyan); text-shadow:0 0 8px rgba(44,224,222,.5); }
   /* Week leader banner — the golden marquee with a shine rolling the outline */
   @property --ang{ syntax:"<angle>"; initial-value:0deg; inherits:false; }
   .week-champ{
@@ -1048,6 +1050,9 @@
      Scores above it stay visible but get publicly roasted and are excluded
      from medals, weekly wins, and the season championship. */
   var SUS_LIMITS = { 1: 2000, 2: 3300, 3: 1400, 4: 1600, 5: 2850 };
+  /* Noticeboard controls — flip card kinds on/off; set PINNED_NEWS = null to clear the news card. */
+  var NOTICE_KINDS = { sus: false, slacker: false, bounty: false, decree: false, teamDecree: true, bot: false };
+  var PINNED_NEWS = { k: "📰 ARCADE NEWS", html: "<b>WEEKEND EXTENSION!</b> The board no longer locks on Friday. New rhythm: every game runs <b>TUESDAY → SUNDAY</b>, champion crowned <b>MONDAY</b>. Lint Line stays open all weekend — Suds Stack drops Tuesday, Sept 8. 🧼" };
   /* House bots (e.g. Viktor the chatbot): they play every game and keep their
      scores as fun score-holders, but never take medals, wins, or the crown. */
   var BOT_EMAILS = { "ai@uprootclean.com": "Viktor, our house chatbot" };
@@ -1451,14 +1456,14 @@
         }).join("")
       : '<li class="empty">' + (state.loaded || !CONFIGURED
           ? "No runs yet this week — spend a credit! 🪙" : "Loading scores…") + "</li>";
-    var callouts = wk.filter(function(s){ return !isBot(s) && isSus(s); }).map(function(s){
+    var callouts = (NOTICE_KINDS.sus ? wk.filter(function(s){ return !isBot(s) && isSus(s); }) : []).map(function(s){
       var n = esc(nameFor(s.email, s.gen));
       return '<div class="notice-card sus"><div class="notice-k">🚨 CHEAT SMELL DETECTOR</div>' + roastFor(n) +
         " Prove yourself, legend — replay it live, or lose the crown. The Arcade Committee never blinks.</div>";
     });
     /* Slacker Watch: needs a real field (4+ clean humans) and a truly low score. */
     var cleanWk = wk.filter(function(s){ return !isBot(s) && !isSus(s); });
-    if (cleanWk.length >= 4) {
+    if (NOTICE_KINDS.slacker && cleanWk.length >= 4) {
       var lowP = cleanWk[cleanWk.length - 1], topP = cleanWk[0];
       if (lowP.score <= topP.score * 0.35) {
         var ln = esc(nameFor(lowP.email, lowP.gen));
@@ -1476,11 +1481,12 @@
         var grp = byReason[rsn];
         var hack = rsn.indexOf("Bug bounty") === 0;
         if (grp.length >= 4) {
-          callouts.push('<div class="notice-card bounty"><div class="notice-k">⚔️ COMMITTEE DECREE</div>' +
+          if (NOTICE_KINDS.teamDecree) callouts.push('<div class="notice-card bounty"><div class="notice-k">⚔️ COMMITTEE DECREE</div>' +
             "<b>THE WHOLE ARCADE</b> (" + grp.length + " players) gets +" + grp[0].extra +
             " CREDIT this week — " + esc(rsn || "the Committee is feeling generous") + "</div>");
           return;
         }
+        if (!(hack ? NOTICE_KINDS.bounty : NOTICE_KINDS.decree)) return;
         grp.forEach(function(bb){
           var bn = esc(nameFor(bb.email, latestGen(bb.email)));
           callouts.push(hack
@@ -1492,10 +1498,11 @@
         });
       });
     }
-    wk.filter(isBot).forEach(function(s){
+    if (NOTICE_KINDS.bot) wk.filter(isBot).forEach(function(s){
       callouts.push('<div class="notice-card bot"><div class="notice-k">🤖 HOUSE BOT</div>' + esc(nameFor(s.email, s.gen)) + " is " +
         BOT_EMAILS[s.email] + " — it plays for the love of the game. Scores on the board, but no crown, no medals. Beat it if you can!</div>");
     });
+    if (PINNED_NEWS) callouts.unshift('<div class="notice-card news"><div class="notice-k">' + PINNED_NEWS.k + "</div>" + PINNED_NEWS.html + "</div>");
     $("#notice-box").innerHTML = callouts.join("");
     $("#sec-notice").hidden = callouts.length === 0;
 
