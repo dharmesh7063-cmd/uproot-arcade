@@ -1,3 +1,6 @@
+-- ⚠️ SUPERSEDED (2026-09-03): the scores_insert policy below uses the OLD Saturday anchor (2026-08-22).
+-- Weeks now run Tuesday→Monday — the current policy lives in supabase-tuesday-weeks.sql. Do NOT re-run this file.
+
 -- ============================================================
 -- UPROOT ARCADE — the brick wall (run once in the SQL Editor)
 -- 1) Scores above 2500 are rejected by the database itself.
