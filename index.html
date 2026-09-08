@@ -251,49 +251,49 @@
     width:44px; height:44px; font-size:19px; cursor:pointer; color:var(--lav);
   }
 
-  /* ---------- Board: four lint tiles (Simon) ---------- */
+  /* ---------- Board: the soap tower ---------- */
   .stage{ position:relative; }
-  .simon{
+  .stack{
     position:relative;
-    display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr;
-    gap:12px;
-    height:clamp(340px, 56vh, 440px);
-    padding:12px;
+    height:clamp(360px, 58vh, 460px);
     border:2px solid var(--line); border-radius:10px;
-    background:var(--bg);
+    overflow:hidden;
+    background:
+      radial-gradient(circle at 20% 18%, rgba(44,224,222,.08) 0 46px, transparent 48px),
+      radial-gradient(circle at 78% 40%, rgba(140,75,255,.09) 0 34px, transparent 36px),
+      radial-gradient(circle at 55% 75%, rgba(245,44,135,.06) 0 40px, transparent 42px),
+      var(--bg);
     user-select:none; -webkit-user-select:none; touch-action:manipulation;
+    cursor:pointer;
   }
-  .stile{
-    border:2px solid var(--line); border-radius:14px;
-    cursor:pointer; padding:0;
-    transition:filter .12s ease, box-shadow .12s ease;
-    filter:brightness(.42) saturate(.75);
+  .tower{
+    position:absolute; left:0; bottom:0; width:100%; height:100%;
+    transition:transform .28s ease;
   }
-  .stile:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
-  .stile.t0{ background:var(--cyan); }
-  .stile.t1{ background:var(--pink); }
-  .stile.t2{ background:var(--gold); }
-  .stile.t3{ background:var(--purple); }
-  .stile.lit{
-    filter:brightness(1.15) saturate(1.1);
-    box-shadow:0 0 26px rgba(242,233,255,.5);
+  .sbar{
+    position:absolute; height:24px;
+    border:2px solid rgba(242,233,255,.75); border-radius:7px;
+    box-sizing:border-box;
   }
-  /* GHOST round: the lights barely whisper */
-  #board.ghost .stile.lit{
-    filter:brightness(.62) saturate(.9);
-    box-shadow:none;
+  .sbar.even{ background:linear-gradient(180deg, #4EE6E4, #17A8A6); }
+  .sbar.odd{ background:linear-gradient(180deg, #B08CFF, #6E3BD6); }
+  .sbar::after{ /* soap shine */
+    content:""; position:absolute; left:8%; top:3px;
+    width:30%; height:5px; border-radius:4px;
+    background:rgba(255,255,255,.55);
   }
-  .simon-status{
-    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  .sbar.falling{
+    transition:transform .7s ease-in, opacity .7s ease-in;
+    transform:translateY(320px) rotate(24deg);
+    opacity:0;
+  }
+  .perfect-pop{
+    position:absolute; transform:translateX(-50%);
     font-family:"Press Start 2P","Courier New",monospace;
-    font-size:11px; letter-spacing:.08em; color:var(--lav);
-    background:var(--panel); border:2px solid var(--line); border-radius:999px;
-    padding:8px 16px; pointer-events:none;
-    text-shadow:1px 1px 0 rgba(0,0,0,.6);
-  }
-  .demo-tile{
-    display:inline-block; width:22px; height:22px; border-radius:6px;
-    background:var(--cyan); box-shadow:0 0 10px rgba(44,224,222,.7);
+    font-size:11px; color:var(--gold);
+    text-shadow:0 0 10px rgba(255,210,63,.7), 1px 1px 0 rgba(0,0,0,.6);
+    pointer-events:none; z-index:6;
+    animation:rise .7s ease-out forwards;
   }
   .grid{
     display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
@@ -449,6 +449,11 @@
     font-size:14.5px; color:var(--lav);
   }
   .bounty-callout b{ color:var(--gold); }
+  .tip-line{
+    font-family:"Silkscreen","Courier New",monospace;
+    font-size:11px; letter-spacing:.06em; color:var(--cyan);
+    margin:2px 0 10px;
+  }
   .bounty-line{
     font-family:"Silkscreen","Courier New",monospace;
     font-size:11px; letter-spacing:.06em; color:var(--gold);
@@ -799,7 +804,7 @@
       <span class="l1" data-text="UPROOT">UPROOT</span>
       <span class="l2" data-text="ARCADE">ARCADE</span>
     </h1>
-    <div class="weekchip">WEEK 2 ★ LINT LINE</div>
+    <div class="weekchip">WEEK 3 ★ SUDS STACK</div>
     <p class="tagline">One game a week · Limited credits · Best run counts · Scores live forever</p>
   </header>
 
@@ -867,35 +872,31 @@
       </div>
     </section>
 
-    <section class="card" id="game-card" aria-label="Lint Line memory game" hidden>
+    <section class="card" id="game-card" aria-label="Suds Stack game" hidden>
       <div class="hud">
-        <div class="pill time" id="time-pill"><span class="lab">Round</span><span class="val" id="hud-time">0</span></div>
+        <div class="pill time" id="time-pill"><span class="lab">Height</span><span class="val" id="hud-time">0</span></div>
         <div class="pill"><span class="lab">Score</span><span class="val" id="hud-score">0</span></div>
-        <div class="pill"><span class="lab">Best Rd</span><span class="val" id="hud-streak">0</span></div>
+        <div class="pill"><span class="lab">Perfects</span><span class="val" id="hud-streak">0</span></div>
         <button class="mute" id="mute" aria-pressed="false" title="Toggle sound">🔊</button>
       </div>
       <div class="stage">
-        <div class="simon" id="board" aria-hidden="true">
-          <button class="stile t0" data-i="0"></button>
-          <button class="stile t1" data-i="1"></button>
-          <button class="stile t2" data-i="2"></button>
-          <button class="stile t3" data-i="3"></button>
-          <div class="simon-status" id="simon-status">WATCH…</div>
+        <div class="stack" id="board" aria-hidden="true">
+          <div class="tower" id="tower"></div>
         </div>
 
         <div class="overlay" id="overlay">
           <div class="panel" id="screen-start">
-            <h2>WATCH THE LINT. REPEAT THE LINT.</h2>
+            <h2>STACK THE SUDS TO THE SKY!</h2>
             <ul class="howto">
-              <li><span class="demo">👀</span><span>Glowing lint flashes in a pattern — <b>memorize it</b></span></li>
-              <li><span class="demo">👆</span><span>Repeat it by tapping the tiles in order</span></li>
-              <li><span class="demo"><span class="demo-tile"></span></span><span>Each round adds one flash · <b class="plus">+10 × round</b></span></li>
-              <li><span class="demo">💀</span><span>One wrong tap ends the run · survive all <b>25 rounds</b> to beat the machine</span></li>
-              <li><span class="demo">🔥</span><span>Rounds 23–25: <b>THE GAUNTLET</b> — turbo speed, ghost lights, mirror mode</span></li>
+              <li><span class="demo">🧼</span><span>A soap bar slides — <b>tap anywhere to drop it</b></span></li>
+              <li><span class="demo">🔪</span><span>Overhang gets sliced off — sloppy drops shrink your bar</span></li>
+              <li><span class="demo">✨</span><span>PERFECT drops keep full width · <b class="plus">+25 & streaks</b></span></li>
+              <li><span class="demo">💀</span><span>Miss the stack and the tower falls · one-tap game</span></li>
             </ul>
             <p class="credit" id="credit-line">🪙 CREDITS LEFT: — OF —</p>
             <p class="sub" id="best-so-far" hidden></p>
             <p class="bounty-line" id="bounty-line" hidden>🛠️ BUG BOUNTY ACTIVE: +1 credit awarded by the Committee. Hack responsibly, legend.</p>
+            <p class="tip-line">💡 TIP: SPACEBAR WORKS TOO — CLICK OR SPACE, SAME MOVE</p>
             <button class="btn cyan big blink" id="start">PRESS START</button>
             <button class="btn pink" id="brag-btn-start" hidden>📣 BRAG IN SLACK</button>
           </div>
@@ -948,7 +949,7 @@
           <h2 class="cardtitle">THIS WEEK</h2>
           <button class="sec-toggle" id="th-week" aria-expanded="true" title="Collapse / expand">▾</button>
         </div>
-        <p class="lb-sub2">W2 · LINT LINE · <span id="roster-count"></span> · <span id="week-days" class="days-left"></span></p>
+        <p class="lb-sub2">W3 · SUDS STACK · <span id="roster-count"></span> · <span id="week-days" class="days-left"></span></p>
         <div class="board-body">
           <div id="week-champ" class="week-champ" hidden></div>
           <ol id="week-list" class="wlist"></ol>
@@ -1012,8 +1013,8 @@
 (function(){
   "use strict";
   /* ============ weekly config (tune per game) ============ */
-  var WEEK = 2;
-  var GAME_NAME = "LINT LINE";
+  var WEEK = 3;
+  var GAME_NAME = "SUDS STACK";
   var FALLBACK_TRIES = 3; // server value in the `games` table wins
   /* Arcade clock: US Eastern (America/New_York, DST-aware). Weeks run
      Tuesday→Monday on the EASTERN calendar (Tue = game day, Mon = ceremony), anchored Tue 2026-08-25. */
@@ -1280,13 +1281,11 @@
 
   /* ================= rank titles ================= */
   function rankTitle(s){
-    if (s <= 0) return "MEMORY NOT FOUND (404)";
-    if (s >= 2600) return "THE MAINFRAME";
-    if (s >= 1800) return "MEMORY PALACE";
-    if (s >= 900) return "THE ELEPHANT";
-    if (s >= 500) return "MIND SWEEPER";
-    if (s >= 200) return "PATTERN PUPIL";
-    return "GOLDFISH MEMORY";
+    if (s <= 0) return "DROPPED THE SOAP";
+    if (s >= 900) return "THE ARCHITECT";
+    if (s >= 500) return "TOWER TITAN";
+    if (s >= 200) return "LATHER LAYER";
+    return "SOAP DROPPER";
   }
 
   /* ================= render ================= */
@@ -1972,106 +1971,124 @@
 
   /* ================= game ================= */
   var board = $("#board");
+  var tower = $("#tower");
   var hudTime = $("#hud-time"), hudScore = $("#hud-score"), hudStreak = $("#hud-streak");
   var timePill = $("#time-pill");
-  var score = 0, round = 0, bestStreak = 0, playing = false, showing = false;
-  var seq = [], inputPos = 0;
-  var showTimer = null, idleTimer = null, roundTimer = null;
-  var MAX_ROUND = 25;
-  var TONES = [523, 659, 784, 988]; // one note per lint tile
-  var statusEl = $("#simon-status");
-  var tiles = Array.prototype.slice.call(board.querySelectorAll(".stile"));
+  var score = 0, level = 0, perfectRun = 0, bestStreak = 0, playing = false;
+  var BAR_H = 24, START_W = 130, MAX_BARS = 40;
+  var prevLeft = 0, prevWidth = 0;      // the bar we must land on
+  var slider = null, sliderX = 0, sliderW = 0, sliderDir = 1, speed = 0;
+  var rafId = null, idleTimer = null, dropLock = false;
 
   board.addEventListener("contextmenu", function(e){ e.preventDefault(); });
 
   function updateHud(){
-    hudTime.textContent = String(round);
+    hudTime.textContent = String(level);
     hudScore.textContent = String(score);
     hudStreak.textContent = String(bestStreak);
-    timePill.classList.toggle("hot", playing && !showing); // hot = your turn
-  }
-  function setStatus(msg){ statusEl.textContent = msg; }
-  function flash(i, ms, silent){
-    var el = tiles[i];
-    el.classList.add("lit");
-    if (!silent) blip(TONES[i], Math.min(0.3, ms / 1000), "triangle", 0.05);
-    setTimeout(function(){ el.classList.remove("lit"); }, ms * 0.75);
+    timePill.classList.toggle("hot", playing && sliderW < 46); // skinny bar = danger
   }
   function stopTimers(){
-    clearTimeout(showTimer); clearTimeout(idleTimer); clearTimeout(roundTimer);
+    cancelAnimationFrame(rafId);
+    clearTimeout(idleTimer);
   }
   function armIdle(){
     clearTimeout(idleTimer);
-    idleTimer = setTimeout(function(){
-      if (playing && !showing) { setStatus("LINT WAITS FOR NO ONE…"); endGame(); }
-    }, 12000);
+    idleTimer = setTimeout(function(){ if (playing) endGame(); }, 15000);
   }
-  var TWISTS = {
-    23: "⚡ TURBO",
-    24: "👻 GHOST",
-    25: "🌀 MIRROR — BACKWARD!"
-  };
-  function stepFor(r){
-    if (r <= 16) return Math.max(230, 540 - r * 22);
-    if (r === 23) return 120;
-    if (r >= 24) return 150;
-    return 230 - (r - 16) * 14;
+  function makeBar(left, width, lvl){
+    var el = document.createElement("div");
+    el.className = "sbar " + (lvl % 2 ? "odd" : "even");
+    el.style.left = left + "px";
+    el.style.width = width + "px";
+    el.style.bottom = (lvl * BAR_H) + "px";
+    tower.appendChild(el);
+    return el;
   }
-  function showSeq(){
-    showing = true;
-    var twist = TWISTS[round];
-    board.classList.toggle("ghost", round === 24);
-    setStatus(twist ? "ROUND " + round + " — " + twist : "WATCH… ROUND " + round);
+  function cameraFollow(){
+    var visible = board.clientHeight - 90; // keep the action ~90px below the top
+    var top = (level + 2) * BAR_H;
+    tower.style.transform = top > visible ? "translateY(" + (top - visible) + "px)" : "translateY(0)";
+  }
+  function newSlider(){
+    sliderW = prevWidth;
+    sliderX = sliderDir > 0 ? 0 : board.clientWidth - sliderW;
+    speed = 2.3 + level * 0.16;
+    slider = makeBar(sliderX, sliderW, level + 1);
+    cameraFollow();
+    armIdle();
+  }
+  function tick(){
+    if (!playing || !slider) return;
+    sliderX += speed * sliderDir;
+    var maxX = board.clientWidth - sliderW;
+    if (sliderX <= 0) { sliderX = 0; sliderDir = 1; }
+    if (sliderX >= maxX) { sliderX = maxX; sliderDir = -1; }
+    slider.style.left = sliderX + "px";
+    rafId = requestAnimationFrame(tick);
+  }
+  function perfectPop(x, bottomPx, txt){
+    var p = document.createElement("span");
+    p.className = "perfect-pop";
+    p.textContent = txt;
+    p.style.left = x + "px";
+    p.style.bottom = (bottomPx + BAR_H + 6) + "px";
+    tower.appendChild(p);
+    setTimeout(function(){ p.remove(); }, 700);
+  }
+  function drop(){
+    if (!playing || !slider || dropLock) return;
+    dropLock = true;
+    cancelAnimationFrame(rafId);
+    var overlapL = Math.max(sliderX, prevLeft);
+    var overlapR = Math.min(sliderX + sliderW, prevLeft + prevWidth);
+    var overlap = overlapR - overlapL;
+    if (overlap <= 3) { // clean miss — the bar tumbles off the tower
+      slider.classList.add("falling");
+      blip(160, 0.4, "sawtooth", 0.06);
+      setTimeout(endGame, 650);
+      return;
+    }
+    var perfect = Math.abs(sliderX - prevLeft) <= 5;
+    if (perfect) {
+      overlapL = prevLeft;
+      overlap = prevWidth;
+      perfectRun++;
+      bestStreak = Math.max(bestStreak, perfectRun);
+      var gain = Math.min(50, 25 + (perfectRun - 1) * 5);
+      score += gain;
+      perfectPop(overlapL + overlap / 2, (level + 1) * BAR_H, "PERFECT +" + gain);
+      blip(880 + Math.min(perfectRun, 8) * 40, 0.14, "triangle", 0.055);
+    } else {
+      perfectRun = 0;
+      score += 10;
+      blip(430 + level * 9, 0.09, "square", 0.045);
+    }
+    slider.style.left = overlapL + "px";
+    slider.style.width = overlap + "px";
+    level++;
+    prevLeft = overlapL;
+    prevWidth = overlap;
+    slider = null;
     updateHud();
-    var step = stepFor(round);
-    var lead = twist ? 1250 : 450;
-    seq.forEach(function(tileIdx, n){
-      setTimeout(function(){ if (playing) flash(tileIdx, step, round === 24); }, lead + n * step);
-    });
-    showTimer = setTimeout(function(){
+    if (level >= MAX_BARS) {
+      perfectPop(prevLeft + prevWidth / 2, (level + 1) * BAR_H, "THE TOWER TOUCHES THE SKY!");
+      setTimeout(endGame, 900);
+      return;
+    }
+    setTimeout(function(){
       if (!playing) return;
-      showing = false;
-      board.classList.remove("ghost");
-      inputPos = 0;
-      setStatus(round === 25 ? "YOUR TURN — BACKWARD! 🌀" : "YOUR TURN");
-      updateHud();
-      armIdle();
-    }, lead + seq.length * step + 120);
-  }
-  function nextRound(){
-    round++;
-    seq.push(Math.floor(Math.random() * 4));
-    showSeq();
+      newSlider();
+      dropLock = false;
+      rafId = requestAnimationFrame(tick);
+    }, 140);
   }
   board.addEventListener("pointerdown", function(e){
-    if (!playing || showing) return;
-    var tile = e.target.closest ? e.target.closest(".stile") : null;
-    if (!tile) return;
-    var i = +tile.dataset.i;
-    armIdle();
-    var expect = (round === 25) ? seq[seq.length - 1 - inputPos] : seq[inputPos];
-    if (i === expect) {
-      flash(i, 220);
-      inputPos++;
-      if (inputPos === seq.length) {
-        score += 10 * round;
-        bestStreak = round;
-        updateHud();
-        clearTimeout(idleTimer);
-        if (round >= MAX_ROUND) {
-          setStatus("THE MACHINE KNEELS — PERFECT " + score + "!");
-          roundTimer = setTimeout(endGame, 800);
-        } else {
-          setStatus("NICE! +" + (10 * round));
-          roundTimer = setTimeout(nextRound, 750);
-        }
-      }
-    } else {
-      flash(i, 320);
-      blip(150, 0.3, "sawtooth", 0.06);
-      setStatus("WRONG LINT!");
-      roundTimer = setTimeout(endGame, 600);
-    }
+    e.preventDefault();
+    drop();
+  });
+  document.addEventListener("keydown", function(e){
+    if (e.code === "Space" && playing) { e.preventDefault(); drop(); }
   });
 
   function saveNote(msg, kind){
@@ -2083,20 +2100,28 @@
   function startRun(){
     var m = me();
     if (!m) { renderAll(); return; }
-    board.classList.remove("ghost");
     if (currentCalendarWeek() < WEEK) { toast("EARLY BIRD! THIS GAME UNLOCKS TUESDAY 🐦"); return; }
     if (currentCalendarWeek() > WEEK) { toast("THIS GAME'S WEEK IS OVER — THE NEW GAME AWAITS! 🏁"); return; }
     if (currentCalendarWeek() === WEEK && dayIndex() === 6) { toast("CEREMONY DAY — NO RUNS, JUST GLORY. NEW GAME TOMORROW! 🎉"); return; }
     if (myRuns().length >= triesForMe(m.email, WEEK)) { justFinished = false; renderAll(); toast("OUT OF CREDITS THIS WEEK!"); return; }
     stopTimers();
-    score = 0; round = 0; bestStreak = 0; seq = []; inputPos = 0;
-    playing = true; showing = false;
-    setStatus("GET READY…");
+    tower.innerHTML = "";
+    tower.style.transform = "translateY(0)";
+    score = 0; level = 0; perfectRun = 0; bestStreak = 0;
+    slider = null; sliderDir = 1; dropLock = false;
+    playing = true;
+    prevWidth = Math.min(START_W, Math.floor(board.clientWidth * 0.4));
+    prevLeft = Math.floor((board.clientWidth - prevWidth) / 2);
+    makeBar(prevLeft, prevWidth, 0); // the base bar
     updateHud();
     $("#overlay").hidden = true;
     document.querySelector(".stage").style.minHeight = ""; // game board back to design size
     blip(520, 0.1); setTimeout(function(){ blip(780, 0.12); }, 110);
-    roundTimer = setTimeout(nextRound, 600);
+    setTimeout(function(){
+      if (!playing) return;
+      newSlider();
+      rafId = requestAnimationFrame(tick);
+    }, 350);
   }
   $("#start").addEventListener("click", startRun);
   $("#again-btn").addEventListener("click", startRun);
@@ -2110,7 +2135,7 @@
 
     $("#final-score").textContent = String(score);
     $("#rank-title").textContent = rankTitle(score);
-    $("#end-streak").textContent = "Reached round " + bestStreak + " of " + MAX_ROUND;
+    $("#end-streak").textContent = "Tower height: " + level + " bars · best perfect streak: " + bestStreak;
     showPanel("screen-end");
 
     var m = me();
