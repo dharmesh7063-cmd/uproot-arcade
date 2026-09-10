@@ -155,6 +155,7 @@
   .btn.cyan:active{ transform:translateY(4px); box-shadow:0 1px 0 var(--purple-deep); }
   .btn.big{ font-size:15px; padding:15px 26px; }
   .btn[disabled]{ opacity:.55; cursor:default; }
+  #start:disabled{ animation:none; cursor:wait; filter:saturate(.4); }
   #again-btn{ margin-top:12px; }
   .btn:focus-visible, .chip:focus-visible, .linkbtn:focus-visible, input:focus-visible, .mute:focus-visible{
     outline:3px solid var(--gold); outline-offset:2px;
@@ -1686,7 +1687,15 @@
         $("#locked-rank").textContent = rankTitle(b ? b.score : 0);
         showPanel("screen-locked");
       } else {
-        $("#credit-line").textContent = "🪙 CREDITS LEFT: " + (tries - runs.length) + " OF " + tries + " — BEST RUN COUNTS";
+        /* Race guard (found by Henrique): the button is real only once the board has confirmed credits. */
+        var synced = !CONFIGURED || state.loaded, offlineFirst = !synced && state.error === "net-first";
+        var startBtn = $("#start");
+        startBtn.disabled = !(synced || offlineFirst);
+        startBtn.textContent = (synced || offlineFirst) ? "PRESS START" : "SYNCING CREDITS…";
+        startBtn.classList.toggle("blink", synced || offlineFirst);
+        $("#credit-line").textContent = synced
+          ? "🪙 CREDITS LEFT: " + (tries - runs.length) + " OF " + tries + " — BEST RUN COUNTS"
+          : (offlineFirst ? "📡 OFFLINE — CREDITS UNVERIFIED. THE BOARD HAS THE FINAL SAY." : "🔄 SYNCING YOUR CREDITS WITH THE BOARD…");
         var bsf = $("#best-so-far");
         bsf.hidden = !b;
         if (b) bsf.textContent = "Your best so far: " + b.score + " (" + rankTitle(b.score) + ")";
@@ -2103,6 +2112,7 @@
     if (currentCalendarWeek() < WEEK) { toast("EARLY BIRD! THIS GAME UNLOCKS TUESDAY 🐦"); return; }
     if (currentCalendarWeek() > WEEK) { toast("THIS GAME'S WEEK IS OVER — THE NEW GAME AWAITS! 🏁"); return; }
     if (currentCalendarWeek() === WEEK && dayIndex() === 6) { toast("CEREMONY DAY — NO RUNS, JUST GLORY. NEW GAME TOMORROW! 🎉"); return; }
+    if (CONFIGURED && !state.loaded && state.error !== "net-first") { toast("HOLD ON — SYNCING YOUR CREDITS… 🔄"); return; }
     if (myRuns().length >= triesForMe(m.email, WEEK)) { justFinished = false; renderAll(); toast("OUT OF CREDITS THIS WEEK!"); return; }
     stopTimers();
     tower.innerHTML = "";
