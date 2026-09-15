@@ -1,12 +1,13 @@
 name: weekly-launch
 
-# Every TUESDAY at 09:00 UTC (4-5am US Eastern — past midnight in both
-# EST and EDT), promote this week's game folder to the site root. Safe
+# TUESDAYS, hourly from 04:05 to 14:05 UTC (00:05 Eastern onward — GitHub often
+# runs schedules hours late, so we retry), promote this week's game folder to
+# the site root. Safe
 # to run any time: it no-ops when the right game is already live or the
 # week's folder doesn't exist yet.
 on:
   schedule:
-    - cron: "0 9 * * 2"
+    - cron: "5 4-14 * * 2"
   workflow_dispatch: {}
 
 permissions:
