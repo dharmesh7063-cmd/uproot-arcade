@@ -252,49 +252,23 @@
     width:44px; height:44px; font-size:19px; cursor:pointer; color:var(--lav);
   }
 
-  /* ---------- Board: the soap tower ---------- */
+  /* ---------- Board: the hallway ---------- */
   .stage{ position:relative; }
-  .stack{
+  .run{
     position:relative;
-    height:clamp(360px, 58vh, 460px);
+    height:clamp(280px, 44vh, 360px);
     border:2px solid var(--line); border-radius:10px;
     overflow:hidden;
     background:
-      radial-gradient(circle at 20% 18%, rgba(44,224,222,.08) 0 46px, transparent 48px),
-      radial-gradient(circle at 78% 40%, rgba(140,75,255,.09) 0 34px, transparent 36px),
-      radial-gradient(circle at 55% 75%, rgba(245,44,135,.06) 0 40px, transparent 42px),
-      var(--bg);
+      radial-gradient(circle at 22% 22%, rgba(140,75,255,.08) 0 40px, transparent 42px),
+      radial-gradient(circle at 72% 30%, rgba(44,224,222,.07) 0 32px, transparent 34px),
+      linear-gradient(180deg, var(--bg) 0 78%, #1C1338 78% 100%);
     user-select:none; -webkit-user-select:none; touch-action:manipulation;
     cursor:pointer;
   }
-  .tower{
-    position:absolute; left:0; bottom:0; width:100%; height:100%;
-    transition:transform .28s ease;
-  }
-  .sbar{
-    position:absolute; height:24px;
-    border:2px solid rgba(242,233,255,.75); border-radius:7px;
-    box-sizing:border-box;
-  }
-  .sbar.even{ background:linear-gradient(180deg, #4EE6E4, #17A8A6); }
-  .sbar.odd{ background:linear-gradient(180deg, #B08CFF, #6E3BD6); }
-  .sbar::after{ /* soap shine */
-    content:""; position:absolute; left:8%; top:3px;
-    width:30%; height:5px; border-radius:4px;
-    background:rgba(255,255,255,.55);
-  }
-  .sbar.falling{
-    transition:transform .7s ease-in, opacity .7s ease-in;
-    transform:translateY(320px) rotate(24deg);
-    opacity:0;
-  }
-  .perfect-pop{
-    position:absolute; transform:translateX(-50%);
-    font-family:"Press Start 2P","Courier New",monospace;
-    font-size:11px; color:var(--gold);
-    text-shadow:0 0 10px rgba(255,210,63,.7), 1px 1px 0 rgba(0,0,0,.6);
-    pointer-events:none; z-index:6;
-    animation:rise .7s ease-out forwards;
+  #game-canvas{
+    position:absolute; inset:0; width:100%; height:100%;
+    image-rendering:pixelated;
   }
   .grid{
     display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
@@ -805,7 +779,7 @@
       <span class="l1" data-text="UPROOT">UPROOT</span>
       <span class="l2" data-text="ARCADE">ARCADE</span>
     </h1>
-    <div class="weekchip">WEEK 3 ★ SUDS STACK</div>
+    <div class="weekchip">WEEK 4 ★ MOP HOP</div>
     <p class="tagline">One game a week · Limited credits · Best run counts · Scores live forever</p>
   </header>
 
@@ -873,26 +847,26 @@
       </div>
     </section>
 
-    <section class="card" id="game-card" aria-label="Suds Stack game" hidden>
+    <section class="card" id="game-card" aria-label="Mop Hop runner game" hidden>
       <div class="hud">
-        <div class="pill time" id="time-pill"><span class="lab">Height</span><span class="val" id="hud-time">0</span></div>
+        <div class="pill time" id="time-pill"><span class="lab">Dist</span><span class="val" id="hud-time">0m</span></div>
         <div class="pill"><span class="lab">Score</span><span class="val" id="hud-score">0</span></div>
-        <div class="pill"><span class="lab">Perfects</span><span class="val" id="hud-streak">0</span></div>
+        <div class="pill"><span class="lab">Close Calls</span><span class="val" id="hud-streak">0</span></div>
         <button class="mute" id="mute" aria-pressed="false" title="Toggle sound">🔊</button>
       </div>
       <div class="stage">
-        <div class="stack" id="board" aria-hidden="true">
-          <div class="tower" id="tower"></div>
+        <div class="run" id="board" aria-hidden="true">
+          <canvas id="game-canvas"></canvas>
         </div>
 
         <div class="overlay" id="overlay">
           <div class="panel" id="screen-start">
-            <h2>STACK THE SUDS TO THE SKY!</h2>
+            <h2>THE FLOOR IS FRESHLY MOPPED. RUN.</h2>
             <ul class="howto">
-              <li><span class="demo">🧼</span><span>A soap bar slides — <b>tap anywhere to drop it</b></span></li>
-              <li><span class="demo">🔪</span><span>Overhang gets sliced off — sloppy drops shrink your bar</span></li>
-              <li><span class="demo">✨</span><span>PERFECT drops keep full width · <b class="plus">+25 & streaks</b></span></li>
-              <li><span class="demo">💀</span><span>Miss the stack and the tower falls · one-tap game</span></li>
+              <li><span class="demo">🧹</span><span>Your mop runs on its own — <b>tap to JUMP</b></span></li>
+              <li><span class="demo">🪣</span><span>Buckets, signs, puddles, cats & bucket-stacks — <b>every height needs its own timing</b></span></li>
+              <li><span class="demo">🧽</span><span>Flying sponge? <b class="minus">DON'T JUMP</b> — stay low and duck under. Near-misses <b class="plus">+15</b></span></li>
+              <li><span class="demo">💀</span><span>One hit ends the run · it keeps speeding up · 60s max</span></li>
             </ul>
             <p class="credit" id="credit-line">🪙 CREDITS LEFT: — OF —</p>
             <p class="sub" id="best-so-far" hidden></p>
@@ -950,7 +924,7 @@
           <h2 class="cardtitle">THIS WEEK</h2>
           <button class="sec-toggle" id="th-week" aria-expanded="true" title="Collapse / expand">▾</button>
         </div>
-        <p class="lb-sub2">W3 · SUDS STACK · <span id="roster-count"></span> · <span id="week-days" class="days-left"></span></p>
+        <p class="lb-sub2">W4 · MOP HOP · <span id="roster-count"></span> · <span id="week-days" class="days-left"></span></p>
         <div class="board-body">
           <div id="week-champ" class="week-champ" hidden></div>
           <ol id="week-list" class="wlist"></ol>
@@ -1014,8 +988,8 @@
 (function(){
   "use strict";
   /* ============ weekly config (tune per game) ============ */
-  var WEEK = 3;
-  var GAME_NAME = "SUDS STACK";
+  var WEEK = 4;
+  var GAME_NAME = "MOP HOP";
   var FALLBACK_TRIES = 3; // server value in the `games` table wins
   /* Arcade clock: US Eastern (America/New_York, DST-aware). Weeks run
      Tuesday→Monday on the EASTERN calendar (Tue = game day, Mon = ceremony), anchored Tue 2026-08-25. */
@@ -1282,11 +1256,11 @@
 
   /* ================= rank titles ================= */
   function rankTitle(s){
-    if (s <= 0) return "DROPPED THE SOAP";
-    if (s >= 900) return "THE ARCHITECT";
-    if (s >= 500) return "TOWER TITAN";
-    if (s >= 200) return "LATHER LAYER";
-    return "SOAP DROPPER";
+    if (s <= 0) return "TRIPPED AT THE DOOR";
+    if (s >= 1100) return "UNTOUCHABLE";
+    if (s >= 700) return "MOP MARATHONER";
+    if (s >= 300) return "HALL SPRINTER";
+    return "PUDDLE JUMPER";
   }
 
   /* ================= render ================= */
@@ -1980,124 +1954,358 @@
 
   /* ================= game ================= */
   var board = $("#board");
-  var tower = $("#tower");
+  var cv = $("#game-canvas"), g2 = null;
   var hudTime = $("#hud-time"), hudScore = $("#hud-score"), hudStreak = $("#hud-streak");
   var timePill = $("#time-pill");
-  var score = 0, level = 0, perfectRun = 0, bestStreak = 0, playing = false;
-  var BAR_H = 24, START_W = 130, MAX_BARS = 40;
-  var prevLeft = 0, prevWidth = 0;      // the bar we must land on
-  var slider = null, sliderX = 0, sliderW = 0, sliderDir = 1, speed = 0;
-  var rafId = null, idleTimer = null, dropLock = false;
+  var score = 0, bestStreak = 0, playing = false, dead = false;
+  var SCALE = 4, PLAYER_X = 56, MAX_MS = 60000;
+  var PW = 12 * SCALE, PH = 16 * SCALE;   // player box
+  var py = 0, vy = 0, dist = 0, speed = 0, elapsed = 0;
+  var obstacles = [], popups = [], stars = [], spawnIn = 0, rafId = null, lastT = 0, groundOff = 0;
+
+  /* ---- pixel sprites (1 char = 1 px) ---- */
+  var PAL = { K:"#1A1038", B:"#B07B3E", D:"#7A521F", G:"#C7CEDA", H:"#8E99A4",
+              W:"#FFF3D9", C:"#2CE0DE", T:"#17A8A6", P:"#F52C87", Y:"#FFD23F",
+              U:"#8C4BFF", O:"#F7A21B", E:"#150F2B" };
+  function sprite(rows){
+    var h = rows.length, w = rows[0].length;
+    var c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    var g = c.getContext("2d");
+    for (var y = 0; y < h; y++) {
+      for (var x = 0; x < w; x++) {
+        var ch = rows[y][x];
+        if (ch === ".") continue;
+        g.fillStyle = PAL[ch] || "#FFF";
+        g.fillRect(x, y, 1, 1);
+      }
+    }
+    return c;
+  }
+  var MOP_A = sprite([
+    ".....YY.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....DB.....",
+    ".....DB.....",
+    "....KKKK....",
+    "...KWWWWK...",
+    "..KGGGGGGK..",
+    "..KGKGGKGK..",
+    "..KGGGGGGK..",
+    "..GGGGGGGG..",
+    "..G.GG.GG...",
+    "..G.G..G.G.."
+  ]);
+  var MOP_B = sprite([
+    ".....YY.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....DB.....",
+    ".....DB.....",
+    "....KKKK....",
+    "...KWWWWK...",
+    "..KGGGGGGK..",
+    "..KGKGGKGK..",
+    "..KGGGGGGK..",
+    "..GGGGGGGG..",
+    "...GG.GG.G..",
+    ".G..G..G..G."
+  ]);
+  var MOP_J = sprite([
+    ".....YY.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....BB.....",
+    ".....DB.....",
+    ".....DB.....",
+    "....KKKK....",
+    "...KWWWWK...",
+    "..KGGGGGGK..",
+    "..KGWGGWGK..",
+    "..KGGGGGGK..",
+    "...GGGGGG...",
+    "....GGGG....",
+    "....GGGG...."
+  ]);
+  var BUCKET = sprite([
+    "KKKKKKKKKKKK",
+    "KCWWCCCCCCCK",
+    "KCCCCCCCCCCK",
+    ".KCCCCCCCCK.",
+    ".KCTCCCCTCK.",
+    ".KCTCCCCTCK.",
+    ".KCTCCCCTCK.",
+    "..KTCCCCTK..",
+    "..KTTTTTTK..",
+    "..KKKKKKKK.."
+  ]);
+  var STACK = sprite([
+    "KKKKKKKKKKKK",
+    "KUWWUUUUUUUK",
+    "KUUUUUUUUUUK",
+    ".KUUUUUUUUK.",
+    ".KUUUUUUUUK.",
+    ".KUUUUUUUUK.",
+    "..KUUUUUUK..",
+    "..KKKKKKKK..",
+    "KKKKKKKKKKKK",
+    "KCWWCCCCCCCK",
+    "KCCCCCCCCCCK",
+    ".KCCCCCCCCK.",
+    ".KCCCCCCCCK.",
+    ".KCCCCCCCCK.",
+    ".KCCCCCCCCK.",
+    ".KCCCCCCCCK.",
+    "..KCCCCCCK..",
+    "..KCCCCCCK..",
+    "..KTTTTTTK..",
+    "..KKKKKKKK.."
+  ]);
+  var SIGN = sprite([
+    "....KK....",
+    "...KYYK...",
+    "...KYYK...",
+    "..KYKKYK..",
+    "..KYKKYK..",
+    ".KYYKKYYK.",
+    ".KYYYYYYK.",
+    ".KYYKKYYK.",
+    "KYYYYYYYYK",
+    "KKKKKKKKKK",
+    "..K....K..",
+    "..K....K..",
+    ".KK....KK."
+  ]);
+  var CAT_A = sprite([
+    ".K.K.............",
+    "KUKUK.........KK.",
+    "KUUUK........KUUK",
+    "KWUUKKKKKKKKKUUK.",
+    ".KUUUUUUUUUUUUK..",
+    ".KUUUUUUUUUUUK...",
+    "..KUUUUUUUUUUK...",
+    "..KUK.KUUK.KUK...",
+    "..KK...KK...KK...",
+    "................."
+  ]);
+  var CAT_B = sprite([
+    ".K.K.............",
+    "KUKUK.........KK.",
+    "KUUUK........KUUK",
+    "KWUUKKKKKKKKKUUK.",
+    ".KUUUUUUUUUUUUK..",
+    ".KUUUUUUUUUUUK...",
+    "..KUUUUUUUUUUK...",
+    "..K.KUK.KUK.K....",
+    ".....KK..KK......",
+    "................."
+  ]);
+  var PUDDLE = sprite([
+    "....KKKKKKKKKKKKKK....",
+    "..KKCCWWCCCCCCWWCCKK..",
+    ".KCCCCCCCWWCCCCCCCCCK.",
+    "..KKKKKKKKKKKKKKKKKK.."
+  ]);
+  var SPONGE = sprite([
+    "W....KKKKKK....W",
+    "WW..KOOOOOOK..WW",
+    ".W.KOWOOOOWOK.W.",
+    "...KOOOOOOOOK...",
+    "...KOOWOOWOOK...",
+    "...KOOOOOOOOK...",
+    "....KKKKKKKK....",
+    "................"
+  ]);
+  var OBS_TYPES = [
+    { spr: BUCKET, frames: null, w: 12, h: 10, mode: "ground", minT: 0,     wt: 30, vx: 0 },
+    { spr: SIGN,   frames: null, w: 10, h: 13, mode: "ground", minT: 0,     wt: 22, vx: 0 },
+    { spr: PUDDLE, frames: null, w: 22, h: 4,  mode: "ground", minT: 5000,  wt: 16, vx: 0 },
+    { spr: CAT_A,  frames: [CAT_A, CAT_B], w: 17, h: 9, mode: "ground", minT: 8000, wt: 14, vx: 0.06 },
+    { spr: STACK,  frames: null, w: 12, h: 20, mode: "ground", minT: 12000, wt: 10, vx: 0 },
+    { spr: SPONGE, frames: null, w: 16, h: 7,  mode: "air",    minT: 20000, wt: 14, vx: 0, hover: 84 }
+  ];
 
   board.addEventListener("contextmenu", function(e){ e.preventDefault(); });
 
+  function initCanvas(){
+    cv.width = board.clientWidth;
+    cv.height = board.clientHeight;
+    g2 = cv.getContext("2d");
+    g2.imageSmoothingEnabled = false;
+    stars = [];
+    for (var i = 0; i < 24; i++) {
+      stars.push({ x: Math.random() * cv.width, y: Math.random() * (cv.height - 120),
+                   s: Math.random() < 0.3 ? 3 : 2, a: 0.1 + Math.random() * 0.25 });
+    }
+  }
+  function groundY(){ return cv.height - 24; } // the floor line
   function updateHud(){
-    hudTime.textContent = String(level);
-    hudScore.textContent = String(score);
+    hudTime.textContent = Math.floor(dist / 40) + "m";
+    hudScore.textContent = String(Math.floor(score));
     hudStreak.textContent = String(bestStreak);
-    timePill.classList.toggle("hot", playing && sliderW < 46); // skinny bar = danger
+    timePill.classList.toggle("hot", playing && elapsed > MAX_MS - 10000);
   }
-  function stopTimers(){
-    cancelAnimationFrame(rafId);
-    clearTimeout(idleTimer);
-  }
-  function armIdle(){
-    clearTimeout(idleTimer);
-    idleTimer = setTimeout(function(){ if (playing) endGame(); }, 15000);
-  }
-  function makeBar(left, width, lvl){
-    var el = document.createElement("div");
-    el.className = "sbar " + (lvl % 2 ? "odd" : "even");
-    el.style.left = left + "px";
-    el.style.width = width + "px";
-    el.style.bottom = (lvl * BAR_H) + "px";
-    tower.appendChild(el);
-    return el;
-  }
-  function cameraFollow(){
-    var visible = board.clientHeight - 90; // keep the action ~90px below the top
-    var top = (level + 2) * BAR_H;
-    tower.style.transform = top > visible ? "translateY(" + (top - visible) + "px)" : "translateY(0)";
-  }
-  function newSlider(){
-    sliderW = prevWidth;
-    sliderX = sliderDir > 0 ? 0 : board.clientWidth - sliderW;
-    speed = 2.3 + level * 0.16;
-    slider = makeBar(sliderX, sliderW, level + 1);
-    cameraFollow();
-    armIdle();
-  }
-  function tick(){
-    if (!playing || !slider) return;
-    sliderX += speed * sliderDir;
-    var maxX = board.clientWidth - sliderW;
-    if (sliderX <= 0) { sliderX = 0; sliderDir = 1; }
-    if (sliderX >= maxX) { sliderX = maxX; sliderDir = -1; }
-    slider.style.left = sliderX + "px";
-    rafId = requestAnimationFrame(tick);
-  }
-  function perfectPop(x, bottomPx, txt){
-    var p = document.createElement("span");
-    p.className = "perfect-pop";
-    p.textContent = txt;
-    p.style.left = x + "px";
-    p.style.bottom = (bottomPx + BAR_H + 6) + "px";
-    tower.appendChild(p);
-    setTimeout(function(){ p.remove(); }, 700);
-  }
-  function drop(){
-    if (!playing || !slider || dropLock) return;
-    dropLock = true;
-    cancelAnimationFrame(rafId);
-    var overlapL = Math.max(sliderX, prevLeft);
-    var overlapR = Math.min(sliderX + sliderW, prevLeft + prevWidth);
-    var overlap = overlapR - overlapL;
-    if (overlap <= 3) { // clean miss — the bar tumbles off the tower
-      slider.classList.add("falling");
-      blip(160, 0.4, "sawtooth", 0.06);
-      setTimeout(endGame, 650);
-      return;
+  function stopTimers(){ cancelAnimationFrame(rafId); }
+  function jump(){
+    if (!playing || dead) return;
+    if (py <= 0.5) {
+      vy = 0.70;
+      blip(660, 0.08, "square", 0.04);
     }
-    var perfect = Math.abs(sliderX - prevLeft) <= 5;
-    if (perfect) {
-      overlapL = prevLeft;
-      overlap = prevWidth;
-      perfectRun++;
-      bestStreak = Math.max(bestStreak, perfectRun);
-      var gain = Math.min(50, 25 + (perfectRun - 1) * 5);
-      score += gain;
-      perfectPop(overlapL + overlap / 2, (level + 1) * BAR_H, "PERFECT +" + gain);
-      blip(880 + Math.min(perfectRun, 8) * 40, 0.14, "triangle", 0.055);
+  }
+  function crash(){
+    dead = true;
+    blip(150, 0.4, "sawtooth", 0.07);
+    setTimeout(function(){ playing = false; endGame(); }, 650);
+  }
+  function spawnObstacle(){
+    var pool = [], total = 0;
+    OBS_TYPES.forEach(function(t){ if (elapsed >= t.minT) { pool.push(t); total += t.wt; } });
+    var r = Math.random() * total, pick = pool[0];
+    for (var i = 0; i < pool.length; i++) { r -= pool[i].wt; if (r <= 0) { pick = pool[i]; break; } }
+    obstacles.push({ t: pick, x: cv.width + 40, minGap: 999, cleared: false, bob: Math.random() * 6.28 });
+  }
+  function drawWorld(dt){
+    g2.clearRect(0, 0, cv.width, cv.height);
+    var gy = groundY();
+    // drifting pixel dust (parallax)
+    stars.forEach(function(st){
+      st.x -= speed * dt * 0.25;
+      if (st.x < -4) st.x = cv.width + 4;
+      g2.globalAlpha = st.a;
+      g2.fillStyle = "#8C4BFF";
+      g2.fillRect(Math.floor(st.x), Math.floor(st.y), st.s, st.s);
+    });
+    g2.globalAlpha = 1;
+    // ground
+    groundOff = (groundOff + speed * dt) % 30;
+    g2.fillStyle = "#8C4BFF";
+    for (var x = -groundOff; x < cv.width; x += 30) g2.fillRect(Math.floor(x), gy + 4, 16, 3);
+    g2.fillStyle = "#3D2B70";
+    for (var x2 = -((groundOff * 1.6) % 44); x2 < cv.width; x2 += 44) g2.fillRect(Math.floor(x2), gy + 12, 10, 2);
+  }
+  function drawObstacle(o){
+    var gy = groundY();
+    var t = o.t;
+    var spr = t.frames ? t.frames[Math.floor(elapsed / 130) % 2] : t.spr;
+    var h = t.h * SCALE, w = t.w * SCALE;
+    var yTop;
+    if (t.mode === "air") {
+      var bob = Math.sin(elapsed / 300 + o.bob) * 6;
+      o.flyBottom = t.hover + bob;
+      yTop = gy - o.flyBottom - h;
+      g2.drawImage(spr, Math.floor(o.x), Math.floor(yTop), w, spr.height * SCALE);
     } else {
-      perfectRun = 0;
-      score += 10;
-      blip(430 + level * 9, 0.09, "square", 0.045);
+      yTop = gy - h;
+      g2.drawImage(spr, Math.floor(o.x), Math.floor(yTop), w, spr.height * SCALE);
     }
-    slider.style.left = overlapL + "px";
-    slider.style.width = overlap + "px";
-    level++;
-    prevLeft = overlapL;
-    prevWidth = overlap;
-    slider = null;
+  }
+  function drawPlayer(){
+    var gy = groundY();
+    var spr = py > 0.5 ? MOP_J : (Math.floor(elapsed / 120) % 2 ? MOP_A : MOP_B);
+    var yTop = gy - PH - py;
+    if (dead) {
+      g2.save();
+      g2.translate(PLAYER_X + PW / 2, gy - PH / 3);
+      g2.rotate(-1.4);
+      g2.drawImage(MOP_J, -PW / 2, -PH / 2, PW, PH);
+      g2.restore();
+    } else {
+      g2.drawImage(spr, PLAYER_X, Math.floor(yTop), PW, PH);
+    }
+  }
+  function drawPopups(dt){
+    g2.textAlign = "center";
+    g2.font = '10px "Press Start 2P", monospace';
+    for (var i = popups.length - 1; i >= 0; i--) {
+      var p = popups[i];
+      p.life -= dt; p.y -= dt * 0.03;
+      if (p.life <= 0) { popups.splice(i, 1); continue; }
+      g2.globalAlpha = Math.min(1, p.life / 300);
+      g2.fillStyle = p.color;
+      g2.fillText(p.txt, p.x, p.y);
+    }
+    g2.globalAlpha = 1;
+  }
+  function pop(x, y, txt, color){ popups.push({ x: x, y: y, txt: txt, life: 750, color: color }); }
+  function tick(t){
+    if (!playing) return;
+    var dt = Math.min(40, t - lastT);
+    lastT = t;
+    if (!dead) {
+      elapsed += dt;
+      if (py > 0 || vy > 0) {
+        vy -= 0.0024 * dt;
+        py += vy * dt;
+        if (py <= 0) { py = 0; vy = 0; }
+      }
+      speed = 0.27 + elapsed * 0.0000045;
+      dist += speed * dt;
+      score += speed * dt / 25;
+      spawnIn -= dt;
+      if (spawnIn <= 0) {
+        spawnObstacle();
+        spawnIn = Math.max(560, 760 + Math.random() * 800 - elapsed * 0.004);
+      }
+      var pL = PLAYER_X + 4, pR = PLAYER_X + PW - 4;
+      var pBottom = py, pTop = py + PH; // heights above floor
+      for (var i = obstacles.length - 1; i >= 0; i--) {
+        var o = obstacles[i];
+        o.x -= (speed + (o.t.vx || 0)) * dt;
+        var w = o.t.w * SCALE, h = o.t.h * SCALE;
+        var oL = o.x + 3, oR = o.x + w - 3;
+        if (oR > pL && oL < pR) {
+          if (o.t.mode === "air") {
+            var clearance = o.flyBottom - pTop;
+            if (clearance < o.minGap) o.minGap = clearance;
+            if (pTop > o.flyBottom + 2 || (py > 0.5 && clearance < -2)) { crash(); break; }
+            if (clearance < -2) { crash(); break; }
+          } else {
+            var gap = pBottom - h;
+            if (gap < o.minGap) o.minGap = gap;
+            if (gap < -5) { crash(); break; }
+          }
+        } else if (!o.cleared && oR <= pL) {
+          o.cleared = true;
+          if (o.minGap > -5 && o.minGap < 16) {
+            bestStreak++;
+            score += 15;
+            pop(PLAYER_X + 40, groundY() - 60, "CLOSE! +15", "#FFD23F");
+            blip(980, 0.1, "triangle", 0.05);
+          }
+        }
+        if (o.x < -120) obstacles.splice(i, 1);
+      }
+    }
+    drawWorld(dt);
+    for (var d = 0; d < obstacles.length; d++) drawObstacle(obstacles[d]);
+    drawPlayer();
+    drawPopups(dt);
     updateHud();
-    if (level >= MAX_BARS) {
-      perfectPop(prevLeft + prevWidth / 2, (level + 1) * BAR_H, "THE TOWER TOUCHES THE SKY!");
-      setTimeout(endGame, 900);
+    if (!dead && elapsed >= MAX_MS) {
+      pop(cv.width / 2, groundY() - 90, "YOU OUTRAN THE MESS!", "#2CE0DE");
+      playing = false;
+      stopTimers();
+      setTimeout(endGame, 800);
       return;
     }
-    setTimeout(function(){
-      if (!playing) return;
-      newSlider();
-      dropLock = false;
-      rafId = requestAnimationFrame(tick);
-    }, 140);
+    rafId = requestAnimationFrame(tick);
   }
   board.addEventListener("pointerdown", function(e){
     e.preventDefault();
-    drop();
+    jump();
   });
   document.addEventListener("keydown", function(e){
-    if (e.code === "Space" && playing) { e.preventDefault(); drop(); }
+    if (e.code === "Space" && playing) { e.preventDefault(); jump(); }
   });
 
   function saveNote(msg, kind){
@@ -2115,23 +2323,17 @@
     if (CONFIGURED && !state.loaded && state.error !== "net-first") { toast("HOLD ON — SYNCING YOUR CREDITS… 🔄"); return; }
     if (myRuns().length >= triesForMe(m.email, WEEK)) { justFinished = false; renderAll(); toast("OUT OF CREDITS THIS WEEK!"); return; }
     stopTimers();
-    tower.innerHTML = "";
-    tower.style.transform = "translateY(0)";
-    score = 0; level = 0; perfectRun = 0; bestStreak = 0;
-    slider = null; sliderDir = 1; dropLock = false;
+    initCanvas();
+    obstacles = []; popups = [];
+    score = 0; bestStreak = 0; dist = 0; elapsed = 0;
+    py = 0; vy = 0; spawnIn = 1100; dead = false;
     playing = true;
-    prevWidth = Math.min(START_W, Math.floor(board.clientWidth * 0.4));
-    prevLeft = Math.floor((board.clientWidth - prevWidth) / 2);
-    makeBar(prevLeft, prevWidth, 0); // the base bar
     updateHud();
     $("#overlay").hidden = true;
     document.querySelector(".stage").style.minHeight = ""; // game board back to design size
     blip(520, 0.1); setTimeout(function(){ blip(780, 0.12); }, 110);
-    setTimeout(function(){
-      if (!playing) return;
-      newSlider();
-      rafId = requestAnimationFrame(tick);
-    }, 350);
+    lastT = performance.now();
+    rafId = requestAnimationFrame(tick);
   }
   $("#start").addEventListener("click", startRun);
   $("#again-btn").addEventListener("click", startRun);
@@ -2140,12 +2342,13 @@
     playing = false;
     justFinished = true;
     stopTimers();
+    score = Math.round(score);
     updateHud();
     blip(660, 0.12); setTimeout(function(){ blip(440, 0.25); }, 130);
 
     $("#final-score").textContent = String(score);
     $("#rank-title").textContent = rankTitle(score);
-    $("#end-streak").textContent = "Tower height: " + level + " bars · best perfect streak: " + bestStreak;
+    $("#end-streak").textContent = "Distance: " + Math.floor(dist / 40) + "m · close calls: " + bestStreak;
     showPanel("screen-end");
 
     var m = me();
@@ -2156,7 +2359,7 @@
     var tries = triesForMe(m.email, WEEK);
     var attempt = myRuns().length + 1;
     var left = Math.max(0, tries - attempt);
-    $("#end-title").textContent = left > 0 ? "TIME'S UP!" : "LAST CREDIT SPENT!";
+    $("#end-title").textContent = left <= 0 ? "LAST CREDIT SPENT!" : (elapsed >= MAX_MS ? "YOU OUTRAN THE MESS!" : "WIPED OUT!");
     if (left > 0) {
       againBtn.hidden = false;
       againBtn.textContent = "PLAY AGAIN — " + left + " CREDIT" + (left === 1 ? "" : "S") + " LEFT";
