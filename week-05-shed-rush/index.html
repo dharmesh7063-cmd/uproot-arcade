@@ -869,7 +869,7 @@
             <ul class="howto">
               <li><span class="demo">🐈</span><span>Fur drops straight from the cat — <b>watch the cat, not the balls</b> · every 25s a <b>SHED STORM</b> dumps a burst</span></li>
               <li><span class="demo">🧶</span><span>Every fur ball <b class="plus">+8</b> · back-to-back catches build <b class="plus">x2 / x3</b> · a <b>GOLD ball</b> is <b class="plus">+40</b> and triggers GOLD RUSH: 8 seconds of an extra multiplier</span></li>
-              <li><span class="demo">👟</span><span>Shoes, toys & LEGO cost a heart ❤️ · you have three · a <b>VACUUM WARRANTY</b> card 🧾 drops once in each of the first two minutes: grab it for a heart back (or a bonus 4th) · catch fur right beside a hazard for a <b class="plus">DARING +15</b> · dodging alone scores nothing</span></li>
+              <li><span class="demo">👟</span><span>Shoes, toys & LEGO cost a heart ❤️ · you have three · a big red <b>VACUUM WARRANTY ❤️</b> drops once in each of the first two minutes: grab it for a heart back (or a bonus 4th) · catch fur right beside a hazard for a <b class="plus">DARING +15</b> · dodging alone scores nothing</span></li>
               <li><span class="demo">🔥</span><span>It speeds up every 30s · at <b>2:00 THE CAT TURNS</b> and pounces around the hallway · <b>3 minutes</b> max — catch more than anyone else</span></li>
             </ul>
             <p class="credit" id="credit-line">🪙 CREDITS LEFT: — OF —</p>
@@ -2119,18 +2119,18 @@
     "KKKKKKKKKKKK"
   ]);
   var WARRANTY = sprite([
-    "KKKKKKKKKKKKKK",
-    "KCCCCCCCCCCCCK",
-    "KCWWWWWWWWWWCK",
-    "KCWWWWWWWWYWCK",
-    "KCWKKKWWWYYWCK",
-    "KCWWWWWWYYWWCK",
-    "KCWKKKKYYWWWCK",
-    "KCWWWWYYWWWWCK",
-    "KCWKKKKKWWWWCK",
-    "KCWWWWWWWWWWCK",
-    "KCCCCCCCCCCCCK",
-    "KKKKKKKKKKKKKK"
+    "..KKK....KKK..",
+    ".KRRRK..KRRRK.",
+    "KRWWRRKKRRRRRK",
+    "KRWRRRRRRRRRRK",
+    "KRRRRRRRRRRRRK",
+    "KRRRRRRRRRRRRK",
+    ".KRRRRRRRRRRK.",
+    "..KRRRRRRRRK..",
+    "...KRRRRRRK...",
+    "....KRRRRK....",
+    ".....KRRK.....",
+    "......KK......"
   ]);
   var HAZARDS = [
     { spr: SHOE, w: 10, h: 16, wt: 30, name: "shoe" },
@@ -2318,6 +2318,7 @@
       if (warrantyAt.length && elapsed >= warrantyAt[0]) {
         warrantyAt.shift();
         items.push({ kind: "warranty", spr: WARRANTY, w: 14, h: 12, x: minX() + Math.random() * (maxX() + PW - 14 * SCALE - minX()), y: -60, age: 0, hit: false, passed: false, minGap: 999 });
+        pop(cv.width / 2, cv.height * 0.3, "VACUUM WARRANTY! ❤️", "#FF6262");
       }
       if (tuftIn <= 0) {
         spawnTuft();
@@ -2390,6 +2391,12 @@
     drawWorld(dt);
     for (var d2 = 0; d2 < items.length; d2++) {
       var it = items[d2], iw = it.w * SCALE, ih = it.h * SCALE, sc = it.kind === "haz" ? 1 : Math.min(1, 0.35 + (it.age || 0) / 220);
+      if (it.kind === "warranty") { // the heart beats and glows so it never hides among the toys
+        sc *= 1 + 0.18 * Math.pow(Math.max(0, Math.sin(elapsed / 210)), 8);
+        g2.save(); g2.shadowColor = "#FF4D6D"; g2.shadowBlur = 18;
+        g2.drawImage(it.spr, Math.floor(it.x + (iw - iw * sc) / 2), Math.floor(it.y + (ih - ih * sc) / 2), Math.round(iw * sc), Math.round(ih * sc));
+        g2.restore(); continue;
+      }
       g2.drawImage(it.spr, Math.floor(it.x + (iw - iw * sc) / 2), Math.floor(it.y + (ih - ih * sc) / 2), Math.round(iw * sc), Math.round(ih * sc));
     }
     drawDog();
