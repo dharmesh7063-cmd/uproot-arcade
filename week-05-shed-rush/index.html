@@ -156,6 +156,7 @@
   .btn.big{ font-size:15px; padding:15px 26px; }
   .btn[disabled]{ opacity:.55; cursor:default; }
   #start:disabled{ animation:none; cursor:wait; filter:saturate(.4); }
+  #board.live{ cursor:none; }
   .btn.demo-btn{ background:transparent; border:2px dashed var(--purple); color:var(--lav); box-shadow:none; }
   .btn.demo-btn:hover{ border-color:var(--cyan); color:var(--cyan); }
   #again-btn{ margin-top:12px; }
@@ -1966,7 +1967,7 @@
   var PW = 11 * SCALE, PH = 14 * SCALE;
   var px = 0, targetX = null, keyDir = 0, elapsed = 0, speed = 0, floorOff = 0;
   var lives = 3, streak = 0, tufts = 0, closeCalls = 0, invuln = 0, shake = 0, turned = false;
-  var boost = 0, demoMode = false, runMax = MAX_MS, nextSpeedPop = 30000;
+  var boost = 0, demoMode = false, runMax = MAX_MS, nextSpeedPop = 30000, hissing = false;
   var dog = { x: 0, y: 60, dir: 1, vx: 0 };
   var items = [], popups = [], tuftIn = 0, hazIn = 0, rafId = null, lastT = 0;
 
@@ -2164,6 +2165,7 @@
   function drawDog(){
     var spr = Math.floor(elapsed / 140) % 2 ? CAT_A : CAT_B;
     g2.save();
+    if (hissing && !turned) g2.translate((Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5); // shaking with rage
     if (turned) { g2.translate(dog.x + 8 * SCALE, dog.y + 7 * SCALE); g2.rotate(Math.PI); g2.translate(-(dog.x + 8 * SCALE), -(dog.y + 7 * SCALE)); }
     g2.drawImage(spr, Math.floor(dog.x), Math.floor(dog.y), 16 * SCALE, 14 * SCALE);
     g2.restore();
@@ -2206,8 +2208,13 @@
         pop(cv.width / 2, cv.height * 0.3, "FASTER!", "#8C4BFF");
         blip(880, 0.08, "square", 0.04); setTimeout(function(){ blip(1100, 0.1, "square", 0.04); }, 110);
       }
-      // the cat turns
-      if (!turned && elapsed >= TURN_MS) {
+      // the cat telegraphs, then turns
+      if (!turned && !hissing && !demoMode && elapsed >= TURN_MS - 2500) {
+        hissing = true;
+        pop(dog.x + 8 * SCALE, dog.y + 14 * SCALE + 14, "HISSSS!", "#F52C87");
+        blip(120, 0.5, "sawtooth", 0.05);
+      }
+      if (!turned && !demoMode && elapsed >= TURN_MS) {
         turned = true; dog.vx = 0.16; dog.dir = 1;
         pop(cv.width / 2, cv.height * 0.45, "THE CAT TURNS!", "#F52C87");
         blip(220, 0.3, "square", 0.06); setTimeout(function(){ blip(180, 0.4, "square", 0.06); }, 200);
@@ -2215,7 +2222,7 @@
       // dog movement: weaves up top while shedding, then patrols mid-hallway as a moving wall
       if (!turned) {
         dog.y = 54 + Math.sin(elapsed / 900) * 8;
-        dog.x += dog.dir * 0.08 * dt;
+        if (!hissing) dog.x += dog.dir * 0.08 * dt; // frozen while hissing
         if (dog.x > maxX() - 20) dog.dir = -1;
         if (dog.x < minX()) dog.dir = 1;
         if (Math.random() < dt * 0.0006) dog.dir *= -1;
@@ -2302,7 +2309,7 @@
   }
   function pointerX(e){ var r = cv.getBoundingClientRect(); return (e.clientX - r.left) * (cv.width / r.width); }
   board.addEventListener("pointerdown", function(e){ e.preventDefault(); targetX = pointerX(e); if (board.setPointerCapture) board.setPointerCapture(e.pointerId); });
-  board.addEventListener("pointermove", function(e){ targetX = pointerX(e); }); // hover steers — no click needed
+  document.addEventListener("pointermove", function(e){ if (playing) targetX = pointerX(e); }); // the whole page steers — no click, no borders
   document.addEventListener("keydown", function(e){
     if (!playing) return;
     if (e.code === "ArrowLeft" || e.code === "KeyA") { e.preventDefault(); keyDir = -1; }
@@ -2342,7 +2349,8 @@
     score = 0; bestStreak = 0; streak = 0; tufts = 0; closeCalls = 0; elapsed = 0;
     lives = 3; invuln = 0; shake = 0; turned = false; keyDir = 0; targetX = null;
     px = (cv.width - PW) / 2; dog.x = cv.width / 2 - 8 * SCALE; dog.y = 54; dog.dir = 1; dog.vx = 0;
-    tuftIn = 900; hazIn = 2200; dead = false;
+    tuftIn = 900; hazIn = 2200; dead = false; hissing = false;
+    board.classList.add("live");
     playing = true;
     updateHud();
     $("#overlay").hidden = true;
@@ -2358,6 +2366,7 @@
   function endGame(){
     playing = false;
     stopTimers();
+    board.classList.remove("live");
     if (demoMode) {
       demoMode = false;
       renderAll();
