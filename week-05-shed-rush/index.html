@@ -867,7 +867,7 @@
           <div class="panel" id="screen-start">
             <h2>THE CAT IS SHEDDING. VACUUM.</h2>
             <ul class="howto">
-              <li><span class="demo">🐈</span><span>A cat coughs up fur balls down the hallway — <b>steer the vacuum into them</b></span></li>
+              <li><span class="demo">🐈</span><span>Fur drops straight from the cat — <b>watch the cat, not the balls</b> · every 25s a <b>SHED STORM</b> dumps a burst</span></li>
               <li><span class="demo">🧶</span><span>Every fur ball <b class="plus">+8</b> · back-to-back catches build <b class="plus">x2 / x3</b> · a <b>GOLD ball</b> is <b class="plus">+40</b> and triggers GOLD RUSH: 8 seconds of an extra multiplier</span></li>
               <li><span class="demo">👟</span><span>Shoes, toys & LEGO cost a heart ❤️ · you have three · catch fur right beside a hazard for a <b class="plus">DARING +15</b> · dodging alone scores nothing</span></li>
               <li><span class="demo">🔥</span><span>It speeds up every 30s · at <b>2:00 THE CAT TURNS</b> and pounces around the hallway · <b>3 minutes</b> max — catch more than anyone else</span></li>
@@ -1969,6 +1969,7 @@
   var px = 0, targetX = null, keyDir = 0, elapsed = 0, speed = 0, floorOff = 0;
   var lives = 3, streak = 0, tufts = 0, closeCalls = 0, invuln = 0, shake = 0, turned = false;
   var boost = 0, demoMode = false, runMax = MAX_MS, nextSpeedPop = 30000, hissing = false;
+  var storm = 0, calm = 0, nextStorm = 25000, shedFx = 0;
   var dog = { x: 0, y: 60, dir: 1, vx: 0 };
   var items = [], popups = [], tuftIn = 0, hazIn = 0, rafId = null, lastT = 0;
 
@@ -2156,9 +2157,10 @@
   }
   function spawnTuft(){
     var gold = Math.random() < 0.06;
-    var x = turned ? minX() + Math.random() * (maxX() - minX()) : dog.x + (CAT_W * SCALE) / 2 - (FUR * SCALE) / 2 + (Math.random() - 0.5) * 70;
+    var x = turned ? minX() + Math.random() * (maxX() - minX()) : dog.x + (CAT_W * SCALE) / 2 - (FUR * SCALE) / 2 + (Math.random() - 0.5) * 24;
     x = Math.max(minX(), Math.min(maxX() + PW - FUR * SCALE, x));
-    items.push({ kind: gold ? "gold" : "tuft", spr: gold ? GOLD : TUFT, w: FUR, h: 8, x: x, y: -30, hit: false, passed: false, minGap: 999 });
+    if (!turned) { shedFx = 220; }
+    items.push({ kind: gold ? "gold" : "tuft", spr: gold ? GOLD : TUFT, w: FUR, h: 8, x: x, y: turned ? -30 : dog.y + CAT_H * SCALE - 10, age: 0, hit: false, passed: false, minGap: 999 });
   }
   function spawnHazard(){
     var total = 0; HAZARDS.forEach(function(h){ total += h.wt; });
@@ -2204,6 +2206,7 @@
     var spr = Math.floor(elapsed / 140) % 2 ? CAT_A : CAT_B;
     g2.save();
     if (hissing && !turned) g2.translate((Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5); // shaking with rage
+    else if (shedFx > 0 && !turned) g2.translate((Math.random() - 0.5) * 3, (Math.random() - 0.5) * 2); // shed shiver
     if (turned) { g2.translate(dog.x + CAT_W * SCALE / 2, dog.y + CAT_H * SCALE / 2); g2.rotate(Math.PI); g2.translate(-(dog.x + CAT_W * SCALE / 2), -(dog.y + CAT_H * SCALE / 2)); }
     g2.drawImage(spr, Math.floor(dog.x), Math.floor(dog.y), CAT_W * SCALE, CAT_H * SCALE);
     g2.restore();
@@ -2240,6 +2243,13 @@
     if (!dead) {
       elapsed += dt;
       invuln = Math.max(0, invuln - dt); shake = Math.max(0, shake - dt); boost = Math.max(0, boost - dt);
+      shedFx = Math.max(0, shedFx - dt); calm = Math.max(0, calm - dt);
+      if (storm > 0) { storm = Math.max(0, storm - dt); if (storm === 0) calm = 4000; }
+      if (!turned && !hissing && !demoMode && elapsed >= nextStorm && elapsed < TURN_MS - 6000) {
+        nextStorm += 25000; storm = 2600;
+        pop(cv.width / 2, cv.height * 0.3, "SHED STORM!", "#F52C87");
+        blip(660, 0.08, "square", 0.05); setTimeout(function(){ blip(880, 0.08, "square", 0.05); }, 90); setTimeout(function(){ blip(1100, 0.12, "square", 0.05); }, 180);
+      }
       speed = 0.22 + elapsed * 0.0000034;
       if (!demoMode && elapsed >= nextSpeedPop) {
         nextSpeedPop += 30000;
@@ -2260,10 +2270,10 @@
       // dog movement: weaves up top while shedding, then patrols mid-hallway as a moving wall
       if (!turned) {
         dog.y = 54 + Math.sin(elapsed / 900) * 8;
-        if (!hissing) dog.x += dog.dir * 0.08 * dt; // frozen while hissing
+        if (!hissing) dog.x += dog.dir * (storm > 0 ? 0.34 : 0.08) * dt; // sprints during a storm, frozen while hissing
         if (dog.x > maxX() - 20) dog.dir = -1;
         if (dog.x < minX()) dog.dir = 1;
-        if (Math.random() < dt * 0.0006) dog.dir *= -1;
+        if (storm <= 0 && Math.random() < dt * 0.0006) dog.dir *= -1;
       } else {
         var targetY = cv.height * 0.52;
         dog.y += (targetY - dog.y) * Math.min(1, dt * 0.003);
@@ -2277,13 +2287,16 @@
       px = Math.max(minX(), Math.min(maxX(), px));
       // spawns
       tuftIn -= dt; hazIn -= dt;
-      if (tuftIn <= 0) { spawnTuft(); tuftIn = Math.max(420, 820 - elapsed * 0.0025) * (0.7 + Math.random() * 0.6); }
+      if (tuftIn <= 0) {
+        spawnTuft();
+        tuftIn = storm > 0 ? 190 : (calm > 0 ? 1300 : Math.max(420, 820 - elapsed * 0.0025) * (0.7 + Math.random() * 0.6));
+      }
       if (hazIn <= 0) { spawnHazard(); hazIn = Math.max(700, 1500 - elapsed * 0.005) * (0.7 + Math.random() * 0.6); }
       // items
       var pL = px + 3, pR = px + PW - 3, pT = playerY() + 4, pB = playerY() + PH - 2;
       for (var i = items.length - 1; i >= 0; i--) {
         var o = items[i];
-        o.y += speed * dt;
+        o.y += speed * dt; o.age = (o.age || 0) + dt;
         var w = o.w * SCALE, h = o.h * SCALE;
         var oL = o.x + 2, oR = o.x + w - 2, oT = o.y + 2, oB = o.y + h - 2;
         var overlapY = oB > pT && oT < pB;
@@ -2338,7 +2351,10 @@
     g2.save();
     if (shake > 0) g2.translate((Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6);
     drawWorld(dt);
-    for (var d2 = 0; d2 < items.length; d2++) g2.drawImage(items[d2].spr, Math.floor(items[d2].x), Math.floor(items[d2].y), items[d2].w * SCALE, items[d2].h * SCALE);
+    for (var d2 = 0; d2 < items.length; d2++) {
+      var it = items[d2], iw = it.w * SCALE, ih = it.h * SCALE, sc = it.kind === "haz" ? 1 : Math.min(1, 0.35 + (it.age || 0) / 220);
+      g2.drawImage(it.spr, Math.floor(it.x + (iw - iw * sc) / 2), Math.floor(it.y + (ih - ih * sc) / 2), Math.round(iw * sc), Math.round(ih * sc));
+    }
     drawDog();
     drawPlayer();
     drawPopups(dt);
@@ -2395,7 +2411,7 @@
     score = 0; bestStreak = 0; streak = 0; tufts = 0; closeCalls = 0; elapsed = 0;
     lives = 3; invuln = 0; shake = 0; turned = false; keyDir = 0; targetX = null;
     px = (cv.width - PW) / 2; dog.x = cv.width / 2 - CAT_W * SCALE / 2; dog.y = 54; dog.dir = 1; dog.vx = 0;
-    tuftIn = 900; hazIn = 2200; dead = false; hissing = false;
+    tuftIn = 900; hazIn = 2200; dead = false; hissing = false; storm = 0; calm = 0; nextStorm = 25000; shedFx = 0;
     board.classList.add("live"); document.body.classList.add("playing");
     playing = true;
     updateHud();
