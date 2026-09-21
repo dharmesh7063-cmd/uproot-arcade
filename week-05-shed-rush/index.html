@@ -853,7 +853,7 @@
 
     <section class="card" id="game-card" aria-label="Shed Rush hallway game" hidden>
       <div class="hud">
-        <div class="pill time" id="time-pill"><span class="lab">Time</span><span class="val" id="hud-time">150</span></div>
+        <div class="pill time" id="time-pill"><span class="lab">Time</span><span class="val" id="hud-time">180</span></div>
         <div class="pill"><span class="lab">Score</span><span class="val" id="hud-score">0</span></div>
         <div class="pill"><span class="lab">Streak</span><span class="val" id="hud-streak">0</span></div>
         <button class="mute" id="mute" aria-pressed="false" title="Toggle sound">🔊</button>
@@ -870,7 +870,7 @@
               <li><span class="demo">🐈</span><span>A cat coughs up fur balls down the hallway — <b>steer the vacuum into them</b></span></li>
               <li><span class="demo">🧶</span><span>Every fur ball <b class="plus">+8</b> · back-to-back catches build <b class="plus">x2 / x3</b> · a <b>GOLD ball</b> is <b class="plus">+40</b> and triggers GOLD RUSH: 8 seconds of an extra multiplier</span></li>
               <li><span class="demo">👟</span><span>Shoes, toys & LEGO cost a heart ❤️ · you have three · near-misses <b class="plus">+15</b></span></li>
-              <li><span class="demo">🔥</span><span>It speeds up every 30s · at 100s <b>THE CAT TURNS</b> and pounces around the hallway · survive the full 150s</span></li>
+              <li><span class="demo">🔥</span><span>It speeds up every 30s · at <b>2:00 THE CAT TURNS</b> and pounces around the hallway · <b>3 minutes</b> max — catch more than anyone else</span></li>
             </ul>
             <p class="credit" id="credit-line">🪙 CREDITS LEFT: — OF —</p>
             <p class="sub" id="best-so-far" hidden></p>
@@ -1029,10 +1029,10 @@
   /* Cheat-smell detector: per-week plausibility ceiling (add a line per game).
      Scores above it stay visible but get publicly roasted and are excluded
      from medals, weekly wins, and the season championship. */
-  var SUS_LIMITS = { 1: 2000, 2: 3300, 3: 1400, 4: 1600, 5: 5000 };
+  var SUS_LIMITS = { 1: 2000, 2: 3300, 3: 1400, 4: 1600, 5: 7000 };
   /* Noticeboard controls — flip card kinds on/off; set PINNED_NEWS = null to clear the news card. */
   var NOTICE_KINDS = { sus: false, slacker: false, bounty: true, decree: false, teamDecree: true, bot: false };
-  var PINNED_NEWS = { k: "📰 ARCADE NEWS", html: "<b>SEASON FINALE TOMORROW: SHED RUSH!</b> 🐕 Steer the vacuum behind a shedding cat — catch the fur balls, dodge the toys, survive 150 seconds. Week 4 belongs to <b>Henrique</b> again (1122) — two crowns, season lead. 💰 $100 / $50 / $25 for the season top 3, decided next Monday. Everything is still in play." };
+  var PINNED_NEWS = { k: "📰 ARCADE NEWS", html: "<b>SEASON FINALE TOMORROW: SHED RUSH!</b> 🐕 Steer the vacuum behind a shedding cat — catch the fur balls, dodge the toys, 3 minutes on the clock. Week 4 belongs to <b>Henrique</b> again (1122) — two crowns, season lead. 💰 $100 / $50 / $25 for the season top 3, decided next Monday. Everything is still in play." };
   /* House bots (e.g. Viktor the chatbot): they play every game and keep their
      scores as fun score-holders, but never take medals, wins, or the crown. */
   var BOT_EMAILS = { "ai@uprootclean.com": "Viktor, our house chatbot" };
@@ -1964,8 +1964,8 @@
   var hudTime = $("#hud-time"), hudScore = $("#hud-score"), hudStreak = $("#hud-streak");
   var timePill = $("#time-pill");
   var score = 0, bestStreak = 0, playing = false, dead = false;
-  var SCALE = 4, MAX_MS = 150000, TURN_MS = 100000, WALL = 22;
-  var PW = 11 * SCALE, PH = 14 * SCALE;
+  var SCALE = 3, MAX_MS = 180000, TURN_MS = 120000, WALL = 24;
+  var PW = 17 * SCALE, PH = 23 * SCALE, CAT_W = 20, CAT_H = 18, FUR = 9;
   var px = 0, targetX = null, keyDir = 0, elapsed = 0, speed = 0, floorOff = 0;
   var lives = 3, streak = 0, tufts = 0, closeCalls = 0, invuln = 0, shake = 0, turned = false;
   var boost = 0, demoMode = false, runMax = MAX_MS, nextSpeedPop = 30000, hissing = false;
@@ -1993,104 +1993,134 @@
     return c;
   }
   var VACUUM = sprite([
-    "KKKKKKKKKKK",
-    "KTTTTTTTTTK",
-    "KTGKGKGKGTK",
-    "KTTTTTTTTTK",
-    "KKKKKKKKKKK",
-    "...KKCKK...",
-    "..KCCCCCK..",
-    "..KCUUUCK..",
-    "..KCUUUCK..",
-    "..KCCCCCK..",
-    "...KKKKK...",
-    ".....KK....",
-    ".....KK....",
-    "....KYYK..."
+    "..KKKKKKKKKKKKK..",
+    ".KTTTTTTTTTTTTTK.",
+    "KTCCCCCCCCCCCCCTK",
+    "KTCWCCCCCCCCCCCTK",
+    "KTTTTTTTTTTTTTTTK",
+    "KHKHKHKHKHKHKHKHK",
+    ".KKKKKKKKKKKKKKK.",
+    "......KKNKK......",
+    "......KNCNK......",
+    ".....KKNNNKK.....",
+    "....KUUUUUUUK....",
+    "....KUCWCCCUK....",
+    "....KUCCCCCUK....",
+    "....KUCCCCCUK....",
+    "....KUNNNNNUK....",
+    "....KUUUUUUUK....",
+    ".....KKKKKKK.....",
+    ".......KNK.......",
+    ".......KNK.......",
+    ".......KNK.......",
+    "......KYYYK......",
+    "......KYYYK......",
+    ".......KKK......."
   ]);
   var CAT_A = sprite([
-    "..KK........KK..",
-    ".KGGK......KGGK.",
-    ".KGGGKKKKKKGGGK.",
-    "..KGGGGGGGGGGK..",
-    "..KGKGGGGGGKGK..",
-    "..KGGGGPGGGGGK..",
-    "...KGGGGGGGGK...",
-    "..KGGGGGGGGGGK..",
-    ".KGGKGGGGGGKGGK.",
-    ".KGGKGGGGGGKGGK.",
-    "..KK.KGGGGK.KK..",
-    ".....KGGGGK.....",
-    "......KGGK..KK..",
-    ".......KKKKKWK.."
+    "..KK............KK..",
+    ".KHGK..........KGHK.",
+    ".KHPGK........KGPHK.",
+    ".KHGGGKKKKKKKKGGGHK.",
+    "..KGGGGGGGGGGGGGGK..",
+    "..KGGCKGGGGGGKCGGK..",
+    "..KGGGGGGPPGGGGGGK..",
+    "...KGGGGGWWGGGGGK...",
+    "....KGHGGGGGGHGK....",
+    "...KGGGHGGGGHGGGK...",
+    "..KGGGGGHGGHGGGGGK..",
+    "..KGKGGGGGGGGGGKGK..",
+    "..KGKGGGHGGHGGGKGK..",
+    "..KKKKGGGGGGGGKKKK..",
+    "......KGGGGGGK......",
+    "......KGGHGGK.......",
+    ".......KGGGKKKK.....",
+    ".......KKKKKHWK....."
   ]);
   var CAT_B = sprite([
-    "..KK........KK..",
-    ".KGGK......KGGK.",
-    ".KGGGKKKKKKGGGK.",
-    "..KGGGGGGGGGGK..",
-    "..KGKGGGGGGKGK..",
-    "..KGGGGPGGGGGK..",
-    "...KGGGGGGGGK...",
-    "..KGGGGGGGGGGK..",
-    ".KGKGGGGGGGGKGK.",
-    ".KGKGGGGGGGGKGK.",
-    "..K..KGGGGK..K..",
-    ".....KGGGGK.....",
-    "..KK..KGGK......",
-    "..KWKKKKK......."
+    "..KK............KK..",
+    ".KHGK..........KGHK.",
+    ".KHPGK........KGPHK.",
+    ".KHGGGKKKKKKKKGGGHK.",
+    "..KGGGGGGGGGGGGGGK..",
+    "..KGGCKGGGGGGKCGGK..",
+    "..KGGGGGGPPGGGGGGK..",
+    "...KGGGGGWWGGGGGK...",
+    "....KGHGGGGGGHGK....",
+    "...KGGGHGGGGHGGGK...",
+    "..KGGGGGHGGHGGGGGK..",
+    "..KGKGGGGGGGGGGKGK..",
+    "..KGKGGGHGGHGGGKGK..",
+    "..KKKKGGGGGGGGKKKK..",
+    "......KGGGGGGK......",
+    ".......KGGHGGK......",
+    ".....KKKKGGGK.......",
+    ".....KWHKKKKK......."
   ]);
   var TUFT = sprite([
-    "..FFF..",
-    ".FWFFF.",
-    "FFFFFfF",
-    "FFFFffF",
-    ".Fffff.",
-    "..fff.."
+    "...FFF...",
+    "..FWWFF..",
+    ".FFWFFFf.",
+    "FFFFFFFfF",
+    "FFFFFFfff",
+    ".FFFffff.",
+    "..Fffff..",
+    "...fff..."
   ]);
   var GOLD = sprite([
-    "..YYY..",
-    ".YWYYY.",
-    "YYYYYOY",
-    "YYYYOOY",
-    ".YOOOO.",
-    "..OOO.."
+    "...YYY...",
+    "..YWWYY..",
+    ".YYWYYYO.",
+    "YYYYYYYOY",
+    "YYYYYYOOO",
+    ".YYYOOOO.",
+    "..YOOOO..",
+    "...OOO..."
   ]);
   var SHOE = sprite([
-    "..KKKK..",
-    ".KWWWWK.",
-    ".KWRRWK.",
-    ".KRRRRK.",
-    ".KRKKRK.",
-    ".KRRRRK.",
-    ".KRRRRK.",
-    ".KRRRRK.",
-    "KRRRRRRK",
-    "KRRRRRRK",
-    "KWWWWWWK",
-    ".KKKKKK."
+    "...KKKK...",
+    "..KWWWWK..",
+    ".KWRRRRWK.",
+    ".KRRWWRRK.",
+    ".KRRWWRRK.",
+    ".KRRKKRRK.",
+    ".KRRWWRRK.",
+    ".KRRKKRRK.",
+    ".KRRWWRRK.",
+    ".KRRRRRRK.",
+    ".KRRRRRRK.",
+    "KRRRRRRRRK",
+    "KRRRRRRRRK",
+    "KWWWWWWWWK",
+    "KHHHHHHHHK",
+    ".KKKKKKKK."
   ]);
   var BONE = sprite([
-    "KK......KK",
-    "KWKKKKKKWK",
-    "KWWWWWWWWK",
-    "KWKKKKKKWK",
-    "KK......KK"
+    "KKK......KKK",
+    "KWWK....KWWK",
+    "KWWWKKKKWWWK",
+    ".KWWWWWWWWK.",
+    "KWWWKKKKWWWK",
+    "KWWK....KWWK",
+    "KKK......KKK"
   ]);
   var LEGO = sprite([
-    "KKKKK.....",
-    "KPPPKKKKKK",
-    "KPPPKCCCCK",
-    "KPPPKCCCCK",
-    "KKKKKCCCCK",
-    "KYYYYKKKKK",
-    "KYYYYKUUUK",
-    "KKKKKKKKKK"
+    "KKKKKKK.....",
+    "KPWPWPK.....",
+    "KPPPPPKKKKKK",
+    "KPPPPPKCWCWK",
+    "KPPPPPKCCCCK",
+    "KKKKKKKCCCCK",
+    "KYWYWYKCCCCK",
+    "KYYYYYKKKKKK",
+    "KYYYYYKUWUWK",
+    "KYYYYYKUUUUK",
+    "KKKKKKKKKKKK"
   ]);
   var HAZARDS = [
-    { spr: SHOE, w: 8,  h: 12, wt: 30, name: "shoe" },
-    { spr: BONE, w: 10, h: 5,  wt: 30, name: "chew toy" },
-    { spr: LEGO, w: 10, h: 8,  wt: 25, name: "LEGO" }
+    { spr: SHOE, w: 10, h: 16, wt: 30, name: "shoe" },
+    { spr: BONE, w: 12, h: 7,  wt: 30, name: "chew toy" },
+    { spr: LEGO, w: 12, h: 11, wt: 25, name: "LEGO" }
   ];
 
   board.addEventListener("contextmenu", function(e){ e.preventDefault(); });
@@ -2126,9 +2156,9 @@
   }
   function spawnTuft(){
     var gold = Math.random() < 0.06;
-    var x = turned ? minX() + Math.random() * (maxX() - minX()) : dog.x + 16 + (Math.random() - 0.5) * 70;
-    x = Math.max(minX(), Math.min(maxX() + PW - 7 * SCALE, x));
-    items.push({ kind: gold ? "gold" : "tuft", spr: gold ? GOLD : TUFT, w: 7, h: 6, x: x, y: -30, hit: false, passed: false, minGap: 999 });
+    var x = turned ? minX() + Math.random() * (maxX() - minX()) : dog.x + (CAT_W * SCALE) / 2 - (FUR * SCALE) / 2 + (Math.random() - 0.5) * 70;
+    x = Math.max(minX(), Math.min(maxX() + PW - FUR * SCALE, x));
+    items.push({ kind: gold ? "gold" : "tuft", spr: gold ? GOLD : TUFT, w: FUR, h: 8, x: x, y: -30, hit: false, passed: false, minGap: 999 });
   }
   function spawnHazard(){
     var total = 0; HAZARDS.forEach(function(h){ total += h.wt; });
@@ -2139,18 +2169,25 @@
   }
   function drawWorld(dt){
     g2.clearRect(0, 0, cv.width, cv.height);
-    // floor planks scrolling toward the player
-    floorOff = (floorOff + speed * dt) % 44;
-    g2.fillStyle = "#1C1338";
-    for (var y = floorOff - 44; y < cv.height; y += 44) g2.fillRect(WALL, Math.floor(y), cv.width - WALL * 2, 2);
-    g2.fillStyle = "#231A44";
-    for (var y2 = floorOff - 22; y2 < cv.height; y2 += 44) {
-      g2.fillRect(WALL + 40, Math.floor(y2), 2, 22);
-      g2.fillRect(cv.width - WALL - 90, Math.floor(y2 + 22), 2, 22);
+    // hardwood floorboards scrolling toward the player
+    floorOff = (floorOff + speed * dt) % 48;
+    var inner = cv.width - WALL * 2;
+    for (var y = floorOff - 48; y < cv.height; y += 48) {
+      var yy = Math.floor(y), k = Math.round((y - floorOff) / 48);
+      g2.fillStyle = "#1B1237"; g2.fillRect(WALL, yy, inner, 48);
+      g2.fillStyle = "#211744"; g2.fillRect(WALL, yy, inner, 24);
+      g2.fillStyle = "#130C2A"; g2.fillRect(WALL, yy + 23, inner, 2); g2.fillRect(WALL, yy + 47, inner, 1);
+      var seam = WALL + (((k * 97) % 7 + 7) % 7) * (inner / 7);
+      g2.fillRect(Math.floor(seam), yy, 2, 24);
+      g2.fillRect(Math.floor(WALL + ((seam - WALL + inner * 0.55) % inner)), yy + 24, 2, 24);
+      g2.fillStyle = "#2B2050";
+      g2.fillRect(WALL + 30, yy + 8, 18, 1); g2.fillRect(WALL + inner - 80, yy + 34, 24, 1); g2.fillRect(Math.floor(WALL + inner * 0.5), yy + 15, 14, 1);
     }
-    // walls + baseboards
+    // walls: plaster, baseboard, shadow
     g2.fillStyle = "#2A1D52"; g2.fillRect(0, 0, WALL, cv.height); g2.fillRect(cv.width - WALL, 0, WALL, cv.height);
-    g2.fillStyle = "#8C4BFF"; g2.fillRect(WALL - 3, 0, 3, cv.height); g2.fillRect(cv.width - WALL, 0, 3, cv.height);
+    g2.fillStyle = "#3D2B70"; g2.fillRect(WALL - 7, 0, 7, cv.height); g2.fillRect(cv.width - WALL, 0, 7, cv.height);
+    g2.fillStyle = "#8C4BFF"; g2.fillRect(WALL - 2, 0, 2, cv.height); g2.fillRect(cv.width - WALL, 0, 2, cv.height);
+    g2.fillStyle = "rgba(0,0,0,.28)"; g2.fillRect(WALL, 0, 10, cv.height); g2.fillRect(cv.width - WALL - 10, 0, 10, cv.height);
     // lives
     g2.textAlign = "left"; g2.font = "16px serif";
     var hearts = ""; for (var l = 0; l < 3; l++) hearts += (l < lives ? "❤️" : "🖤");
@@ -2167,8 +2204,8 @@
     var spr = Math.floor(elapsed / 140) % 2 ? CAT_A : CAT_B;
     g2.save();
     if (hissing && !turned) g2.translate((Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5); // shaking with rage
-    if (turned) { g2.translate(dog.x + 8 * SCALE, dog.y + 7 * SCALE); g2.rotate(Math.PI); g2.translate(-(dog.x + 8 * SCALE), -(dog.y + 7 * SCALE)); }
-    g2.drawImage(spr, Math.floor(dog.x), Math.floor(dog.y), 16 * SCALE, 14 * SCALE);
+    if (turned) { g2.translate(dog.x + CAT_W * SCALE / 2, dog.y + CAT_H * SCALE / 2); g2.rotate(Math.PI); g2.translate(-(dog.x + CAT_W * SCALE / 2), -(dog.y + CAT_H * SCALE / 2)); }
+    g2.drawImage(spr, Math.floor(dog.x), Math.floor(dog.y), CAT_W * SCALE, CAT_H * SCALE);
     g2.restore();
   }
   function drawPlayer(){
@@ -2212,7 +2249,7 @@
       // the cat telegraphs, then turns
       if (!turned && !hissing && !demoMode && elapsed >= TURN_MS - 2500) {
         hissing = true;
-        pop(dog.x + 8 * SCALE, dog.y + 14 * SCALE + 14, "HISSSS!", "#F52C87");
+        pop(dog.x + CAT_W * SCALE / 2, dog.y + CAT_H * SCALE + 14, "HISSSS!", "#F52C87");
         blip(120, 0.5, "sawtooth", 0.05);
       }
       if (!turned && !demoMode && elapsed >= TURN_MS) {
@@ -2231,7 +2268,7 @@
         var targetY = cv.height * 0.52;
         dog.y += (targetY - dog.y) * Math.min(1, dt * 0.003);
         dog.x += dog.dir * dog.vx * dt;
-        if (dog.x > cv.width - WALL - 16 * SCALE) dog.dir = -1;
+        if (dog.x > cv.width - WALL - CAT_W * SCALE) dog.dir = -1;
         if (dog.x < WALL) dog.dir = 1;
       }
       // steering
@@ -2286,7 +2323,7 @@
       }
       // the cat itself is a hazard once it has turned
       if (turned) {
-        var dL = dog.x + 8, dR = dog.x + 16 * SCALE - 8, dT = dog.y + 10, dB = dog.y + 14 * SCALE - 10;
+        var dL = dog.x + 8, dR = dog.x + CAT_W * SCALE - 8, dT = dog.y + 10, dB = dog.y + CAT_H * SCALE - 10;
         if (dR > pL && dL < pR && dB > pT && dT < pB) loseLife("CAT POUNCE!");
       }
     }
@@ -2349,7 +2386,7 @@
     items = []; popups = [];
     score = 0; bestStreak = 0; streak = 0; tufts = 0; closeCalls = 0; elapsed = 0;
     lives = 3; invuln = 0; shake = 0; turned = false; keyDir = 0; targetX = null;
-    px = (cv.width - PW) / 2; dog.x = cv.width / 2 - 8 * SCALE; dog.y = 54; dog.dir = 1; dog.vx = 0;
+    px = (cv.width - PW) / 2; dog.x = cv.width / 2 - CAT_W * SCALE / 2; dog.y = 54; dog.dir = 1; dog.vx = 0;
     tuftIn = 900; hazIn = 2200; dead = false; hissing = false;
     board.classList.add("live"); document.body.classList.add("playing");
     playing = true;

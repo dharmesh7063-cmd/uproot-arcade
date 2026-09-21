@@ -1024,10 +1024,10 @@
   /* Cheat-smell detector: per-week plausibility ceiling (add a line per game).
      Scores above it stay visible but get publicly roasted and are excluded
      from medals, weekly wins, and the season championship. */
-  var SUS_LIMITS = { 1: 2000, 2: 3300, 3: 1400, 4: 1600, 5: 5000 };
+  var SUS_LIMITS = { 1: 2000, 2: 3300, 3: 1400, 4: 1600, 5: 7000 };
   /* Noticeboard controls — flip card kinds on/off; set PINNED_NEWS = null to clear the news card. */
   var NOTICE_KINDS = { sus: false, slacker: false, bounty: true, decree: false, teamDecree: true, bot: false };
-  var PINNED_NEWS = { k: "📰 ARCADE NEWS", html: "<b>SEASON FINALE TOMORROW: SHED RUSH!</b> 🐕 Steer the vacuum behind a shedding cat — catch the fur balls, dodge the toys, survive 150 seconds. Week 4 belongs to <b>Henrique</b> again (1122) — two crowns, season lead. 💰 $100 / $50 / $25 for the season top 3, decided next Monday. Everything is still in play." };
+  var PINNED_NEWS = { k: "📰 ARCADE NEWS", html: "<b>SEASON FINALE TOMORROW: SHED RUSH!</b> 🐕 Steer the vacuum behind a shedding cat — catch the fur balls, dodge the toys, 3 minutes on the clock. Week 4 belongs to <b>Henrique</b> again (1122) — two crowns, season lead. 💰 $100 / $50 / $25 for the season top 3, decided next Monday. Everything is still in play." };
   /* House bots (e.g. Viktor the chatbot): they play every game and keep their
      scores as fun score-holders, but never take medals, wins, or the crown. */
   var BOT_EMAILS = { "ai@uprootclean.com": "Viktor, our house chatbot" };
