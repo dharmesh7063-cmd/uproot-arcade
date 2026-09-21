@@ -2096,7 +2096,7 @@
       return loadData();
     }).catch(function(e){
       if (isDup(e)) { // attempt number raced with another device — take the next slot once
-        if (allowRetry && rec.attempt < triesFor(rec.week)) {
+        if (allowRetry && rec.attempt < triesForMe(rec.email, rec.week)) { // bonus credits count here too (found by Nicole)
           rec.attempt += 1;
           submitScore(rec, false);
         } else {
