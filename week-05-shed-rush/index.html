@@ -156,6 +156,8 @@
   .btn.big{ font-size:15px; padding:15px 26px; }
   .btn[disabled]{ opacity:.55; cursor:default; }
   #start:disabled{ animation:none; cursor:wait; filter:saturate(.4); }
+  .btn.demo-btn{ background:transparent; border:2px dashed var(--purple); color:var(--lav); box-shadow:none; }
+  .btn.demo-btn:hover{ border-color:var(--cyan); color:var(--cyan); }
   #again-btn{ margin-top:12px; }
   .btn:focus-visible, .chip:focus-visible, .linkbtn:focus-visible, input:focus-visible, .mute:focus-visible{
     outline:3px solid var(--gold); outline-offset:2px;
@@ -861,18 +863,19 @@
 
         <div class="overlay" id="overlay">
           <div class="panel" id="screen-start">
-            <h2>THE DOG IS SHEDDING. ROLL.</h2>
+            <h2>THE CAT IS SHEDDING. VACUUM.</h2>
             <ul class="howto">
-              <li><span class="demo">🐕</span><span>A golden retriever sheds down the hallway — <b>steer the roller into the fur tufts</b></span></li>
-              <li><span class="demo">🧶</span><span>Every tuft <b class="plus">+8</b> · catch them back-to-back for <b class="plus">x2 / x3</b> streaks · gold tufts <b class="plus">+40</b></span></li>
-              <li><span class="demo">👟</span><span>Shoes, chew toys & LEGO cost a paw 🐾 · you have three · near-misses <b class="plus">+15</b></span></li>
-              <li><span class="demo">🔥</span><span>At 100s <b>THE DOG TURNS</b> and charges the hallway · survive the full 150s</span></li>
+              <li><span class="demo">🐈</span><span>A cat coughs up fur balls down the hallway — <b>steer the vacuum into them</b></span></li>
+              <li><span class="demo">🧶</span><span>Every fur ball <b class="plus">+8</b> · back-to-back catches build <b class="plus">x2 / x3</b> · a <b>GOLD ball</b> triggers GOLD RUSH: 8s of magnet pull and an extra multiplier</span></li>
+              <li><span class="demo">👟</span><span>Shoes, toys & LEGO cost a heart ❤️ · you have three · near-misses <b class="plus">+15</b></span></li>
+              <li><span class="demo">🔥</span><span>It speeds up every 30s · at 100s <b>THE CAT TURNS</b> and pounces around the hallway · survive the full 150s</span></li>
             </ul>
             <p class="credit" id="credit-line">🪙 CREDITS LEFT: — OF —</p>
             <p class="sub" id="best-so-far" hidden></p>
             <p class="bounty-line" id="bounty-line" hidden>🛠️ BUG BOUNTY ACTIVE: +1 credit awarded by the Committee. Hack responsibly, legend.</p>
-            <p class="tip-line">💡 TIP: ARROW KEYS OR A / D · ON PHONE, DRAG YOUR FINGER ACROSS THE HALLWAY</p>
+            <p class="tip-line">🖱️ BEST WITH A MOUSE — just move it, the vacuum follows 1:1 (arrow keys work too). Fingers work, but your finger will be standing on the fur. Science.</p>
             <button class="btn cyan big blink" id="start">PRESS START</button>
+            <button class="btn demo-btn" id="demo-btn">🎮 TRY A 10s DEMO — FREE</button>
             <button class="btn pink" id="brag-btn-start" hidden>📣 BRAG IN SLACK</button>
           </div>
 
@@ -1027,7 +1030,7 @@
   var SUS_LIMITS = { 1: 2000, 2: 3300, 3: 1400, 4: 1600, 5: 5000 };
   /* Noticeboard controls — flip card kinds on/off; set PINNED_NEWS = null to clear the news card. */
   var NOTICE_KINDS = { sus: false, slacker: false, bounty: true, decree: false, teamDecree: true, bot: false };
-  var PINNED_NEWS = { k: "📰 ARCADE NEWS", html: "<b>SEASON FINALE TOMORROW: SHED RUSH!</b> 🐕 Steer the Uproot roller behind a shedding retriever — catch the fur, dodge the toys, survive 150 seconds. Week 4 belongs to <b>Henrique</b> again (1122) — two crowns, season lead. 💰 $100 / $50 / $25 for the season top 3, decided next Monday. Everything is still in play." };
+  var PINNED_NEWS = { k: "📰 ARCADE NEWS", html: "<b>SEASON FINALE TOMORROW: SHED RUSH!</b> 🐕 Steer the vacuum behind a shedding cat — catch the fur balls, dodge the toys, survive 150 seconds. Week 4 belongs to <b>Henrique</b> again (1122) — two crowns, season lead. 💰 $100 / $50 / $25 for the season top 3, decided next Monday. Everything is still in play." };
   /* House bots (e.g. Viktor the chatbot): they play every game and keep their
      scores as fun score-holders, but never take medals, wins, or the crown. */
   var BOT_EMAILS = { "ai@uprootclean.com": "Viktor, our house chatbot" };
@@ -1963,13 +1966,15 @@
   var PW = 11 * SCALE, PH = 14 * SCALE;
   var px = 0, targetX = null, keyDir = 0, elapsed = 0, speed = 0, floorOff = 0;
   var lives = 3, streak = 0, tufts = 0, closeCalls = 0, invuln = 0, shake = 0, turned = false;
+  var boost = 0, demoMode = false, runMax = MAX_MS, nextSpeedPop = 30000;
   var dog = { x: 0, y: 60, dir: 1, vx: 0 };
   var items = [], popups = [], tuftIn = 0, hazIn = 0, rafId = null, lastT = 0;
 
   /* ---- pixel sprites (1 char = 1 px), seen from above ---- */
   var PAL = { K:"#1A1038", B:"#B07B3E", D:"#7A521F", G:"#C7CEDA", H:"#8E99A4",
               W:"#FFF3D9", C:"#2CE0DE", T:"#17A8A6", P:"#F52C87", Y:"#FFD23F",
-              U:"#8C4BFF", O:"#F7A21B", E:"#150F2B", R:"#E0483C", N:"#3D2B70" };
+              U:"#8C4BFF", O:"#F7A21B", E:"#150F2B", R:"#E0483C", N:"#3D2B70",
+              F:"#00D1DB", f:"#0A9AA3" };
   function sprite(rows){
     var h = rows.length, w = rows[0].length;
     var c = document.createElement("canvas");
@@ -1985,61 +1990,61 @@
     }
     return c;
   }
-  var ROLLER = sprite([
-    "....KYYYK..",
-    "....KYYYK..",
-    ".....KCK...",
-    ".....KCK...",
-    ".....KCK...",
-    ".....KCK...",
-    ".....KCK...",
-    "....KKCKK..",
+  var VACUUM = sprite([
     "KKKKKKKKKKK",
     "KTTTTTTTTTK",
-    "KTGTTGTTGTK",
+    "KTGKGKGKGTK",
     "KTTTTTTTTTK",
-    "KNNNNNNNNNK",
-    "KKKKKKKKKKK"
+    "KKKKKKKKKKK",
+    "...KKCKK...",
+    "..KCCCCCK..",
+    "..KCUUUCK..",
+    "..KCUUUCK..",
+    "..KCCCCCK..",
+    "...KKKKK...",
+    ".....KK....",
+    ".....KK....",
+    "....KYYK..."
   ]);
-  var DOG_A = sprite([
-    "...KK......KK...",
-    "..KBBK....KBBK..",
-    "..KBOOKKKKOOBK..",
-    "...KOOOOOOOOK...",
-    "...KOKOOOOKOK...",
-    "...KOOOOOOOOK...",
-    "....KOOOOOOK....",
-    "..KOOOOOOOOOOK..",
-    ".KOOKOOOOOOKOOK.",
-    ".KOOKOOOOOOKOOK.",
-    "..KK.KOOOOK.KK..",
-    ".....KOWWOK.....",
-    "......KWWK......",
-    ".......KK......."
+  var CAT_A = sprite([
+    "..KK........KK..",
+    ".KGGK......KGGK.",
+    ".KGGGKKKKKKGGGK.",
+    "..KGGGGGGGGGGK..",
+    "..KGKGGGGGGKGK..",
+    "..KGGGGPGGGGGK..",
+    "...KGGGGGGGGK...",
+    "..KGGGGGGGGGGK..",
+    ".KGGKGGGGGGKGGK.",
+    ".KGGKGGGGGGKGGK.",
+    "..KK.KGGGGK.KK..",
+    ".....KGGGGK.....",
+    "......KGGK..KK..",
+    ".......KKKKKWK.."
   ]);
-  var DOG_B = sprite([
-    "...KK......KK...",
-    "..KBBK....KBBK..",
-    "..KBOOKKKKOOBK..",
-    "...KOOOOOOOOK...",
-    "...KOKOOOOKOK...",
-    "...KOOOOOOOOK...",
-    "....KOOOOOOK....",
-    "..KOOOOOOOOOOK..",
-    ".KOKOOOOOOOOKOK.",
-    ".KOKOOOOOOOOKOK.",
-    "..K..KOOOOK..K..",
-    ".....KOWWOK.....",
-    ".....KWWOK......",
-    "......KK........"
+  var CAT_B = sprite([
+    "..KK........KK..",
+    ".KGGK......KGGK.",
+    ".KGGGKKKKKKGGGK.",
+    "..KGGGGGGGGGGK..",
+    "..KGKGGGGGGKGK..",
+    "..KGGGGPGGGGGK..",
+    "...KGGGGGGGGK...",
+    "..KGGGGGGGGGGK..",
+    ".KGKGGGGGGGGKGK.",
+    ".KGKGGGGGGGGKGK.",
+    "..K..KGGGGK..K..",
+    ".....KGGGGK.....",
+    "..KK..KGGK......",
+    "..KWKKKKK......."
   ]);
   var TUFT = sprite([
-    "..GGG..",
-    ".GWGGG.",
-    "GGGGGHG",
-    "GGGGHHG",
-    ".GHHHH.",
-    "..HHH.."
+    "..FFF..",
+    ".FWFFF.",
+    "FFFFFfF",
+    "FFFFffF",
+    ".Fffff.",
+    "..fff.."
   ]);
   var GOLD = sprite([
     "..YYY..",
@@ -2097,12 +2102,12 @@
   function playerY(){ return cv.height - PH - 26; }
   function minX(){ return WALL + 4; }
   function maxX(){ return cv.width - WALL - 4 - PW; }
-  function mult(){ return 1 + Math.min(2, Math.floor(streak / 6)); }
+  function mult(){ return 1 + Math.min(2, Math.floor(streak / 6)) + (boost > 0 ? 1 : 0); }
   function updateHud(){
-    var left = Math.max(0, Math.ceil((MAX_MS - elapsed) / 1000));
+    var left = Math.max(0, Math.ceil((runMax - elapsed) / 1000));
     hudTime.textContent = String(left);
     hudScore.textContent = String(Math.floor(score));
-    hudStreak.textContent = "x" + mult() + (streak ? " · " + streak : "");
+    hudStreak.textContent = "x" + mult() + (boost > 0 ? " 🔥" + Math.ceil(boost / 1000) + "s" : (streak ? " · " + streak : ""));
     timePill.classList.toggle("hot", playing && (turned || left <= 10));
   }
   function stopTimers(){ cancelAnimationFrame(rafId); }
@@ -2111,7 +2116,7 @@
     if (invuln > 0 || dead) return;
     lives--; streak = 0; invuln = 1300; shake = 320;
     blip(150, 0.35, "sawtooth", 0.07);
-    pop(px + PW / 2, playerY() - 18, why + " -1🐾", "#F52C87");
+    pop(px + PW / 2, playerY() - 18, why + " -1❤️", "#F52C87");
     if (lives <= 0) {
       dead = true;
       setTimeout(function(){ playing = false; endGame(); }, 700);
@@ -2146,15 +2151,18 @@
     g2.fillStyle = "#8C4BFF"; g2.fillRect(WALL - 3, 0, 3, cv.height); g2.fillRect(cv.width - WALL, 0, 3, cv.height);
     // lives
     g2.textAlign = "left"; g2.font = "16px serif";
-    var paws = ""; for (var l = 0; l < lives; l++) paws += "🐾";
-    g2.fillText(paws, WALL + 8, 22);
+    var hearts = ""; for (var l = 0; l < 3; l++) hearts += (l < lives ? "❤️" : "🖤");
+    g2.fillText(hearts, WALL + 8, 22);
     if (turned) {
       g2.textAlign = "right"; g2.fillStyle = "#F52C87"; g2.font = '9px "Press Start 2P", monospace';
-      g2.fillText("THE DOG TURNED!", cv.width - WALL - 8, 20);
+      g2.fillText("THE CAT TURNED!", cv.width - WALL - 8, 20);
+    } else if (demoMode) {
+      g2.textAlign = "right"; g2.fillStyle = "#FFD23F"; g2.font = '9px "Press Start 2P", monospace';
+      g2.fillText("DEMO — NO CREDIT USED", cv.width - WALL - 8, 20);
     }
   }
   function drawDog(){
-    var spr = Math.floor(elapsed / 140) % 2 ? DOG_A : DOG_B;
+    var spr = Math.floor(elapsed / 140) % 2 ? CAT_A : CAT_B;
     g2.save();
     if (turned) { g2.translate(dog.x + 8 * SCALE, dog.y + 7 * SCALE); g2.rotate(Math.PI); g2.translate(-(dog.x + 8 * SCALE), -(dog.y + 7 * SCALE)); }
     g2.drawImage(spr, Math.floor(dog.x), Math.floor(dog.y), 16 * SCALE, 14 * SCALE);
@@ -2163,9 +2171,13 @@
   function drawPlayer(){
     var y = playerY();
     if (invuln > 0 && Math.floor(elapsed / 90) % 2) return; // blink while invulnerable
+    if (boost > 0) {
+      g2.fillStyle = "rgba(255,210,63," + (0.18 + 0.12 * Math.sin(elapsed / 90)) + ")";
+      g2.fillRect(px - 10, y - 10, PW + 20, PH + 20);
+    }
     g2.save();
     if (dead) { g2.translate(px + PW / 2, y + PH / 2); g2.rotate(1.2); g2.translate(-(px + PW / 2), -(y + PH / 2)); }
-    g2.drawImage(ROLLER, Math.floor(px), Math.floor(y), PW, PH);
+    g2.drawImage(VACUUM, Math.floor(px), Math.floor(y), PW, PH);
     g2.restore();
   }
   function drawPopups(dt){
@@ -2187,12 +2199,17 @@
     lastT = t;
     if (!dead) {
       elapsed += dt;
-      invuln = Math.max(0, invuln - dt); shake = Math.max(0, shake - dt);
-      speed = 0.22 + elapsed * 0.0000030;
-      // the dog turns
+      invuln = Math.max(0, invuln - dt); shake = Math.max(0, shake - dt); boost = Math.max(0, boost - dt);
+      speed = 0.22 + elapsed * 0.0000034;
+      if (!demoMode && elapsed >= nextSpeedPop) {
+        nextSpeedPop += 30000;
+        pop(cv.width / 2, cv.height * 0.3, "FASTER!", "#8C4BFF");
+        blip(880, 0.08, "square", 0.04); setTimeout(function(){ blip(1100, 0.1, "square", 0.04); }, 110);
+      }
+      // the cat turns
       if (!turned && elapsed >= TURN_MS) {
         turned = true; dog.vx = 0.16; dog.dir = 1;
-        pop(cv.width / 2, cv.height * 0.45, "THE DOG TURNS!", "#F52C87");
+        pop(cv.width / 2, cv.height * 0.45, "THE CAT TURNS!", "#F52C87");
         blip(220, 0.3, "square", 0.06); setTimeout(function(){ blip(180, 0.4, "square", 0.06); }, 200);
       }
       // dog movement: weaves up top while shedding, then patrols mid-hallway as a moving wall
@@ -2210,9 +2227,8 @@
         if (dog.x < WALL) dog.dir = 1;
       }
       // steering
-      var maxV = 0.55 * dt;
-      if (keyDir) px += keyDir * maxV;
-      else if (targetX !== null) { var d = targetX - PW / 2 - px; px += Math.max(-maxV, Math.min(maxV, d)); }
+      if (keyDir) px += keyDir * 0.55 * dt;
+      else if (targetX !== null) px = targetX - PW / 2; // 1:1 with the mouse or finger
       px = Math.max(minX(), Math.min(maxX(), px));
       // spawns
       tuftIn -= dt; hazIn -= dt;
@@ -2223,6 +2239,9 @@
       for (var i = items.length - 1; i >= 0; i--) {
         var o = items[i];
         o.y += speed * dt;
+        if (boost > 0 && o.kind !== "haz" && o.y > playerY() - 170 && o.y < playerY() + 10) {
+          o.x += (px + PW / 2 - (o.w * SCALE) / 2 - o.x) * Math.min(1, dt * 0.009); // GOLD RUSH magnet
+        }
         var w = o.w * SCALE, h = o.h * SCALE;
         var oL = o.x + 2, oR = o.x + w - 2, oT = o.y + 2, oB = o.y + h - 2;
         var overlapY = oB > pT && oT < pB;
@@ -2234,9 +2253,10 @@
             } else {
               streak++; tufts++;
               if (streak > bestStreak) bestStreak = streak;
+              if (o.kind === "gold") boost = 8000;
               var pts = o.kind === "gold" ? 40 : 8 * mult();
               score += pts;
-              pop(o.x + w / 2, o.y - 6, "+" + pts + (o.kind === "gold" ? " GOLD!" : (mult() > 1 ? " x" + mult() : "")), o.kind === "gold" ? "#FFD23F" : "#2CE0DE");
+              pop(o.x + w / 2, o.y - 6, o.kind === "gold" ? "GOLD RUSH! +40" : "+" + pts + (mult() > 1 ? " x" + mult() : ""), o.kind === "gold" ? "#FFD23F" : "#00D1DB");
               blip(o.kind === "gold" ? 1200 : 760 + streak * 12, 0.07, "triangle", 0.04);
               items.splice(i, 1); continue;
             }
@@ -2259,10 +2279,10 @@
         }
         if (o.y > cv.height + 40) items.splice(i, 1);
       }
-      // the dog itself is a hazard once it has turned
+      // the cat itself is a hazard once it has turned
       if (turned) {
         var dL = dog.x + 8, dR = dog.x + 16 * SCALE - 8, dT = dog.y + 10, dB = dog.y + 14 * SCALE - 10;
-        if (dR > pL && dL < pR && dB > pT && dT < pB) loseLife("DOG TACKLE!");
+        if (dR > pL && dL < pR && dB > pT && dT < pB) loseLife("CAT POUNCE!");
       }
     }
     g2.save();
@@ -2274,8 +2294,8 @@
     drawPopups(dt);
     g2.restore();
     updateHud();
-    if (!dead && elapsed >= MAX_MS) {
-      pop(cv.width / 2, cv.height * 0.4, "YOU OUTRAN THE SHED!", "#2CE0DE");
+    if (!dead && elapsed >= runMax) {
+      pop(cv.width / 2, cv.height * 0.4, demoMode ? "DEMO OVER!" : "YOU OUTRAN THE SHED!", "#2CE0DE");
       playing = false;
       stopTimers();
       setTimeout(endGame, 800);
@@ -2284,10 +2304,8 @@
     rafId = requestAnimationFrame(tick);
   }
   function pointerX(e){ var r = cv.getBoundingClientRect(); return (e.clientX - r.left) * (cv.width / r.width); }
-  board.addEventListener("pointerdown", function(e){ e.preventDefault(); targetX = pointerX(e); board.setPointerCapture && board.setPointerCapture(e.pointerId); });
-  board.addEventListener("pointermove", function(e){ if (e.pressure > 0 || e.buttons) targetX = pointerX(e); });
-  board.addEventListener("pointerup", function(){ targetX = null; });
-  board.addEventListener("pointercancel", function(){ targetX = null; });
+  board.addEventListener("pointerdown", function(e){ e.preventDefault(); targetX = pointerX(e); if (board.setPointerCapture) board.setPointerCapture(e.pointerId); });
+  board.addEventListener("pointermove", function(e){ targetX = pointerX(e); }); // hover steers — no click needed
   document.addEventListener("keydown", function(e){
     if (!playing) return;
     if (e.code === "ArrowLeft" || e.code === "KeyA") { e.preventDefault(); keyDir = -1; }
@@ -2312,6 +2330,15 @@
     if (currentCalendarWeek() === WEEK && dayIndex() === 6) { toast("CEREMONY DAY — NO RUNS, JUST GLORY. NEW GAME TOMORROW! 🎉"); return; }
     if (CONFIGURED && !state.loaded && state.error !== "net-first") { toast("HOLD ON — SYNCING YOUR CREDITS… 🔄"); return; }
     if (myRuns().length >= triesForMe(m.email, WEEK)) { justFinished = false; renderAll(); toast("OUT OF CREDITS THIS WEEK!"); return; }
+    beginRun(false);
+  }
+  function startDemo(){
+    if (!me() || playing) return;
+    beginRun(true);
+    toast("DEMO: 10 SECONDS, NO CREDIT USED 🎮");
+  }
+  function beginRun(isDemo){
+    demoMode = isDemo; runMax = isDemo ? 10000 : MAX_MS; nextSpeedPop = 30000; boost = 0;
     stopTimers();
     initCanvas();
     items = []; popups = [];
@@ -2328,12 +2355,19 @@
     rafId = requestAnimationFrame(tick);
   }
   $("#start").addEventListener("click", startRun);
+  $("#demo-btn").addEventListener("click", startDemo);
   $("#again-btn").addEventListener("click", startRun);
 
   function endGame(){
     playing = false;
-    justFinished = true;
     stopTimers();
+    if (demoMode) {
+      demoMode = false;
+      renderAll();
+      toast(score > 0 ? "DEMO OVER — " + Math.floor(score) + " PTS. NOW DO IT FOR REAL 🪙" : "DEMO OVER — READY FOR THE REAL RUN? 🪙");
+      return;
+    }
+    justFinished = true;
     score = Math.round(score);
     updateHud();
     blip(660, 0.12); setTimeout(function(){ blip(440, 0.25); }, 130);
