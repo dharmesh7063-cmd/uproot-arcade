@@ -2265,6 +2265,7 @@
       if (!turned && !demoMode && elapsed >= TURN_MS) {
         turned = true; dog.vx = 0.16; dog.dir = 1;
         pop(cv.width / 2, cv.height * 0.45, "THE CAT TURNS!", "#F52C87");
+        if (music.on && audioCtx && !muted) { try { braaam(audioCtx.currentTime, 26, 0.07); } catch (e) {} }
         blip(220, 0.3, "square", 0.06); setTimeout(function(){ blip(180, 0.4, "square", 0.06); }, 200);
       }
       // dog movement: weaves up top while shedding, then patrols mid-hallway as a moving wall
@@ -2398,23 +2399,46 @@
     if (myRuns().length >= triesForMe(m.email, WEEK)) { justFinished = false; renderAll(); toast("OUT OF CREDITS THIS WEEK!"); return; }
     beginRun(false);
   }
-  /* ---- 8-bit soundtrack: three tension tiers (one per minute), very subtle, honors mute ---- */
-  var music = { on: false, timer: null, nextT: 0, step: 0, gain: null, lastTier: -1 };
+  /* ---- Generative 8-bit score: evolving chords, improvised melody, layers that build, a swelling drone,
+          and a BRAAAM at every tension step. Very subtle, honors mute, different every run. ---- */
+  var music = { on: false, timer: null, nextT: 0, step: 0, bar: 0, gain: null, lastTier: -1, drone: null, droneGain: null, droneFilter: null, noise: null, lastLead: 64 };
   var TIERS = [
-    { bpm: 104, bass: [36, 36, 43, 36, 36, 36, 43, 41], lead: [60, -1, 64, -1, 67, -1, 64, -1], leadType: "triangle", vol: 0.022 },
-    { bpm: 124, bass: [33, 33, 40, 33, 36, 36, 43, 35], lead: [57, 60, 64, 60, 65, 64, 60, 59], leadType: "triangle", vol: 0.026 },
-    { bpm: 148, bass: [33, 33, 32, 33, 31, 31, 32, 35], lead: [69, 68, 69, 71, 72, 71, 68, 65], leadType: "square",   vol: 0.03 }
+    { bpm: 104, chords: [[48, 52, 55], [45, 48, 52], [41, 45, 48], [43, 47, 50]], scale: [0, 2, 4, 5, 7, 9, 11], density: 0.42, vol: 0.02,  drone: 0.006, leadType: "triangle" },
+    { bpm: 124, chords: [[45, 48, 52], [41, 45, 48], [48, 52, 55], [40, 44, 47]], scale: [0, 2, 3, 5, 7, 8, 11], density: 0.62, vol: 0.024, drone: 0.009, leadType: "triangle" },
+    { bpm: 148, chords: [[50, 53, 57], [46, 50, 53], [43, 46, 50], [45, 49, 52]], scale: [0, 1, 3, 5, 7, 8, 10], density: 0.8,  vol: 0.028, drone: 0.013, leadType: "square" }
   ];
   function midi(n){ return 440 * Math.pow(2, (n - 69) / 12); }
   function musicTier(){ return demoMode ? 0 : Math.min(2, Math.floor(elapsed / 60000)); }
-  function scheduleNote(t, freq, dur, type, vol){
+  function tone(t, freq, dur, type, vol, dest){
     var o = audioCtx.createOscillator(), g = audioCtx.createGain();
     o.type = type; o.frequency.value = freq;
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(music.gain);
+    o.connect(g); g.connect(dest || music.gain);
     o.start(t); o.stop(t + dur + 0.02);
+  }
+  function noiseHit(t, dur, vol, hp){ // snare / hat from filtered noise
+    if (!music.noise) {
+      var buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.3, audioCtx.sampleRate), d = buf.getChannelData(0);
+      for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      music.noise = buf;
+    }
+    var src = audioCtx.createBufferSource(), f = audioCtx.createBiquadFilter(), g = audioCtx.createGain();
+    src.buffer = music.noise; f.type = "highpass"; f.frequency.value = hp;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(f); f.connect(g); g.connect(music.gain);
+    src.start(t); src.stop(t + dur + 0.02);
+  }
+  function braaam(t, root, vol){ // the Zimmer horn: two detuned saws under a closing lowpass
+    [0, 7].forEach(function(det){
+      var o = audioCtx.createOscillator(), f = audioCtx.createBiquadFilter(), g = audioCtx.createGain();
+      o.type = "sawtooth"; o.frequency.value = midi(root) * (1 + det / 1200);
+      f.type = "lowpass"; f.frequency.setValueAtTime(900, t); f.frequency.exponentialRampToValueAtTime(120, t + 1.4);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.08); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
+      o.connect(f); f.connect(g); g.connect(music.gain);
+      o.start(t); o.stop(t + 1.6);
+    });
   }
   function musicStart(){
     try {
@@ -2423,30 +2447,68 @@
       if (!music.gain) { music.gain = audioCtx.createGain(); music.gain.connect(audioCtx.destination); }
       music.gain.gain.cancelScheduledValues(audioCtx.currentTime);
       music.gain.gain.setValueAtTime(1, audioCtx.currentTime);
-      music.on = true; music.step = 0; music.lastTier = 0; music.nextT = audioCtx.currentTime + 0.12;
+      // the drone: one low saw through a slowly wandering lowpass
+      music.drone = audioCtx.createOscillator(); music.droneFilter = audioCtx.createBiquadFilter(); music.droneGain = audioCtx.createGain();
+      music.drone.type = "sawtooth"; music.drone.frequency.value = midi(36);
+      music.droneFilter.type = "lowpass"; music.droneFilter.frequency.value = 220;
+      music.droneGain.gain.value = 0.0001;
+      music.drone.connect(music.droneFilter); music.droneFilter.connect(music.droneGain); music.droneGain.connect(music.gain);
+      music.drone.start();
+      music.on = true; music.step = 0; music.bar = 0; music.lastTier = 0; music.lastLead = 64;
+      music.nextT = audioCtx.currentTime + 0.12;
       clearInterval(music.timer);
       music.timer = setInterval(musicTick, 90);
     } catch (e) {}
   }
   function musicStop(){
     music.on = false; clearInterval(music.timer);
-    if (music.gain && audioCtx) { try { music.gain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.12); } catch (e) {} }
+    if (music.gain && audioCtx) {
+      try {
+        music.gain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.12);
+        var dr = music.drone; if (dr) setTimeout(function(){ try { dr.stop(); } catch (e) {} }, 800);
+        music.drone = null;
+      } catch (e) {}
+    }
   }
   function musicTick(){
     if (!music.on || !audioCtx) return;
-    if (muted) { music.nextT = Math.max(music.nextT, audioCtx.currentTime + 0.1); return; }
+    if (muted) { music.nextT = Math.max(music.nextT, audioCtx.currentTime + 0.1); if (music.droneGain) music.droneGain.gain.setTargetAtTime(0.0001, audioCtx.currentTime, 0.1); return; }
     var ti = musicTier(), tier = TIERS[ti];
-    if (ti !== music.lastTier) { // tension rises: a quick 3-note riser
-      music.lastTier = ti;
-      [0, 0.09, 0.18].forEach(function(off, k){ scheduleNote(audioCtx.currentTime + off, midi(60 + ti * 5 + k * 4), 0.12, "square", 0.03); });
-    }
-    var stepDur = 60 / tier.bpm / 2; // eighth notes
+    if (ti !== music.lastTier) { music.lastTier = ti; braaam(audioCtx.currentTime, tier.chords[0][0] - 12, 0.05); }
+    var stepDur = 60 / tier.bpm / 2; // eighth notes, 8 per bar
     while (music.nextT < audioCtx.currentTime + 0.25) {
-      var i = music.step % 8;
-      scheduleNote(music.nextT, midi(tier.bass[i]), stepDur * 0.9, "square", tier.vol);
-      if (tier.lead[i] >= 0) scheduleNote(music.nextT, midi(tier.lead[i]), stepDur * 0.6, tier.leadType, tier.vol * 0.5);
-      if (ti === 2 && i % 2 === 1) scheduleNote(music.nextT + stepDur / 2, midi(tier.bass[i]) * 2, stepDur * 0.25, "square", tier.vol * 0.3); // offbeat pulse
+      var i = music.step % 8, bar = music.bar, chord = tier.chords[bar % 4], root = chord[0];
+      var t = music.nextT, layer = Math.min(3, Math.floor(bar / 4)); // layers stack in every 4 bars
+      if (i === 0) { // new bar: retune the drone with a slow glide, wander the filter
+        music.drone.frequency.setTargetAtTime(midi(root - 12), t, 0.4);
+        music.droneGain.gain.setTargetAtTime(tier.drone * (0.7 + layer * 0.1), t, 0.6);
+        music.droneFilter.frequency.setTargetAtTime(160 + Math.random() * 260 + ti * 120, t, 1.2);
+      }
+      // bass: root on 1 and 3, fifth / octave / walk-up chosen per bar
+      var bassPat = [[root, -1, root, -1, root + 7, -1, root, -1], [root, -1, root + 7, -1, root, -1, root + 12, root + 7], [root, root, -1, root + 7, root, -1, root + 5, root + 7]][bar % 3];
+      if (bassPat[i] >= 0) tone(t, midi(bassPat[i]), stepDur * 0.85, "square", tier.vol);
+      // lead: improvised from the chord + scale, random walk, denser as tension rises; rests breathe
+      if (layer >= 1 && Math.random() < tier.density) {
+        var pool = [chord[0] + 12, chord[1] + 12, chord[2] + 12, chord[0] + 24];
+        if (Math.random() < 0.35) pool.push(root + 12 + tier.scale[Math.floor(Math.random() * tier.scale.length)]);
+        var cands = pool.filter(function(n){ return Math.abs(n - music.lastLead) <= 7; });
+        var n = (cands.length ? cands : pool)[Math.floor(Math.random() * (cands.length ? cands : pool).length)];
+        music.lastLead = n;
+        tone(t, midi(n), stepDur * (Math.random() < 0.3 ? 1.6 : 0.7), tier.leadType, tier.vol * 0.5);
+      }
+      // arpeggio shimmer (16ths) on every other bar once the second layer is in
+      if (layer >= 2 && bar % 2 === 1) {
+        tone(t, midi(chord[i % 3] + 24), stepDur * 0.35, "triangle", tier.vol * 0.22);
+        tone(t + stepDur / 2, midi(chord[(i + 1) % 3] + 24), stepDur * 0.35, "triangle", tier.vol * 0.22);
+      }
+      // percussion: hats always, kick from tier 1, snare from tier 2
+      if (i % 2 === 1 || ti === 2) noiseHit(t, 0.03, tier.vol * 0.45, 6000);
+      if (ti >= 1 && (i === 0 || i === 4)) tone(t, 62, 0.11, "square", tier.vol * 1.1);
+      if (ti === 2 && (i === 2 || i === 6)) noiseHit(t, 0.09, tier.vol * 0.9, 1800);
+      // a fill every 4th bar from tier 1: quick 16th run up the chord
+      if (ti >= 1 && bar % 4 === 3 && i >= 6) { tone(t, midi(chord[i % 3] + 12), stepDur * 0.3, "square", tier.vol * 0.4); tone(t + stepDur / 2, midi(chord[(i + 1) % 3] + 12), stepDur * 0.3, "square", tier.vol * 0.4); }
       music.nextT += stepDur; music.step++;
+      if (music.step % 8 === 0) music.bar++;
     }
   }
   function startDemo(){
