@@ -869,7 +869,7 @@
             <ul class="howto">
               <li><span class="demo">🐈</span><span>Fur drops straight from the cat — <b>watch the cat, not the balls</b> · every 25s a <b>SHED STORM</b> dumps a burst</span></li>
               <li><span class="demo">🧶</span><span>Every fur ball <b class="plus">+8</b> · back-to-back catches build <b class="plus">x2 / x3</b> · a <b>GOLD ball</b> is <b class="plus">+40</b> and triggers GOLD RUSH: 8 seconds of an extra multiplier</span></li>
-              <li><span class="demo">👟</span><span>Shoes, toys & LEGO cost a heart ❤️ · you have three · catch fur right beside a hazard for a <b class="plus">DARING +15</b> · dodging alone scores nothing</span></li>
+              <li><span class="demo">👟</span><span>Shoes, toys & LEGO cost a heart ❤️ · you have three · a <b>VACUUM WARRANTY</b> card 🧾 drops twice a run: grab it for a heart back (or a bonus 4th) · catch fur right beside a hazard for a <b class="plus">DARING +15</b> · dodging alone scores nothing</span></li>
               <li><span class="demo">🔥</span><span>It speeds up every 30s · at <b>2:00 THE CAT TURNS</b> and pounces around the hallway · <b>3 minutes</b> max — catch more than anyone else</span></li>
             </ul>
             <p class="credit" id="credit-line">🪙 CREDITS LEFT: — OF —</p>
@@ -1969,7 +1969,7 @@
   var px = 0, targetX = null, keyDir = 0, elapsed = 0, speed = 0, floorOff = 0;
   var lives = 3, streak = 0, tufts = 0, closeCalls = 0, invuln = 0, shake = 0, turned = false;
   var boost = 0, demoMode = false, runMax = MAX_MS, nextSpeedPop = 30000, hissing = false;
-  var storm = 0, calm = 0, nextStorm = 25000, shedFx = 0;
+  var storm = 0, calm = 0, nextStorm = 25000, shedFx = 0, warrantyAt = [];
   var dog = { x: 0, y: 60, dir: 1, vx: 0 };
   var items = [], popups = [], tuftIn = 0, hazIn = 0, rafId = null, lastT = 0;
 
@@ -2118,6 +2118,20 @@
     "KYYYYYKUUUUK",
     "KKKKKKKKKKKK"
   ]);
+  var WARRANTY = sprite([
+    "KKKKKKKKKKKKKK",
+    "KCCCCCCCCCCCCK",
+    "KCWWWWWWWWWWCK",
+    "KCWWWWWWWWYWCK",
+    "KCWKKKWWWYYWCK",
+    "KCWWWWWWYYWWCK",
+    "KCWKKKKYYWWWCK",
+    "KCWWWWYYWWWWCK",
+    "KCWKKKKKWWWWCK",
+    "KCWWWWWWWWWWCK",
+    "KCCCCCCCCCCCCK",
+    "KKKKKKKKKKKKKK"
+  ]);
   var HAZARDS = [
     { spr: SHOE, w: 10, h: 16, wt: 30, name: "shoe" },
     { spr: BONE, w: 12, h: 7,  wt: 30, name: "chew toy" },
@@ -2192,7 +2206,7 @@
     g2.fillStyle = "rgba(0,0,0,.28)"; g2.fillRect(WALL, 0, 10, cv.height); g2.fillRect(cv.width - WALL - 10, 0, 10, cv.height);
     // lives
     g2.textAlign = "left"; g2.font = "16px serif";
-    var hearts = ""; for (var l = 0; l < 3; l++) hearts += (l < lives ? "❤️" : "🖤");
+    var hearts = ""; for (var l = 0; l < Math.max(3, lives); l++) hearts += (l < lives ? "❤️" : "🖤");
     g2.fillText(hearts, WALL + 8, 22);
     if (turned) {
       g2.textAlign = "right"; g2.fillStyle = "#F52C87"; g2.font = '9px "Press Start 2P", monospace';
@@ -2288,6 +2302,10 @@
       px = Math.max(minX(), Math.min(maxX(), px));
       // spawns
       tuftIn -= dt; hazIn -= dt;
+      if (warrantyAt.length && elapsed >= warrantyAt[0]) {
+        warrantyAt.shift();
+        items.push({ kind: "warranty", spr: WARRANTY, w: 14, h: 12, x: minX() + Math.random() * (maxX() + PW - 14 * SCALE - minX()), y: -60, age: 0, hit: false, passed: false, minGap: 999 });
+      }
       if (tuftIn <= 0) {
         spawnTuft();
         tuftIn = storm > 0 ? 190 : (calm > 0 ? 1300 : Math.max(420, 820 - elapsed * 0.0025) * (0.7 + Math.random() * 0.6));
@@ -2306,6 +2324,11 @@
             o.hit = true;
             if (o.kind === "haz") {
               loseLife(o.name.toUpperCase() + "!");
+            } else if (o.kind === "warranty") {
+              lives = Math.min(4, lives + 1);
+              pop(o.x + w / 2, o.y - 8, lives === 4 ? "WARRANTY! BONUS ❤️" : "WARRANTY! +1❤️", "#FFD23F");
+              blip(880, 0.1, "triangle", 0.05); setTimeout(function(){ blip(1320, 0.16, "triangle", 0.05); }, 110);
+              items.splice(i, 1); continue;
             } else {
               streak++; tufts++;
               if (streak > bestStreak) bestStreak = streak;
@@ -2336,7 +2359,7 @@
         }
         if (!o.passed && oT > pB) {
           o.passed = true;
-          if (o.kind !== "haz" && !o.hit && streak > 0) {
+          if ((o.kind === "tuft" || o.kind === "gold") && !o.hit && streak > 0) {
             streak = 0;
             pop(o.x + w / 2, pB - 10, "MISSED", "#8E99A4");
           }
@@ -2525,6 +2548,7 @@
     lives = 3; invuln = 0; shake = 0; turned = false; keyDir = 0; targetX = null;
     px = (cv.width - PW) / 2; dog.x = cv.width / 2 - CAT_W * SCALE / 2; dog.y = 54; dog.dir = 1; dog.vx = 0;
     tuftIn = 900; hazIn = 2200; dead = false; hissing = false; storm = 0; calm = 0; nextStorm = 25000; shedFx = 0;
+    warrantyAt = isDemo ? [] : [45000 + Math.random() * 25000, 125000 + Math.random() * 30000];
     board.classList.add("live"); document.body.classList.add("playing");
     playing = true;
     musicStart();
