@@ -866,7 +866,7 @@
             <h2>THE CAT IS SHEDDING. VACUUM.</h2>
             <ul class="howto">
               <li><span class="demo">🐈</span><span>A cat coughs up fur balls down the hallway — <b>steer the vacuum into them</b></span></li>
-              <li><span class="demo">🧶</span><span>Every fur ball <b class="plus">+8</b> · back-to-back catches build <b class="plus">x2 / x3</b> · a <b>GOLD ball</b> triggers GOLD RUSH: 8s of magnet pull and an extra multiplier</span></li>
+              <li><span class="demo">🧶</span><span>Every fur ball <b class="plus">+8</b> · back-to-back catches build <b class="plus">x2 / x3</b> · a <b>GOLD ball</b> is <b class="plus">+40</b> and triggers GOLD RUSH: 8 seconds of an extra multiplier</span></li>
               <li><span class="demo">👟</span><span>Shoes, toys & LEGO cost a heart ❤️ · you have three · near-misses <b class="plus">+15</b></span></li>
               <li><span class="demo">🔥</span><span>It speeds up every 30s · at 100s <b>THE CAT TURNS</b> and pounces around the hallway · survive the full 150s</span></li>
             </ul>
@@ -2239,9 +2239,6 @@
       for (var i = items.length - 1; i >= 0; i--) {
         var o = items[i];
         o.y += speed * dt;
-        if (boost > 0 && o.kind !== "haz" && o.y > playerY() - 170 && o.y < playerY() + 10) {
-          o.x += (px + PW / 2 - (o.w * SCALE) / 2 - o.x) * Math.min(1, dt * 0.009); // GOLD RUSH magnet
-        }
         var w = o.w * SCALE, h = o.h * SCALE;
         var oL = o.x + 2, oR = o.x + w - 2, oT = o.y + 2, oB = o.y + h - 2;
         var overlapY = oB > pT && oT < pB;
