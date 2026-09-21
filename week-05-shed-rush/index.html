@@ -2174,16 +2174,14 @@
     var inner = cv.width - WALL * 2;
     for (var y = floorOff - 48; y < cv.height; y += 48) {
       var yy = Math.floor(y), k = Math.round((y - floorOff) / 48);
-      g2.fillStyle = "#6B4426"; g2.fillRect(WALL, yy, inner, 48);          // oak
-      g2.fillStyle = "#7A4F2C"; g2.fillRect(WALL, yy, inner, 24);          // lighter board
-      g2.fillStyle = "#3E2412"; g2.fillRect(WALL, yy + 23, inner, 2); g2.fillRect(WALL, yy + 47, inner, 1); // seams
+      g2.fillStyle = "#1B1237"; g2.fillRect(WALL, yy, inner, 48);
+      g2.fillStyle = "#211744"; g2.fillRect(WALL, yy, inner, 24);
+      g2.fillStyle = "#130C2A"; g2.fillRect(WALL, yy + 23, inner, 2); g2.fillRect(WALL, yy + 47, inner, 1);
       var seam = WALL + (((k * 97) % 7 + 7) % 7) * (inner / 7);
       g2.fillRect(Math.floor(seam), yy, 2, 24);
       g2.fillRect(Math.floor(WALL + ((seam - WALL + inner * 0.55) % inner)), yy + 24, 2, 24);
-      g2.fillStyle = "#8D5E36"; // grain highlights
+      g2.fillStyle = "#2B2050";
       g2.fillRect(WALL + 30, yy + 8, 18, 1); g2.fillRect(WALL + inner - 80, yy + 34, 24, 1); g2.fillRect(Math.floor(WALL + inner * 0.5), yy + 15, 14, 1);
-      g2.fillStyle = "#553418"; // knots + dark grain
-      g2.fillRect(WALL + 70, yy + 30, 10, 1); g2.fillRect(Math.floor(WALL + inner * 0.72), yy + 6, 16, 1); g2.fillRect(Math.floor(WALL + inner * 0.3), yy + 40, 3, 2);
     }
     // walls: plaster, baseboard, shadow
     g2.fillStyle = "#2A1D52"; g2.fillRect(0, 0, WALL, cv.height); g2.fillRect(cv.width - WALL, 0, WALL, cv.height);
