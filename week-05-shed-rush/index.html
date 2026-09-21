@@ -869,7 +869,7 @@
             <ul class="howto">
               <li><span class="demo">🐈</span><span>A cat coughs up fur balls down the hallway — <b>steer the vacuum into them</b></span></li>
               <li><span class="demo">🧶</span><span>Every fur ball <b class="plus">+8</b> · back-to-back catches build <b class="plus">x2 / x3</b> · a <b>GOLD ball</b> is <b class="plus">+40</b> and triggers GOLD RUSH: 8 seconds of an extra multiplier</span></li>
-              <li><span class="demo">👟</span><span>Shoes, toys & LEGO cost a heart ❤️ · you have three · only fur scores, dodging is free</span></li>
+              <li><span class="demo">👟</span><span>Shoes, toys & LEGO cost a heart ❤️ · you have three · catch fur right beside a hazard for a <b class="plus">DARING +15</b> · dodging alone scores nothing</span></li>
               <li><span class="demo">🔥</span><span>It speeds up every 30s · at <b>2:00 THE CAT TURNS</b> and pounces around the hallway · <b>3 minutes</b> max — catch more than anyone else</span></li>
             </ul>
             <p class="credit" id="credit-line">🪙 CREDITS LEFT: — OF —</p>
@@ -2298,6 +2298,19 @@
               if (o.kind === "gold") boost = 8000;
               var pts = o.kind === "gold" ? 40 : 8 * mult();
               score += pts;
+              var daring = false;
+              for (var k = 0; k < items.length; k++) {
+                var hz = items[k];
+                if (hz.kind !== "haz" || hz.hit) continue;
+                var gapX = Math.max(0, hz.x - (px + PW), px - (hz.x + hz.w * SCALE));
+                var gapY = Math.max(0, hz.y - (playerY() + PH), playerY() - (hz.y + hz.h * SCALE));
+                if (gapX < 26 && gapY < 26) { daring = true; break; }
+              }
+              if (daring) {
+                score += 15; closeCalls++;
+                pop(px + PW / 2, playerY() - 30, "DARING! +15", "#FFD23F");
+                blip(980, 0.1, "triangle", 0.05);
+              }
               pop(o.x + w / 2, o.y - 6, o.kind === "gold" ? "GOLD RUSH! +40" : "+" + pts + (mult() > 1 ? " x" + mult() : ""), o.kind === "gold" ? "#FFD23F" : "#00D1DB");
               blip(o.kind === "gold" ? 1200 : 760 + streak * 12, 0.07, "triangle", 0.04);
               items.splice(i, 1); continue;
@@ -2309,7 +2322,6 @@
         }
         if (!o.passed && oT > pB) {
           o.passed = true;
-          if (o.kind === "haz" && !o.hit && o.minGap < 10) closeCalls++; // bragging rights only, no points
           if (o.kind !== "haz" && !o.hit && streak > 0) {
             streak = 0;
             pop(o.x + w / 2, pB - 10, "MISSED", "#8E99A4");
@@ -2414,7 +2426,7 @@
 
     $("#final-score").textContent = String(score);
     $("#rank-title").textContent = rankTitle(score);
-    $("#end-streak").textContent = "Fur caught: " + tufts + " · best streak: " + bestStreak + " · close calls: " + closeCalls;
+    $("#end-streak").textContent = "Fur caught: " + tufts + " · best streak: " + bestStreak + " · daring catches: " + closeCalls;
     showPanel("screen-end");
 
     var m = me();
