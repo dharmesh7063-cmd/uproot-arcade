@@ -157,6 +157,7 @@
   .btn[disabled]{ opacity:.55; cursor:default; }
   #start:disabled{ animation:none; cursor:wait; filter:saturate(.4); }
   #board.live{ cursor:none; }
+  body.playing, body.playing *{ cursor:none !important; } /* the mouse is the vacuum now */
   .btn.demo-btn{ background:transparent; border:2px dashed var(--purple); color:var(--lav); box-shadow:none; }
   .btn.demo-btn:hover{ border-color:var(--cyan); color:var(--cyan); }
   #again-btn{ margin-top:12px; }
@@ -2350,7 +2351,7 @@
     lives = 3; invuln = 0; shake = 0; turned = false; keyDir = 0; targetX = null;
     px = (cv.width - PW) / 2; dog.x = cv.width / 2 - 8 * SCALE; dog.y = 54; dog.dir = 1; dog.vx = 0;
     tuftIn = 900; hazIn = 2200; dead = false; hissing = false;
-    board.classList.add("live");
+    board.classList.add("live"); document.body.classList.add("playing");
     playing = true;
     updateHud();
     $("#overlay").hidden = true;
@@ -2366,7 +2367,7 @@
   function endGame(){
     playing = false;
     stopTimers();
-    board.classList.remove("live");
+    board.classList.remove("live"); document.body.classList.remove("playing");
     if (demoMode) {
       demoMode = false;
       renderAll();
