@@ -2132,6 +2132,20 @@
     ".....KRRK.....",
     "......KK......"
   ]);
+  var HEART_DEAD = sprite([
+    "..KKK....KKK..",
+    ".KNNNK..KNNNK.",
+    "KNNNNNKKNNNNNK",
+    "KNNNNNNNNNNNNK",
+    "KNNNNNNNNNNNNK",
+    "KNNNNNNNNNNNNK",
+    ".KNNNNNNNNNNK.",
+    "..KNNNNNNNNK..",
+    "...KNNNNNNK...",
+    "....KNNNNK....",
+    ".....KNNK.....",
+    "......KK......"
+  ]);
   var HAZARDS = [
     { spr: SHOE, w: 10, h: 16, wt: 30, name: "shoe" },
     { spr: BONE, w: 12, h: 7,  wt: 30, name: "chew toy" },
@@ -2206,21 +2220,14 @@
     g2.fillStyle = "rgba(0,0,0,.28)"; g2.fillRect(WALL, 0, 10, cv.height); g2.fillRect(cv.width - WALL - 10, 0, 10, cv.height);
     // lives: beating hearts on a dark pill
     var beat = Math.pow(Math.max(0, Math.sin(elapsed / 210)), 8);
-    var slots = Math.max(3, lives), hx = WALL + 10, hy = 28, hsz = 22;
+    var slots = Math.max(3, lives), hx = WALL + 10, hy = 8, hw = 14 * 2, hh = 12 * 2;
     g2.fillStyle = "rgba(10,6,24,.72)";
-    g2.fillRect(hx - 6, hy - 20, slots * (hsz + 4) + 8, 30);
-    g2.textAlign = "left"; g2.textBaseline = "alphabetic";
+    g2.fillRect(hx - 6, hy - 4, slots * (hw + 6) + 6, hh + 8);
     for (var l = 0; l < slots; l++) {
-      var alive = l < lives, sz = alive ? hsz + 6 * beat : hsz - 2;
-      g2.save();
-      g2.translate(hx + l * (hsz + 4) + hsz / 2, hy - 8);
-      g2.scale(sz / hsz, sz / hsz);
-      g2.font = hsz + "px serif";
-      g2.textAlign = "center"; g2.textBaseline = "middle";
-      g2.fillText(alive ? "❤️" : "🖤", 0, 0);
-      g2.restore();
+      var alive = l < lives, sc = alive ? 1 + 0.18 * beat : 0.9;
+      var cx = hx + l * (hw + 6) + hw / 2, cy = hy + hh / 2;
+      g2.drawImage(alive ? WARRANTY : HEART_DEAD, Math.floor(cx - hw * sc / 2), Math.floor(cy - hh * sc / 2), Math.round(hw * sc), Math.round(hh * sc));
     }
-    g2.textBaseline = "alphabetic";
     if (turned) {
       g2.textAlign = "right"; g2.fillStyle = "#F52C87"; g2.font = '9px "Press Start 2P", monospace';
       g2.fillText("THE CAT TURNED!", cv.width - WALL - 8, 20);
