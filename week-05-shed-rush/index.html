@@ -853,7 +853,7 @@
 
     <section class="card" id="game-card" aria-label="Shed Rush hallway game" hidden>
       <div class="hud">
-        <div class="pill time" id="time-pill"><span class="lab">Time</span><span class="val" id="hud-time">180</span></div>
+        <div class="pill time" id="time-pill"><span class="lab">Time Left</span><span class="val" id="hud-time">3:00</span></div>
         <div class="pill"><span class="lab">Score</span><span class="val" id="hud-score">0</span></div>
         <div class="pill"><span class="lab">Streak</span><span class="val" id="hud-streak">0</span></div>
         <button class="mute" id="mute" aria-pressed="false" title="Toggle sound">🔊</button>
@@ -2138,7 +2138,7 @@
   function mult(){ return 1 + Math.min(2, Math.floor(streak / 6)) + (boost > 0 ? 1 : 0); }
   function updateHud(){
     var left = Math.max(0, Math.ceil((runMax - elapsed) / 1000));
-    hudTime.textContent = String(left);
+    hudTime.textContent = Math.floor(left / 60) + ":" + (left % 60 < 10 ? "0" : "") + (left % 60);
     hudScore.textContent = String(Math.floor(score));
     hudStreak.textContent = "x" + mult() + (boost > 0 ? " 🔥" + Math.ceil(boost / 1000) + "s" : (streak ? " · " + streak : ""));
     timePill.classList.toggle("hot", playing && (turned || left <= 10));
