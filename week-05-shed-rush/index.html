@@ -869,7 +869,7 @@
             <ul class="howto">
               <li><span class="demo">🐈</span><span>A cat coughs up fur balls down the hallway — <b>steer the vacuum into them</b></span></li>
               <li><span class="demo">🧶</span><span>Every fur ball <b class="plus">+8</b> · back-to-back catches build <b class="plus">x2 / x3</b> · a <b>GOLD ball</b> is <b class="plus">+40</b> and triggers GOLD RUSH: 8 seconds of an extra multiplier</span></li>
-              <li><span class="demo">👟</span><span>Shoes, toys & LEGO cost a heart ❤️ · you have three · near-misses <b class="plus">+15</b></span></li>
+              <li><span class="demo">👟</span><span>Shoes, toys & LEGO cost a heart ❤️ · you have three · only fur scores, dodging is free</span></li>
               <li><span class="demo">🔥</span><span>It speeds up every 30s · at <b>2:00 THE CAT TURNS</b> and pounces around the hallway · <b>3 minutes</b> max — catch more than anyone else</span></li>
             </ul>
             <p class="credit" id="credit-line">🪙 CREDITS LEFT: — OF —</p>
@@ -2311,11 +2311,7 @@
         }
         if (!o.passed && oT > pB) {
           o.passed = true;
-          if (o.kind === "haz" && !o.hit && o.minGap < 10) {
-            closeCalls++; score += 15;
-            pop(px + PW / 2, playerY() - 16, "CLOSE! +15", "#FFD23F");
-            blip(980, 0.1, "triangle", 0.05);
-          }
+          if (o.kind === "haz" && !o.hit && o.minGap < 10) closeCalls++; // bragging rights only, no points
           if (o.kind !== "haz" && !o.hit && streak > 0) {
             streak = 0;
             pop(o.x + w / 2, pB - 10, "MISSED", "#8E99A4");
