@@ -869,7 +869,7 @@
             <ul class="howto">
               <li><span class="demo">🐈</span><span>Fur drops straight from the cat — <b>watch the cat, not the balls</b> · every 25s a <b>SHED STORM</b> dumps a burst</span></li>
               <li><span class="demo">🧶</span><span>Every fur ball <b class="plus">+8</b> · back-to-back catches build <b class="plus">x2 / x3</b> · a <b>GOLD ball</b> is <b class="plus">+40</b> and triggers GOLD RUSH: 8 seconds of an extra multiplier</span></li>
-              <li><span class="demo">👟</span><span>Shoes, toys & LEGO cost a heart ❤️ · you have three · a <b>VACUUM WARRANTY</b> card 🧾 drops twice a run: grab it for a heart back (or a bonus 4th) · catch fur right beside a hazard for a <b class="plus">DARING +15</b> · dodging alone scores nothing</span></li>
+              <li><span class="demo">👟</span><span>Shoes, toys & LEGO cost a heart ❤️ · you have three · a <b>VACUUM WARRANTY</b> card 🧾 drops once in each of the first two minutes: grab it for a heart back (or a bonus 4th) · catch fur right beside a hazard for a <b class="plus">DARING +15</b> · dodging alone scores nothing</span></li>
               <li><span class="demo">🔥</span><span>It speeds up every 30s · at <b>2:00 THE CAT TURNS</b> and pounces around the hallway · <b>3 minutes</b> max — catch more than anyone else</span></li>
             </ul>
             <p class="credit" id="credit-line">🪙 CREDITS LEFT: — OF —</p>
@@ -2204,10 +2204,23 @@
     g2.fillStyle = "#3D2B70"; g2.fillRect(WALL - 7, 0, 7, cv.height); g2.fillRect(cv.width - WALL, 0, 7, cv.height);
     g2.fillStyle = "#8C4BFF"; g2.fillRect(WALL - 2, 0, 2, cv.height); g2.fillRect(cv.width - WALL, 0, 2, cv.height);
     g2.fillStyle = "rgba(0,0,0,.28)"; g2.fillRect(WALL, 0, 10, cv.height); g2.fillRect(cv.width - WALL - 10, 0, 10, cv.height);
-    // lives
-    g2.textAlign = "left"; g2.font = "16px serif";
-    var hearts = ""; for (var l = 0; l < Math.max(3, lives); l++) hearts += (l < lives ? "❤️" : "🖤");
-    g2.fillText(hearts, WALL + 8, 22);
+    // lives: beating hearts on a dark pill
+    var beat = Math.pow(Math.max(0, Math.sin(elapsed / 210)), 8);
+    var slots = Math.max(3, lives), hx = WALL + 10, hy = 28, hsz = 22;
+    g2.fillStyle = "rgba(10,6,24,.72)";
+    g2.fillRect(hx - 6, hy - 20, slots * (hsz + 4) + 8, 30);
+    g2.textAlign = "left"; g2.textBaseline = "alphabetic";
+    for (var l = 0; l < slots; l++) {
+      var alive = l < lives, sz = alive ? hsz + 6 * beat : hsz - 2;
+      g2.save();
+      g2.translate(hx + l * (hsz + 4) + hsz / 2, hy - 8);
+      g2.scale(sz / hsz, sz / hsz);
+      g2.font = hsz + "px serif";
+      g2.textAlign = "center"; g2.textBaseline = "middle";
+      g2.fillText(alive ? "❤️" : "🖤", 0, 0);
+      g2.restore();
+    }
+    g2.textBaseline = "alphabetic";
     if (turned) {
       g2.textAlign = "right"; g2.fillStyle = "#F52C87"; g2.font = '9px "Press Start 2P", monospace';
       g2.fillText("THE CAT TURNED!", cv.width - WALL - 8, 20);
@@ -2548,7 +2561,7 @@
     lives = 3; invuln = 0; shake = 0; turned = false; keyDir = 0; targetX = null;
     px = (cv.width - PW) / 2; dog.x = cv.width / 2 - CAT_W * SCALE / 2; dog.y = 54; dog.dir = 1; dog.vx = 0;
     tuftIn = 900; hazIn = 2200; dead = false; hissing = false; storm = 0; calm = 0; nextStorm = 25000; shedFx = 0;
-    warrantyAt = isDemo ? [] : [45000 + Math.random() * 25000, 125000 + Math.random() * 30000];
+    warrantyAt = isDemo ? [] : [18000 + Math.random() * 35000, 65000 + Math.random() * 45000]; // one per minute, before the cat turns
     board.classList.add("live"); document.body.classList.add("playing");
     playing = true;
     musicStart();
