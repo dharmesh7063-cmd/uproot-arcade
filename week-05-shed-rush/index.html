@@ -2197,7 +2197,7 @@
     pop(px + PW / 2, playerY() - 18, why + " -1❤️", "#F52C87");
     if (lives <= 0) {
       dead = true;
-      pop(px + PW / 2, playerY() - 44, "OHH CRAP!", "#F52C87");
+      pop(px + PW / 2, playerY() - 44, "OH CRAP!", "#F52C87");
       sayCrap();
       setTimeout(function(){ playing = false; endGame(); }, 1100);
     }
@@ -2209,7 +2209,7 @@
         setTimeout(function(){ blip(n[0], n[1] === 600 ? 0.55 : 0.2, "square", 0.06); }, n[1]);
       });
       if (window.speechSynthesis && window.SpeechSynthesisUtterance) {
-        var u = new SpeechSynthesisUtterance("ohh... crap!");
+        var u = new SpeechSynthesisUtterance("oh crap");
         u.pitch = 0.45; u.rate = 1.05; u.volume = 0.75;
         setTimeout(function(){ try { speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {} }, 150);
       }
