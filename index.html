@@ -2316,11 +2316,11 @@
   function drawPlayer(){
     var y = playerY();
     if (invuln > 0 && Math.floor(elapsed / 90) % 2) return; // blink while invulnerable
-    if (boost > 0) {
-      g2.fillStyle = "rgba(255,210,63," + (0.18 + 0.12 * Math.sin(elapsed / 90)) + ")";
-      g2.fillRect(px - 10, y - 10, PW + 20, PH + 20);
-    }
     g2.save();
+    if (boost > 0) { // Gold Rush: a soft aura that breathes, no hard edges
+      g2.shadowColor = "rgba(255,210,63," + (0.55 + 0.25 * Math.sin(elapsed / 420)) + ")";
+      g2.shadowBlur = 22 + 8 * Math.sin(elapsed / 420);
+    }
     if (dead) { g2.translate(px + PW / 2, y + PH / 2); g2.rotate(1.2); g2.translate(-(px + PW / 2), -(y + PH / 2)); }
     g2.drawImage(VACUUM, Math.floor(px), Math.floor(y), PW, PH);
     g2.restore();
