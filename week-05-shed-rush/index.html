@@ -869,7 +869,7 @@
             <ul class="howto">
               <li><span class="demo">🐈</span><span>Fur drops straight from the cat — <b>watch the cat, not the balls</b> · every 25s a <b>SHED STORM</b> dumps a burst</span></li>
               <li><span class="demo">🧶</span><span>Fur is worth <b class="plus">+1</b> in minute one, <b class="plus">+2</b> in minute two, <b class="plus">+4</b> in the final speed minute · back-to-back catches multiply <b class="plus">x2 / x3</b> · a <b>GOLD ball</b> pays 5× and triggers GOLD RUSH: 8 seconds of an extra multiplier</span></li>
-              <li><span class="demo">👟</span><span>Shoes, toys & LEGO cost a heart ❤️ · you have three · a big red <b>VACUUM WARRANTY ❤️</b> drops once in each of the first two minutes: grab it for a heart back (or a bonus 4th) · catch fur right beside a hazard for a <b class="plus">DARING bonus</b> (2× the fur value) · dodging alone scores nothing</span></li>
+              <li><span class="demo">👟</span><span>Shoes, toys & LEGO cost a heart ❤️ · you have three · the mess gets thicker every minute · a big red <b>VACUUM WARRANTY ❤️</b> drops once in each of the first two minutes: grab it for a heart back (or a bonus 4th) · catch fur right beside a hazard for a <b class="plus">DARING bonus</b> (2× the fur value) · dodging alone scores nothing</span></li>
               <li><span class="demo">🔥</span><span>It speeds up every 30s · at <b>2:00 THE CAT TURNS</b> and pounces around the hallway · in the last 30s a <b>⏱ CLOCK</b> drops: catch it for <b>+30s OVERTIME</b> at 1.35× speed</span></li>
             </ul>
             <p class="credit" id="credit-line">🪙 CREDITS LEFT: — OF —</p>
@@ -2362,7 +2362,12 @@
         spawnTuft();
         tuftIn = storm > 0 ? 190 : (calm > 0 ? 1300 : Math.max(overtime ? 300 : 420, 820 - elapsed * 0.0025) * (0.7 + Math.random() * 0.6));
       }
-      if (hazIn <= 0) { spawnHazard(); hazIn = Math.max(700, 1500 - elapsed * 0.005) * (0.7 + Math.random() * 0.6); }
+      if (hazIn <= 0) {
+        spawnHazard();
+        if (elapsed >= 60000 && Math.random() < (elapsed >= 120000 ? 0.45 : 0.3)) spawnHazard(); // pairs after the first minute
+        var hzBase = Math.max(700, 1500 - elapsed * 0.005) * (0.7 + Math.random() * 0.6);
+        hazIn = hzBase * (elapsed >= 120000 ? 0.6 : (elapsed >= 60000 ? 0.75 : 1)); // denser every minute
+      }
       // items
       var pL = px + 3, pR = px + PW - 3, pT = playerY() + 4, pB = playerY() + PH - 2;
       for (var i = items.length - 1; i >= 0; i--) {
