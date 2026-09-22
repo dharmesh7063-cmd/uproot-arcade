@@ -2202,17 +2202,50 @@
       setTimeout(function(){ playing = false; endGame(); }, 1100);
     }
   }
-  function sayCrap(){ // 8-bit fail jingle + a chip-voice "ohh crap"
+  function sayCrap(){ // Speak & Spell style speech chip: formant-filtered pulse + noise bursts, bit-crushed
     if (muted) return;
     try {
-      [[392, 0], [370, 180], [349, 360], [311, 600]].forEach(function(n){
-        setTimeout(function(){ blip(n[0], n[1] === 600 ? 0.55 : 0.2, "square", 0.06); }, n[1]);
-      });
-      if (window.speechSynthesis && window.SpeechSynthesisUtterance) {
-        var u = new SpeechSynthesisUtterance("oh crap");
-        u.pitch = 0.45; u.rate = 1.05; u.volume = 0.75;
-        setTimeout(function(){ try { speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {} }, 150);
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      var t0 = audioCtx.currentTime + 0.05;
+      // fail jingle underneath
+      [[392, 0], [370, 0.18], [349, 0.36], [311, 0.6]].forEach(function(n){ tone(t0 + n[1], n[0], n[1] === 0.6 ? 0.55 : 0.2, "square", 0.05, audioCtx.destination); });
+      // 8-bit crusher on the voice
+      var crush = audioCtx.createWaveShaper(), curve = new Float32Array(1024), steps = 14;
+      for (var i = 0; i < 1024; i++) { var x = i / 511.5 - 1; curve[i] = Math.round(x * steps) / steps; }
+      crush.curve = curve;
+      var out = audioCtx.createGain(); out.gain.value = 0.9;
+      crush.connect(out); out.connect(audioCtx.destination);
+      // glottal buzz → two formant bandpasses
+      var car = audioCtx.createOscillator(); car.type = "sawtooth";
+      car.frequency.setValueAtTime(112, t0); car.frequency.linearRampToValueAtTime(84, t0 + 1.0);
+      var f1 = audioCtx.createBiquadFilter(), f2 = audioCtx.createBiquadFilter(), vg = audioCtx.createGain();
+      f1.type = "bandpass"; f1.Q.value = 8; f2.type = "bandpass"; f2.Q.value = 10;
+      vg.gain.setValueAtTime(0.0001, t0);
+      car.connect(f1); car.connect(f2); f1.connect(vg); f2.connect(vg); vg.connect(crush);
+      function vowel(t, dur, F1a, F2a, F1b, F2b, g){
+        f1.frequency.setValueAtTime(F1a, t); f1.frequency.linearRampToValueAtTime(F1b, t + dur);
+        f2.frequency.setValueAtTime(F2a, t); f2.frequency.linearRampToValueAtTime(F2b, t + dur);
+        vg.gain.setValueAtTime(0.0001, t); vg.gain.exponentialRampToValueAtTime(g, t + 0.03);
+        vg.gain.setValueAtTime(g, t + dur - 0.04); vg.gain.exponentialRampToValueAtTime(0.0001, t + dur);
       }
+      function burst(t, dur, hp, g){
+        if (!music.noise) { var buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.3, audioCtx.sampleRate), d = buf.getChannelData(0); for (var k = 0; k < d.length; k++) d[k] = Math.random() * 2 - 1; music.noise = buf; }
+        var src = audioCtx.createBufferSource(), f = audioCtx.createBiquadFilter(), gg = audioCtx.createGain();
+        src.buffer = music.noise; f.type = "bandpass"; f.frequency.value = hp; f.Q.value = 1.2;
+        gg.gain.setValueAtTime(g, t); gg.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        src.connect(f); f.connect(gg); gg.connect(crush); src.start(t); src.stop(t + dur + 0.02);
+      }
+      var t = t0 + 0.12;
+      vowel(t, 0.30, 500, 950, 400, 780, 0.9);           // "OH"  (falling /oʊ/)
+      t += 0.30 + 0.09;
+      burst(t, 0.06, 2600, 0.6);                          // "C"   (k burst)
+      t += 0.06;
+      vowel(t, 0.10, 430, 1300, 650, 1550, 0.7);          // "R"   (glide into the vowel)
+      t += 0.10;
+      vowel(t, 0.24, 700, 1700, 660, 1600, 0.95);         // "A"   (/æ/)
+      t += 0.24 + 0.05;
+      burst(t, 0.04, 700, 0.5);                           // "P"   (stop release)
+      car.start(t0); car.stop(t + 0.3);
     } catch (e) {}
   }
   function spawnTuft(){
