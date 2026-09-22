@@ -156,6 +156,10 @@
   .btn.big{ font-size:15px; padding:15px 26px; }
   .btn[disabled]{ opacity:.55; cursor:default; }
   #start:disabled{ animation:none; cursor:wait; filter:saturate(.4); }
+  #board.live{ cursor:none; }
+  body.playing, body.playing *{ cursor:none !important; } /* the mouse is the vacuum now */
+  .btn.demo-btn{ background:transparent; border:2px dashed var(--purple); color:var(--lav); box-shadow:none; }
+  .btn.demo-btn:hover{ border-color:var(--cyan); color:var(--cyan); }
   #again-btn{ margin-top:12px; }
   .btn:focus-visible, .chip:focus-visible, .linkbtn:focus-visible, input:focus-visible, .mute:focus-visible{
     outline:3px solid var(--gold); outline-offset:2px;
@@ -256,15 +260,15 @@
   .stage{ position:relative; }
   .run{
     position:relative;
-    height:clamp(280px, 44vh, 360px);
+    height:clamp(380px, 60vh, 500px);
     border:2px solid var(--line); border-radius:10px;
     overflow:hidden;
     background:
       radial-gradient(circle at 22% 22%, rgba(140,75,255,.08) 0 40px, transparent 42px),
       radial-gradient(circle at 72% 30%, rgba(44,224,222,.07) 0 32px, transparent 34px),
       linear-gradient(180deg, var(--bg) 0 78%, #1C1338 78% 100%);
-    user-select:none; -webkit-user-select:none; touch-action:manipulation;
-    cursor:pointer;
+    user-select:none; -webkit-user-select:none; touch-action:none;
+    cursor:ew-resize;
   }
   #game-canvas{
     position:absolute; inset:0; width:100%; height:100%;
@@ -779,7 +783,7 @@
       <span class="l1" data-text="UPROOT">UPROOT</span>
       <span class="l2" data-text="ARCADE">ARCADE</span>
     </h1>
-    <div class="weekchip">WEEK 4 ★ MOP HOP</div>
+    <div class="weekchip">WEEK 5 ★ SHED RUSH</div>
     <p class="tagline">One game a week · Limited credits · Best run counts · Scores live forever</p>
   </header>
 
@@ -847,11 +851,11 @@
       </div>
     </section>
 
-    <section class="card" id="game-card" aria-label="Mop Hop runner game" hidden>
+    <section class="card" id="game-card" aria-label="Shed Rush hallway game" hidden>
       <div class="hud">
-        <div class="pill time" id="time-pill"><span class="lab">Dist</span><span class="val" id="hud-time">0m</span></div>
+        <div class="pill time" id="time-pill"><span class="lab">Time Left</span><span class="val" id="hud-time">3:00</span></div>
         <div class="pill"><span class="lab">Score</span><span class="val" id="hud-score">0</span></div>
-        <div class="pill"><span class="lab">Close Calls</span><span class="val" id="hud-streak">0</span></div>
+        <div class="pill"><span class="lab">Streak</span><span class="val" id="hud-streak">0</span></div>
         <button class="mute" id="mute" aria-pressed="false" title="Toggle sound">🔊</button>
       </div>
       <div class="stage">
@@ -861,18 +865,19 @@
 
         <div class="overlay" id="overlay">
           <div class="panel" id="screen-start">
-            <h2>THE FLOOR IS FRESHLY MOPPED. RUN.</h2>
+            <h2>THE CAT IS SHEDDING. VACUUM.</h2>
             <ul class="howto">
-              <li><span class="demo">🧹</span><span>Your mop runs on its own — <b>tap to JUMP</b></span></li>
-              <li><span class="demo">🪣</span><span>Buckets, signs, puddles, cats & bucket-stacks — <b>every height needs its own timing</b></span></li>
-              <li><span class="demo">🧽</span><span>Flying sponge? <b class="minus">DON'T JUMP</b> — stay low and duck under. Near-misses <b class="plus">+15</b></span></li>
-              <li><span class="demo">💀</span><span>One hit ends the run · it keeps speeding up · 60s max</span></li>
+              <li><span class="demo">🐈</span><span>Fur drops straight from the cat — <b>watch the cat, not the balls</b> · every 25s a <b>SHED STORM</b> dumps a burst</span></li>
+              <li><span class="demo">🧶</span><span>Every fur ball <b class="plus">+8</b> · back-to-back catches build <b class="plus">x2 / x3</b> · a <b>GOLD ball</b> is <b class="plus">+40</b> and triggers GOLD RUSH: 8 seconds of an extra multiplier</span></li>
+              <li><span class="demo">👟</span><span>Shoes, toys & LEGO cost a heart ❤️ · you have three · a big red <b>VACUUM WARRANTY ❤️</b> drops once in each of the first two minutes: grab it for a heart back (or a bonus 4th) · catch fur right beside a hazard for a <b class="plus">DARING +15</b> · dodging alone scores nothing</span></li>
+              <li><span class="demo">🔥</span><span>It speeds up every 30s · at <b>2:00 THE CAT TURNS</b> and pounces around the hallway · <b>3 minutes</b> max — catch more than anyone else</span></li>
             </ul>
             <p class="credit" id="credit-line">🪙 CREDITS LEFT: — OF —</p>
             <p class="sub" id="best-so-far" hidden></p>
             <p class="bounty-line" id="bounty-line" hidden>🛠️ BUG BOUNTY ACTIVE: +1 credit awarded by the Committee. Hack responsibly, legend.</p>
-            <p class="tip-line">💡 TIP: SPACEBAR WORKS TOO — CLICK OR SPACE, SAME MOVE</p>
+            <p class="tip-line">🖱️ BEST WITH A MOUSE — just move it, the vacuum follows 1:1 (arrow keys work too). Fingers work, but your finger will be standing on the fur. Science.</p>
             <button class="btn cyan big blink" id="start">PRESS START</button>
+            <button class="btn demo-btn" id="demo-btn">🎮 TRY A 10s DEMO — FREE</button>
             <button class="btn pink" id="brag-btn-start" hidden>📣 BRAG IN SLACK</button>
           </div>
 
@@ -924,7 +929,7 @@
           <h2 class="cardtitle">THIS WEEK</h2>
           <button class="sec-toggle" id="th-week" aria-expanded="true" title="Collapse / expand">▾</button>
         </div>
-        <p class="lb-sub2">W4 · MOP HOP · <span id="roster-count"></span> · <span id="week-days" class="days-left"></span></p>
+        <p class="lb-sub2">W5 · SHED RUSH · <span id="roster-count"></span> · <span id="week-days" class="days-left"></span></p>
         <div class="board-body">
           <div id="week-champ" class="week-champ" hidden></div>
           <ol id="week-list" class="wlist"></ol>
@@ -988,8 +993,8 @@
 (function(){
   "use strict";
   /* ============ weekly config (tune per game) ============ */
-  var WEEK = 4;
-  var GAME_NAME = "MOP HOP";
+  var WEEK = 5;
+  var GAME_NAME = "SHED RUSH";
   var FALLBACK_TRIES = 3; // server value in the `games` table wins
   /* Arcade clock: US Eastern (America/New_York, DST-aware). Weeks run
      Tuesday→Monday on the EASTERN calendar (Tue = game day, Mon = ceremony), anchored Tue 2026-08-25. */
@@ -1258,11 +1263,12 @@
 
   /* ================= rank titles ================= */
   function rankTitle(s){
-    if (s <= 0) return "TRIPPED AT THE DOOR";
-    if (s >= 1100) return "UNTOUCHABLE";
-    if (s >= 700) return "MOP MARATHONER";
-    if (s >= 300) return "HALL SPRINTER";
-    return "PUDDLE JUMPER";
+    if (s <= 0) return "TRIPPED ON THE LEASH";
+    if (s >= 2600) return "SHED LEGEND";
+    if (s >= 1800) return "FUR MISSILE";
+    if (s >= 1000) return "HALLWAY HERO";
+    if (s >= 400) return "ROLLER ROOKIE";
+    return "LINT MAGNET";
   }
 
   /* ================= render ================= */
@@ -1622,7 +1628,7 @@
       ? "SEASON LEADER: <b>🏆 " + esc(nameFor(season.email, season.gen)) + " — " + season.total + "</b>"
       : "";
     $("#frame-open").hidden = !(hero && m && m.email === hero.email);
-    $("#loading-week").textContent = "W" + (WEEK + 1) + " LOADING…";
+    $("#loading-week").textContent = "SEASON 2 LOADING…";
     startCeremonyFx();
   }
 
@@ -1960,15 +1966,20 @@
   var hudTime = $("#hud-time"), hudScore = $("#hud-score"), hudStreak = $("#hud-streak");
   var timePill = $("#time-pill");
   var score = 0, bestStreak = 0, playing = false, dead = false;
-  var SCALE = 4, PLAYER_X = 56, MAX_MS = 60000;
-  var PW = 12 * SCALE, PH = 16 * SCALE;   // player box
-  var py = 0, vy = 0, dist = 0, speed = 0, elapsed = 0;
-  var obstacles = [], popups = [], stars = [], spawnIn = 0, rafId = null, lastT = 0, groundOff = 0;
+  var SCALE = 3, MAX_MS = 180000, TURN_MS = 120000, WALL = 24;
+  var PW = 17 * SCALE, PH = 23 * SCALE, CAT_W = 20, CAT_H = 18, FUR = 9;
+  var px = 0, targetX = null, keyDir = 0, elapsed = 0, speed = 0, floorOff = 0;
+  var lives = 3, streak = 0, tufts = 0, closeCalls = 0, invuln = 0, shake = 0, turned = false;
+  var boost = 0, demoMode = false, runMax = MAX_MS, nextSpeedPop = 30000, hissing = false;
+  var storm = 0, calm = 0, nextStorm = 25000, shedFx = 0, warrantyAt = [];
+  var dog = { x: 0, y: 60, dir: 1, vx: 0 };
+  var items = [], popups = [], tuftIn = 0, hazIn = 0, rafId = null, lastT = 0;
 
-  /* ---- pixel sprites (1 char = 1 px) ---- */
+  /* ---- pixel sprites (1 char = 1 px), seen from above ---- */
   var PAL = { K:"#1A1038", B:"#B07B3E", D:"#7A521F", G:"#C7CEDA", H:"#8E99A4",
               W:"#FFF3D9", C:"#2CE0DE", T:"#17A8A6", P:"#F52C87", Y:"#FFD23F",
-              U:"#8C4BFF", O:"#F7A21B", E:"#150F2B" };
+              U:"#8C4BFF", O:"#F7A21B", E:"#150F2B", R:"#E0483C", N:"#3D2B70",
+              F:"#00D1DB", f:"#0A9AA3" };
   function sprite(rows){
     var h = rows.length, w = rows[0].length;
     var c = document.createElement("canvas");
@@ -1984,156 +1995,163 @@
     }
     return c;
   }
-  var MOP_A = sprite([
-    ".....YY.....",
-    ".....BB.....",
-    ".....BB.....",
-    ".....BB.....",
-    ".....BB.....",
-    ".....BB.....",
-    ".....DB.....",
-    ".....DB.....",
-    "....KKKK....",
-    "...KWWWWK...",
-    "..KGGGGGGK..",
-    "..KGKGGKGK..",
-    "..KGGGGGGK..",
-    "..GGGGGGGG..",
-    "..G.GG.GG...",
-    "..G.G..G.G.."
-  ]);
-  var MOP_B = sprite([
-    ".....YY.....",
-    ".....BB.....",
-    ".....BB.....",
-    ".....BB.....",
-    ".....BB.....",
-    ".....BB.....",
-    ".....DB.....",
-    ".....DB.....",
-    "....KKKK....",
-    "...KWWWWK...",
-    "..KGGGGGGK..",
-    "..KGKGGKGK..",
-    "..KGGGGGGK..",
-    "..GGGGGGGG..",
-    "...GG.GG.G..",
-    ".G..G..G..G."
-  ]);
-  var MOP_J = sprite([
-    ".....YY.....",
-    ".....BB.....",
-    ".....BB.....",
-    ".....BB.....",
-    ".....BB.....",
-    ".....BB.....",
-    ".....DB.....",
-    ".....DB.....",
-    "....KKKK....",
-    "...KWWWWK...",
-    "..KGGGGGGK..",
-    "..KGWGGWGK..",
-    "..KGGGGGGK..",
-    "...GGGGGG...",
-    "....GGGG....",
-    "....GGGG...."
-  ]);
-  var BUCKET = sprite([
-    "KKKKKKKKKKKK",
-    "KCWWCCCCCCCK",
-    "KCCCCCCCCCCK",
-    ".KCCCCCCCCK.",
-    ".KCTCCCCTCK.",
-    ".KCTCCCCTCK.",
-    ".KCTCCCCTCK.",
-    "..KTCCCCTK..",
-    "..KTTTTTTK..",
-    "..KKKKKKKK.."
-  ]);
-  var STACK = sprite([
-    "KKKKKKKKKKKK",
-    "KUWWUUUUUUUK",
-    "KUUUUUUUUUUK",
-    ".KUUUUUUUUK.",
-    ".KUUUUUUUUK.",
-    ".KUUUUUUUUK.",
-    "..KUUUUUUK..",
-    "..KKKKKKKK..",
-    "KKKKKKKKKKKK",
-    "KCWWCCCCCCCK",
-    "KCCCCCCCCCCK",
-    ".KCCCCCCCCK.",
-    ".KCCCCCCCCK.",
-    ".KCCCCCCCCK.",
-    ".KCCCCCCCCK.",
-    ".KCCCCCCCCK.",
-    "..KCCCCCCK..",
-    "..KCCCCCCK..",
-    "..KTTTTTTK..",
-    "..KKKKKKKK.."
-  ]);
-  var SIGN = sprite([
-    "....KK....",
-    "...KYYK...",
-    "...KYYK...",
-    "..KYKKYK..",
-    "..KYKKYK..",
-    ".KYYKKYYK.",
-    ".KYYYYYYK.",
-    ".KYYKKYYK.",
-    "KYYYYYYYYK",
-    "KKKKKKKKKK",
-    "..K....K..",
-    "..K....K..",
-    ".KK....KK."
+  var VACUUM = sprite([
+    "..KKKKKKKKKKKKK..",
+    ".KTTTTTTTTTTTTTK.",
+    "KTCCCCCCCCCCCCCTK",
+    "KTCWCCCCCCCCCCCTK",
+    "KTTTTTTTTTTTTTTTK",
+    "KHKHKHKHKHKHKHKHK",
+    ".KKKKKKKKKKKKKKK.",
+    "......KKNKK......",
+    "......KNCNK......",
+    ".....KKNNNKK.....",
+    "....KUUUUUUUK....",
+    "....KUCWCCCUK....",
+    "....KUCCCCCUK....",
+    "....KUCCCCCUK....",
+    "....KUNNNNNUK....",
+    "....KUUUUUUUK....",
+    ".....KKKKKKK.....",
+    ".......KNK.......",
+    ".......KNK.......",
+    ".......KNK.......",
+    "......KYYYK......",
+    "......KYYYK......",
+    ".......KKK......."
   ]);
   var CAT_A = sprite([
-    ".K.K.............",
-    "KUKUK.........KK.",
-    "KUUUK........KUUK",
-    "KWUUKKKKKKKKKUUK.",
-    ".KUUUUUUUUUUUUK..",
-    ".KUUUUUUUUUUUK...",
-    "..KUUUUUUUUUUK...",
-    "..KUK.KUUK.KUK...",
-    "..KK...KK...KK...",
-    "................."
+    "..KK............KK..",
+    ".KHGK..........KGHK.",
+    ".KHPGK........KGPHK.",
+    ".KHGGGKKKKKKKKGGGHK.",
+    "..KGGGGGGGGGGGGGGK..",
+    "..KGGCKGGGGGGKCGGK..",
+    "..KGGGGGGPPGGGGGGK..",
+    "...KGGGGGWWGGGGGK...",
+    "....KGHGGGGGGHGK....",
+    "...KGGGHGGGGHGGGK...",
+    "..KGGGGGHGGHGGGGGK..",
+    "..KGKGGGGGGGGGGKGK..",
+    "..KGKGGGHGGHGGGKGK..",
+    "..KKKKGGGGGGGGKKKK..",
+    "......KGGGGGGK......",
+    "......KGGHGGK.......",
+    ".......KGGGKKKK.....",
+    ".......KKKKKHWK....."
   ]);
   var CAT_B = sprite([
-    ".K.K.............",
-    "KUKUK.........KK.",
-    "KUUUK........KUUK",
-    "KWUUKKKKKKKKKUUK.",
-    ".KUUUUUUUUUUUUK..",
-    ".KUUUUUUUUUUUK...",
-    "..KUUUUUUUUUUK...",
-    "..K.KUK.KUK.K....",
-    ".....KK..KK......",
-    "................."
+    "..KK............KK..",
+    ".KHGK..........KGHK.",
+    ".KHPGK........KGPHK.",
+    ".KHGGGKKKKKKKKGGGHK.",
+    "..KGGGGGGGGGGGGGGK..",
+    "..KGGCKGGGGGGKCGGK..",
+    "..KGGGGGGPPGGGGGGK..",
+    "...KGGGGGWWGGGGGK...",
+    "....KGHGGGGGGHGK....",
+    "...KGGGHGGGGHGGGK...",
+    "..KGGGGGHGGHGGGGGK..",
+    "..KGKGGGGGGGGGGKGK..",
+    "..KGKGGGHGGHGGGKGK..",
+    "..KKKKGGGGGGGGKKKK..",
+    "......KGGGGGGK......",
+    ".......KGGHGGK......",
+    ".....KKKKGGGK.......",
+    ".....KWHKKKKK......."
   ]);
-  var PUDDLE = sprite([
-    "....KKKKKKKKKKKKKK....",
-    "..KKCCWWCCCCCCWWCCKK..",
-    ".KCCCCCCCWWCCCCCCCCCK.",
-    "..KKKKKKKKKKKKKKKKKK.."
+  var TUFT = sprite([
+    "...FFF...",
+    "..FWWFF..",
+    ".FFWFFFf.",
+    "FFFFFFFfF",
+    "FFFFFFfff",
+    ".FFFffff.",
+    "..Fffff..",
+    "...fff..."
   ]);
-  var SPONGE = sprite([
-    "W....KKKKKK....W",
-    "WW..KOOOOOOK..WW",
-    ".W.KOWOOOOWOK.W.",
-    "...KOOOOOOOOK...",
-    "...KOOWOOWOOK...",
-    "...KOOOOOOOOK...",
-    "....KKKKKKKK....",
-    "................"
+  var GOLD = sprite([
+    "...YYY...",
+    "..YWWYY..",
+    ".YYWYYYO.",
+    "YYYYYYYOY",
+    "YYYYYYOOO",
+    ".YYYOOOO.",
+    "..YOOOO..",
+    "...OOO..."
   ]);
-  var OBS_TYPES = [
-    { spr: BUCKET, frames: null, w: 12, h: 10, mode: "ground", minT: 0,     wt: 30, vx: 0 },
-    { spr: SIGN,   frames: null, w: 10, h: 13, mode: "ground", minT: 0,     wt: 22, vx: 0 },
-    { spr: PUDDLE, frames: null, w: 22, h: 4,  mode: "ground", minT: 5000,  wt: 16, vx: 0 },
-    { spr: CAT_A,  frames: [CAT_A, CAT_B], w: 17, h: 9, mode: "ground", minT: 8000, wt: 14, vx: 0.06 },
-    { spr: STACK,  frames: null, w: 12, h: 20, mode: "ground", minT: 12000, wt: 10, vx: 0 },
-    { spr: SPONGE, frames: null, w: 16, h: 7,  mode: "air",    minT: 20000, wt: 14, vx: 0, hover: 84 }
+  var SHOE = sprite([
+    "...KKKK...",
+    "..KWWWWK..",
+    ".KWRRRRWK.",
+    ".KRRWWRRK.",
+    ".KRRWWRRK.",
+    ".KRRKKRRK.",
+    ".KRRWWRRK.",
+    ".KRRKKRRK.",
+    ".KRRWWRRK.",
+    ".KRRRRRRK.",
+    ".KRRRRRRK.",
+    "KRRRRRRRRK",
+    "KRRRRRRRRK",
+    "KWWWWWWWWK",
+    "KHHHHHHHHK",
+    ".KKKKKKKK."
+  ]);
+  var BONE = sprite([
+    "KKK......KKK",
+    "KWWK....KWWK",
+    "KWWWKKKKWWWK",
+    ".KWWWWWWWWK.",
+    "KWWWKKKKWWWK",
+    "KWWK....KWWK",
+    "KKK......KKK"
+  ]);
+  var LEGO = sprite([
+    "KKKKKKK.....",
+    "KPWPWPK.....",
+    "KPPPPPKKKKKK",
+    "KPPPPPKCWCWK",
+    "KPPPPPKCCCCK",
+    "KKKKKKKCCCCK",
+    "KYWYWYKCCCCK",
+    "KYYYYYKKKKKK",
+    "KYYYYYKUWUWK",
+    "KYYYYYKUUUUK",
+    "KKKKKKKKKKKK"
+  ]);
+  var WARRANTY = sprite([
+    "..KKK....KKK..",
+    ".KRRRK..KRRRK.",
+    "KRWWRRKKRRRRRK",
+    "KRWRRRRRRRRRRK",
+    "KRRRRRRRRRRRRK",
+    "KRRRRRRRRRRRRK",
+    ".KRRRRRRRRRRK.",
+    "..KRRRRRRRRK..",
+    "...KRRRRRRK...",
+    "....KRRRRK....",
+    ".....KRRK.....",
+    "......KK......"
+  ]);
+  var HEART_DEAD = sprite([
+    "..KKK....KKK..",
+    ".KNNNK..KNNNK.",
+    "KNNNNNKKNNNNNK",
+    "KNNNNNNNNNNNNK",
+    "KNNNNNNNNNNNNK",
+    "KNNNNNNNNNNNNK",
+    ".KNNNNNNNNNNK.",
+    "..KNNNNNNNNK..",
+    "...KNNNNNNK...",
+    "....KNNNNK....",
+    ".....KNNK.....",
+    "......KK......"
+  ]);
+  var HAZARDS = [
+    { spr: SHOE, w: 10, h: 16, wt: 30, name: "shoe" },
+    { spr: BONE, w: 12, h: 7,  wt: 30, name: "chew toy" },
+    { spr: LEGO, w: 12, h: 11, wt: 25, name: "LEGO" }
   ];
 
   board.addEventListener("contextmenu", function(e){ e.preventDefault(); });
@@ -2143,87 +2161,100 @@
     cv.height = board.clientHeight;
     g2 = cv.getContext("2d");
     g2.imageSmoothingEnabled = false;
-    stars = [];
-    for (var i = 0; i < 24; i++) {
-      stars.push({ x: Math.random() * cv.width, y: Math.random() * (cv.height - 120),
-                   s: Math.random() < 0.3 ? 3 : 2, a: 0.1 + Math.random() * 0.25 });
-    }
   }
-  function groundY(){ return cv.height - 24; } // the floor line
+  function playerY(){ return cv.height - PH - 26; }
+  function minX(){ return WALL + 4; }
+  function maxX(){ return cv.width - WALL - 4 - PW; }
+  function mult(){ return 1 + Math.min(2, Math.floor(streak / 6)) + (boost > 0 ? 1 : 0); }
   function updateHud(){
-    hudTime.textContent = Math.floor(dist / 40) + "m";
+    var left = Math.max(0, Math.ceil((runMax - elapsed) / 1000));
+    hudTime.textContent = Math.floor(left / 60) + ":" + (left % 60 < 10 ? "0" : "") + (left % 60);
     hudScore.textContent = String(Math.floor(score));
-    hudStreak.textContent = String(bestStreak);
-    timePill.classList.toggle("hot", playing && elapsed > MAX_MS - 10000);
+    hudStreak.textContent = "x" + mult() + (boost > 0 ? " 🔥" + Math.ceil(boost / 1000) + "s" : (streak ? " · " + streak : ""));
+    timePill.classList.toggle("hot", playing && (turned || left <= 10));
   }
   function stopTimers(){ cancelAnimationFrame(rafId); }
-  function jump(){
-    if (!playing || dead) return;
-    if (py <= 0.5) {
-      vy = 0.70;
-      blip(660, 0.08, "square", 0.04);
+  function pop(x, y, txt, color){ popups.push({ x: x, y: y, txt: txt, life: 750, color: color }); }
+  function loseLife(why){
+    if (invuln > 0 || dead) return;
+    lives--; streak = 0; invuln = 1300; shake = 320;
+    blip(150, 0.35, "sawtooth", 0.07);
+    pop(px + PW / 2, playerY() - 18, why + " -1❤️", "#F52C87");
+    if (lives <= 0) {
+      dead = true;
+      setTimeout(function(){ playing = false; endGame(); }, 700);
     }
   }
-  function crash(){
-    dead = true;
-    blip(150, 0.4, "sawtooth", 0.07);
-    setTimeout(function(){ playing = false; endGame(); }, 650);
+  function spawnTuft(){
+    var gold = Math.random() < 0.06;
+    var x = turned ? minX() + Math.random() * (maxX() - minX()) : dog.x + (CAT_W * SCALE) / 2 - (FUR * SCALE) / 2 + (Math.random() - 0.5) * 24;
+    x = Math.max(minX(), Math.min(maxX() + PW - FUR * SCALE, x));
+    if (!turned) { shedFx = 220; }
+    items.push({ kind: gold ? "gold" : "tuft", spr: gold ? GOLD : TUFT, w: FUR, h: 8, x: x, y: turned ? -30 : dog.y + CAT_H * SCALE - 10, age: 0, hit: false, passed: false, minGap: 999 });
   }
-  function spawnObstacle(){
-    var pool = [], total = 0;
-    OBS_TYPES.forEach(function(t){ if (elapsed >= t.minT) { pool.push(t); total += t.wt; } });
-    var r = Math.random() * total, pick = pool[0];
-    for (var i = 0; i < pool.length; i++) { r -= pool[i].wt; if (r <= 0) { pick = pool[i]; break; } }
-    obstacles.push({ t: pick, x: cv.width + 40, minGap: 999, cleared: false, bob: Math.random() * 6.28 });
+  function spawnHazard(){
+    var total = 0; HAZARDS.forEach(function(h){ total += h.wt; });
+    var r = Math.random() * total, pick = HAZARDS[0];
+    for (var i = 0; i < HAZARDS.length; i++) { r -= HAZARDS[i].wt; if (r <= 0) { pick = HAZARDS[i]; break; } }
+    var x = minX() + Math.random() * (maxX() + PW - pick.w * SCALE - minX());
+    items.push({ kind: "haz", spr: pick.spr, w: pick.w, h: pick.h, x: x, y: -60, hit: false, passed: false, minGap: 999, name: pick.name });
   }
   function drawWorld(dt){
     g2.clearRect(0, 0, cv.width, cv.height);
-    var gy = groundY();
-    // drifting pixel dust (parallax)
-    stars.forEach(function(st){
-      st.x -= speed * dt * 0.25;
-      if (st.x < -4) st.x = cv.width + 4;
-      g2.globalAlpha = st.a;
-      g2.fillStyle = "#8C4BFF";
-      g2.fillRect(Math.floor(st.x), Math.floor(st.y), st.s, st.s);
-    });
-    g2.globalAlpha = 1;
-    // ground
-    groundOff = (groundOff + speed * dt) % 30;
-    g2.fillStyle = "#8C4BFF";
-    for (var x = -groundOff; x < cv.width; x += 30) g2.fillRect(Math.floor(x), gy + 4, 16, 3);
-    g2.fillStyle = "#3D2B70";
-    for (var x2 = -((groundOff * 1.6) % 44); x2 < cv.width; x2 += 44) g2.fillRect(Math.floor(x2), gy + 12, 10, 2);
-  }
-  function drawObstacle(o){
-    var gy = groundY();
-    var t = o.t;
-    var spr = t.frames ? t.frames[Math.floor(elapsed / 130) % 2] : t.spr;
-    var h = t.h * SCALE, w = t.w * SCALE;
-    var yTop;
-    if (t.mode === "air") {
-      var bob = Math.sin(elapsed / 300 + o.bob) * 6;
-      o.flyBottom = t.hover + bob;
-      yTop = gy - o.flyBottom - h;
-      g2.drawImage(spr, Math.floor(o.x), Math.floor(yTop), w, spr.height * SCALE);
-    } else {
-      yTop = gy - h;
-      g2.drawImage(spr, Math.floor(o.x), Math.floor(yTop), w, spr.height * SCALE);
+    // hardwood floorboards scrolling toward the player
+    floorOff = (floorOff + speed * dt) % 48;
+    var inner = cv.width - WALL * 2;
+    for (var y = floorOff - 48; y < cv.height; y += 48) {
+      var yy = Math.floor(y), k = Math.round((y - floorOff) / 48);
+      g2.fillStyle = "#1B1237"; g2.fillRect(WALL, yy, inner, 48);
+      g2.fillStyle = "#211744"; g2.fillRect(WALL, yy, inner, 24);
+      g2.fillStyle = "#130C2A"; g2.fillRect(WALL, yy + 23, inner, 2); g2.fillRect(WALL, yy + 47, inner, 1);
+      var seam = WALL + (((k * 97) % 7 + 7) % 7) * (inner / 7);
+      g2.fillRect(Math.floor(seam), yy, 2, 24);
+      g2.fillRect(Math.floor(WALL + ((seam - WALL + inner * 0.55) % inner)), yy + 24, 2, 24);
+      g2.fillStyle = "#2B2050";
+      g2.fillRect(WALL + 30, yy + 8, 18, 1); g2.fillRect(WALL + inner - 80, yy + 34, 24, 1); g2.fillRect(Math.floor(WALL + inner * 0.5), yy + 15, 14, 1);
     }
+    // walls: plaster, baseboard, shadow
+    g2.fillStyle = "#2A1D52"; g2.fillRect(0, 0, WALL, cv.height); g2.fillRect(cv.width - WALL, 0, WALL, cv.height);
+    g2.fillStyle = "#3D2B70"; g2.fillRect(WALL - 7, 0, 7, cv.height); g2.fillRect(cv.width - WALL, 0, 7, cv.height);
+    g2.fillStyle = "#8C4BFF"; g2.fillRect(WALL - 2, 0, 2, cv.height); g2.fillRect(cv.width - WALL, 0, 2, cv.height);
+    g2.fillStyle = "rgba(0,0,0,.28)"; g2.fillRect(WALL, 0, 10, cv.height); g2.fillRect(cv.width - WALL - 10, 0, 10, cv.height);
+    // lives: beating hearts on a dark pill
+    var beat = Math.pow(Math.max(0, Math.sin(elapsed / 210)), 8);
+    var slots = Math.max(3, lives), hx = WALL + 10, hy = 8, hw = 14 * 2, hh = 12 * 2;
+    g2.fillStyle = "rgba(10,6,24,.72)";
+    g2.fillRect(hx - 6, hy - 4, slots * (hw + 6) + 6, hh + 8);
+    for (var l = 0; l < slots; l++) {
+      var alive = l < lives, sc = alive ? 1 + 0.18 * beat : 0.9;
+      var cx = hx + l * (hw + 6) + hw / 2, cy = hy + hh / 2;
+      g2.drawImage(alive ? WARRANTY : HEART_DEAD, Math.floor(cx - hw * sc / 2), Math.floor(cy - hh * sc / 2), Math.round(hw * sc), Math.round(hh * sc));
+    }
+    if (turned) {
+      g2.textAlign = "right"; g2.fillStyle = "#F52C87"; g2.font = '9px "Press Start 2P", monospace';
+      g2.fillText("THE CAT TURNED!", cv.width - WALL - 8, 20);
+    }
+  }
+  function drawDog(){
+    var spr = Math.floor(elapsed / 140) % 2 ? CAT_A : CAT_B;
+    g2.save();
+    if (hissing && !turned) g2.translate((Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5); // shaking with rage
+    else if (shedFx > 0 && !turned) g2.translate((Math.random() - 0.5) * 3, (Math.random() - 0.5) * 2); // shed shiver
+    if (turned) { g2.translate(dog.x + CAT_W * SCALE / 2, dog.y + CAT_H * SCALE / 2); g2.rotate(Math.PI); g2.translate(-(dog.x + CAT_W * SCALE / 2), -(dog.y + CAT_H * SCALE / 2)); }
+    g2.drawImage(spr, Math.floor(dog.x), Math.floor(dog.y), CAT_W * SCALE, CAT_H * SCALE);
+    g2.restore();
   }
   function drawPlayer(){
-    var gy = groundY();
-    var spr = py > 0.5 ? MOP_J : (Math.floor(elapsed / 120) % 2 ? MOP_A : MOP_B);
-    var yTop = gy - PH - py;
-    if (dead) {
-      g2.save();
-      g2.translate(PLAYER_X + PW / 2, gy - PH / 3);
-      g2.rotate(-1.4);
-      g2.drawImage(MOP_J, -PW / 2, -PH / 2, PW, PH);
-      g2.restore();
-    } else {
-      g2.drawImage(spr, PLAYER_X, Math.floor(yTop), PW, PH);
+    var y = playerY();
+    if (invuln > 0 && Math.floor(elapsed / 90) % 2) return; // blink while invulnerable
+    if (boost > 0) {
+      g2.fillStyle = "rgba(255,210,63," + (0.18 + 0.12 * Math.sin(elapsed / 90)) + ")";
+      g2.fillRect(px - 10, y - 10, PW + 20, PH + 20);
     }
+    g2.save();
+    if (dead) { g2.translate(px + PW / 2, y + PH / 2); g2.rotate(1.2); g2.translate(-(px + PW / 2), -(y + PH / 2)); }
+    g2.drawImage(VACUUM, Math.floor(px), Math.floor(y), PW, PH);
+    g2.restore();
   }
   function drawPopups(dt){
     g2.textAlign = "center";
@@ -2238,63 +2269,154 @@
     }
     g2.globalAlpha = 1;
   }
-  function pop(x, y, txt, color){ popups.push({ x: x, y: y, txt: txt, life: 750, color: color }); }
   function tick(t){
     if (!playing) return;
     var dt = Math.min(40, t - lastT);
     lastT = t;
     if (!dead) {
       elapsed += dt;
-      if (py > 0 || vy > 0) {
-        vy -= 0.0024 * dt;
-        py += vy * dt;
-        if (py <= 0) { py = 0; vy = 0; }
+      invuln = Math.max(0, invuln - dt); shake = Math.max(0, shake - dt); boost = Math.max(0, boost - dt);
+      shedFx = Math.max(0, shedFx - dt); calm = Math.max(0, calm - dt);
+      if (storm > 0) { storm = Math.max(0, storm - dt); if (storm === 0) calm = 4000; }
+      if (!turned && !hissing && !demoMode && elapsed >= nextStorm && elapsed < TURN_MS - 6000) {
+        nextStorm += 25000; storm = 2600;
+        pop(cv.width / 2, cv.height * 0.3, "SHED STORM!", "#F52C87");
+        blip(660, 0.08, "square", 0.05); setTimeout(function(){ blip(880, 0.08, "square", 0.05); }, 90); setTimeout(function(){ blip(1100, 0.12, "square", 0.05); }, 180);
       }
-      speed = 0.27 + elapsed * 0.0000045;
-      dist += speed * dt;
-      score += speed * dt / 25;
-      spawnIn -= dt;
-      if (spawnIn <= 0) {
-        spawnObstacle();
-        spawnIn = Math.max(560, 760 + Math.random() * 800 - elapsed * 0.004);
+      speed = 0.22 + elapsed * 0.0000034;
+      if (!demoMode && elapsed >= nextSpeedPop) {
+        nextSpeedPop += 30000;
+        pop(cv.width / 2, cv.height * 0.3, "FASTER!", "#8C4BFF");
+        blip(880, 0.08, "square", 0.04); setTimeout(function(){ blip(1100, 0.1, "square", 0.04); }, 110);
       }
-      var pL = PLAYER_X + 4, pR = PLAYER_X + PW - 4;
-      var pBottom = py, pTop = py + PH; // heights above floor
-      for (var i = obstacles.length - 1; i >= 0; i--) {
-        var o = obstacles[i];
-        o.x -= (speed + (o.t.vx || 0)) * dt;
-        var w = o.t.w * SCALE, h = o.t.h * SCALE;
-        var oL = o.x + 3, oR = o.x + w - 3;
-        if (oR > pL && oL < pR) {
-          if (o.t.mode === "air") {
-            var clearance = o.flyBottom - pTop;
-            if (clearance < o.minGap) o.minGap = clearance;
-            if (pTop > o.flyBottom + 2 || (py > 0.5 && clearance < -2)) { crash(); break; }
-            if (clearance < -2) { crash(); break; }
-          } else {
-            var gap = pBottom - h;
+      // the cat telegraphs, then turns
+      if (!turned && !hissing && !demoMode && elapsed >= TURN_MS - 2500) {
+        hissing = true;
+        pop(dog.x + CAT_W * SCALE / 2, dog.y + CAT_H * SCALE + 14, "HISSSS!", "#F52C87");
+        blip(120, 0.5, "sawtooth", 0.05);
+      }
+      if (!turned && !demoMode && elapsed >= TURN_MS) {
+        turned = true; dog.vx = 0.16; dog.dir = 1;
+        pop(cv.width / 2, cv.height * 0.45, "THE CAT TURNS!", "#F52C87");
+        if (music.on && audioCtx && !muted) { try { braaam(audioCtx.currentTime, 26, 0.07); } catch (e) {} }
+        blip(220, 0.3, "square", 0.06); setTimeout(function(){ blip(180, 0.4, "square", 0.06); }, 200);
+      }
+      // dog movement: weaves up top while shedding, then patrols mid-hallway as a moving wall
+      if (!turned) {
+        dog.y = 54 + Math.sin(elapsed / 900) * 8;
+        if (!hissing) dog.x += dog.dir * (storm > 0 ? 0.34 : 0.08) * dt; // sprints during a storm, frozen while hissing
+        if (dog.x > maxX() - 20) dog.dir = -1;
+        if (dog.x < minX()) dog.dir = 1;
+        if (storm <= 0 && Math.random() < dt * 0.0006) dog.dir *= -1;
+      } else {
+        var targetY = cv.height * 0.52;
+        dog.y += (targetY - dog.y) * Math.min(1, dt * 0.003);
+        dog.x += dog.dir * dog.vx * dt;
+        if (dog.x > cv.width - WALL - CAT_W * SCALE) dog.dir = -1;
+        if (dog.x < WALL) dog.dir = 1;
+      }
+      // steering
+      if (keyDir) px += keyDir * 0.55 * dt;
+      else if (targetX !== null) px = targetX - PW / 2; // 1:1 with the mouse or finger
+      px = Math.max(minX(), Math.min(maxX(), px));
+      // spawns
+      tuftIn -= dt; hazIn -= dt;
+      if (warrantyAt.length && elapsed >= warrantyAt[0]) {
+        warrantyAt.shift();
+        items.push({ kind: "warranty", spr: WARRANTY, w: 14, h: 12, x: minX() + Math.random() * (maxX() + PW - 14 * SCALE - minX()), y: -60, age: 0, hit: false, passed: false, minGap: 999 });
+        pop(cv.width / 2, cv.height * 0.3, "VACUUM WARRANTY! ❤️", "#FF6262");
+      }
+      if (tuftIn <= 0) {
+        spawnTuft();
+        tuftIn = storm > 0 ? 190 : (calm > 0 ? 1300 : Math.max(420, 820 - elapsed * 0.0025) * (0.7 + Math.random() * 0.6));
+      }
+      if (hazIn <= 0) { spawnHazard(); hazIn = Math.max(700, 1500 - elapsed * 0.005) * (0.7 + Math.random() * 0.6); }
+      // items
+      var pL = px + 3, pR = px + PW - 3, pT = playerY() + 4, pB = playerY() + PH - 2;
+      for (var i = items.length - 1; i >= 0; i--) {
+        var o = items[i];
+        o.y += speed * dt; o.age = (o.age || 0) + dt;
+        var w = o.w * SCALE, h = o.h * SCALE;
+        var oL = o.x + 2, oR = o.x + w - 2, oT = o.y + 2, oB = o.y + h - 2;
+        var overlapY = oB > pT && oT < pB;
+        if (!o.hit && overlapY) {
+          if (oR > pL && oL < pR) {
+            o.hit = true;
+            if (o.kind === "haz") {
+              loseLife(o.name.toUpperCase() + "!");
+            } else if (o.kind === "warranty") {
+              lives = Math.min(4, lives + 1);
+              pop(o.x + w / 2, o.y - 8, lives === 4 ? "WARRANTY! BONUS ❤️" : "WARRANTY! +1❤️", "#FFD23F");
+              blip(880, 0.1, "triangle", 0.05); setTimeout(function(){ blip(1320, 0.16, "triangle", 0.05); }, 110);
+              items.splice(i, 1); continue;
+            } else {
+              streak++; tufts++;
+              if (streak > bestStreak) bestStreak = streak;
+              if (o.kind === "gold") boost = 8000;
+              var pts = o.kind === "gold" ? 40 : 8 * mult();
+              score += pts;
+              var daring = false;
+              for (var k = 0; k < items.length; k++) {
+                var hz = items[k];
+                if (hz.kind !== "haz" || hz.hit) continue;
+                var gapX = Math.max(0, hz.x - (px + PW), px - (hz.x + hz.w * SCALE));
+                var gapY = Math.max(0, hz.y - (playerY() + PH), playerY() - (hz.y + hz.h * SCALE));
+                if (gapX < 26 && gapY < 26) { daring = true; break; }
+              }
+              if (daring) {
+                score += 15; closeCalls++;
+                pop(px + PW / 2, playerY() - 30, "DARING! +15", "#FFD23F");
+                blip(980, 0.1, "triangle", 0.05);
+              }
+              pop(o.x + w / 2, o.y - 6, o.kind === "gold" ? "GOLD RUSH! +40" : "+" + pts + (mult() > 1 ? " x" + mult() : ""), o.kind === "gold" ? "#FFD23F" : "#00D1DB");
+              blip(o.kind === "gold" ? 1200 : 760 + streak * 12, 0.07, "triangle", 0.04);
+              items.splice(i, 1); continue;
+            }
+          } else if (o.kind === "haz") {
+            var gap = oL > pR ? oL - pR : pL - oR;
             if (gap < o.minGap) o.minGap = gap;
-            if (gap < -5) { crash(); break; }
-          }
-        } else if (!o.cleared && oR <= pL) {
-          o.cleared = true;
-          if (o.minGap > -5 && o.minGap < 16) {
-            bestStreak++;
-            score += 15;
-            pop(PLAYER_X + 40, groundY() - 60, "CLOSE! +15", "#FFD23F");
-            blip(980, 0.1, "triangle", 0.05);
           }
         }
-        if (o.x < -120) obstacles.splice(i, 1);
+        if (!o.passed && oT > pB) {
+          o.passed = true;
+          if ((o.kind === "tuft" || o.kind === "gold") && !o.hit && streak > 0) {
+            streak = 0;
+            pop(o.x + w / 2, pB - 10, "MISSED", "#8E99A4");
+          }
+        }
+        if (o.y > cv.height + 40) items.splice(i, 1);
+      }
+      // the cat itself is a hazard once it has turned
+      if (turned) {
+        var dL = dog.x + 8, dR = dog.x + CAT_W * SCALE - 8, dT = dog.y + 10, dB = dog.y + CAT_H * SCALE - 10;
+        if (dR > pL && dL < pR && dB > pT && dT < pB) loseLife("CAT POUNCE!");
       }
     }
+    g2.save();
+    if (shake > 0) g2.translate((Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6);
     drawWorld(dt);
-    for (var d = 0; d < obstacles.length; d++) drawObstacle(obstacles[d]);
+    for (var d2 = 0; d2 < items.length; d2++) {
+      var it = items[d2], iw = it.w * SCALE, ih = it.h * SCALE, sc = it.kind === "haz" ? 1 : Math.min(1, 0.35 + (it.age || 0) / 220);
+      if (it.kind === "warranty") { // the heart beats and glows so it never hides among the toys
+        sc *= 1 + 0.18 * Math.pow(Math.max(0, Math.sin(elapsed / 210)), 8);
+        g2.save(); g2.shadowColor = "#FF4D6D"; g2.shadowBlur = 18;
+        g2.drawImage(it.spr, Math.floor(it.x + (iw - iw * sc) / 2), Math.floor(it.y + (ih - ih * sc) / 2), Math.round(iw * sc), Math.round(ih * sc));
+        g2.restore(); continue;
+      }
+      g2.drawImage(it.spr, Math.floor(it.x + (iw - iw * sc) / 2), Math.floor(it.y + (ih - ih * sc) / 2), Math.round(iw * sc), Math.round(ih * sc));
+    }
+    drawDog();
     drawPlayer();
     drawPopups(dt);
+    if (demoMode && !turned) {
+      g2.fillStyle = "rgba(10,6,24,.72)"; g2.fillRect(cv.width - WALL - 214, 6, 206, 22);
+      g2.textAlign = "right"; g2.fillStyle = "#FFD23F"; g2.font = '9px "Press Start 2P", monospace';
+      g2.fillText("DEMO — NO CREDIT USED", cv.width - WALL - 14, 21);
+    }
+    g2.restore();
     updateHud();
-    if (!dead && elapsed >= MAX_MS) {
-      pop(cv.width / 2, groundY() - 90, "YOU OUTRAN THE MESS!", "#2CE0DE");
+    if (!dead && elapsed >= runMax) {
+      pop(cv.width / 2, cv.height * 0.4, demoMode ? "DEMO OVER!" : "YOU OUTRAN THE SHED!", "#2CE0DE");
       playing = false;
       stopTimers();
       setTimeout(endGame, 800);
@@ -2302,12 +2424,17 @@
     }
     rafId = requestAnimationFrame(tick);
   }
-  board.addEventListener("pointerdown", function(e){
-    e.preventDefault();
-    jump();
-  });
+  function pointerX(e){ var r = cv.getBoundingClientRect(); return (e.clientX - r.left) * (cv.width / r.width); }
+  board.addEventListener("pointerdown", function(e){ e.preventDefault(); targetX = pointerX(e); if (board.setPointerCapture) board.setPointerCapture(e.pointerId); });
+  document.addEventListener("pointermove", function(e){ if (playing) targetX = pointerX(e); }); // the whole page steers — no click, no borders
   document.addEventListener("keydown", function(e){
-    if (e.code === "Space" && playing) { e.preventDefault(); jump(); }
+    if (!playing) return;
+    if (e.code === "ArrowLeft" || e.code === "KeyA") { e.preventDefault(); keyDir = -1; }
+    if (e.code === "ArrowRight" || e.code === "KeyD") { e.preventDefault(); keyDir = 1; }
+  });
+  document.addEventListener("keyup", function(e){
+    if ((e.code === "ArrowLeft" || e.code === "KeyA") && keyDir === -1) keyDir = 0;
+    if ((e.code === "ArrowRight" || e.code === "KeyD") && keyDir === 1) keyDir = 0;
   });
 
   function saveNote(msg, kind){
@@ -2324,12 +2451,138 @@
     if (currentCalendarWeek() === WEEK && dayIndex() === 6) { toast("CEREMONY DAY — NO RUNS, JUST GLORY. NEW GAME TOMORROW! 🎉"); return; }
     if (CONFIGURED && !state.loaded && state.error !== "net-first") { toast("HOLD ON — SYNCING YOUR CREDITS… 🔄"); return; }
     if (myRuns().length >= triesForMe(m.email, WEEK)) { justFinished = false; renderAll(); toast("OUT OF CREDITS THIS WEEK!"); return; }
+    beginRun(false);
+  }
+  /* ---- Generative 8-bit score: evolving chords, improvised melody, layers that build, a swelling drone,
+          and a BRAAAM at every tension step. Very subtle, honors mute, different every run. ---- */
+  var music = { on: false, timer: null, nextT: 0, step: 0, bar: 0, gain: null, lastTier: -1, drone: null, droneGain: null, droneFilter: null, noise: null, lastLead: 64 };
+  var TIERS = [
+    { bpm: 104, chords: [[48, 52, 55], [45, 48, 52], [41, 45, 48], [43, 47, 50]], scale: [0, 2, 4, 5, 7, 9, 11], density: 0.42, vol: 0.02,  drone: 0.006, leadType: "triangle" },
+    { bpm: 124, chords: [[45, 48, 52], [41, 45, 48], [48, 52, 55], [40, 44, 47]], scale: [0, 2, 3, 5, 7, 8, 11], density: 0.62, vol: 0.024, drone: 0.009, leadType: "triangle" },
+    { bpm: 148, chords: [[50, 53, 57], [46, 50, 53], [43, 46, 50], [45, 49, 52]], scale: [0, 1, 3, 5, 7, 8, 10], density: 0.8,  vol: 0.028, drone: 0.013, leadType: "square" }
+  ];
+  function midi(n){ return 440 * Math.pow(2, (n - 69) / 12); }
+  function musicTier(){ return demoMode ? 0 : Math.min(2, Math.floor(elapsed / 60000)); }
+  function tone(t, freq, dur, type, vol, dest){
+    var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(dest || music.gain);
+    o.start(t); o.stop(t + dur + 0.02);
+  }
+  function noiseHit(t, dur, vol, hp){ // snare / hat from filtered noise
+    if (!music.noise) {
+      var buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.3, audioCtx.sampleRate), d = buf.getChannelData(0);
+      for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      music.noise = buf;
+    }
+    var src = audioCtx.createBufferSource(), f = audioCtx.createBiquadFilter(), g = audioCtx.createGain();
+    src.buffer = music.noise; f.type = "highpass"; f.frequency.value = hp;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(f); f.connect(g); g.connect(music.gain);
+    src.start(t); src.stop(t + dur + 0.02);
+  }
+  function braaam(t, root, vol){ // the Zimmer horn: two detuned saws under a closing lowpass
+    [0, 7].forEach(function(det){
+      var o = audioCtx.createOscillator(), f = audioCtx.createBiquadFilter(), g = audioCtx.createGain();
+      o.type = "sawtooth"; o.frequency.value = midi(root) * (1 + det / 1200);
+      f.type = "lowpass"; f.frequency.setValueAtTime(900, t); f.frequency.exponentialRampToValueAtTime(120, t + 1.4);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.08); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
+      o.connect(f); f.connect(g); g.connect(music.gain);
+      o.start(t); o.stop(t + 1.6);
+    });
+  }
+  function musicStart(){
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      if (!music.gain) { music.gain = audioCtx.createGain(); music.gain.connect(audioCtx.destination); }
+      music.gain.gain.cancelScheduledValues(audioCtx.currentTime);
+      music.gain.gain.setValueAtTime(1, audioCtx.currentTime);
+      // the drone: one low saw through a slowly wandering lowpass
+      music.drone = audioCtx.createOscillator(); music.droneFilter = audioCtx.createBiquadFilter(); music.droneGain = audioCtx.createGain();
+      music.drone.type = "sawtooth"; music.drone.frequency.value = midi(36);
+      music.droneFilter.type = "lowpass"; music.droneFilter.frequency.value = 220;
+      music.droneGain.gain.value = 0.0001;
+      music.drone.connect(music.droneFilter); music.droneFilter.connect(music.droneGain); music.droneGain.connect(music.gain);
+      music.drone.start();
+      music.on = true; music.step = 0; music.bar = 0; music.lastTier = 0; music.lastLead = 64;
+      music.nextT = audioCtx.currentTime + 0.12;
+      clearInterval(music.timer);
+      music.timer = setInterval(musicTick, 90);
+    } catch (e) {}
+  }
+  function musicStop(){
+    music.on = false; clearInterval(music.timer);
+    if (music.gain && audioCtx) {
+      try {
+        music.gain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.12);
+        var dr = music.drone; if (dr) setTimeout(function(){ try { dr.stop(); } catch (e) {} }, 800);
+        music.drone = null;
+      } catch (e) {}
+    }
+  }
+  function musicTick(){
+    if (!music.on || !audioCtx) return;
+    if (muted) { music.nextT = Math.max(music.nextT, audioCtx.currentTime + 0.1); if (music.droneGain) music.droneGain.gain.setTargetAtTime(0.0001, audioCtx.currentTime, 0.1); return; }
+    var ti = musicTier(), tier = TIERS[ti];
+    if (ti !== music.lastTier) { music.lastTier = ti; braaam(audioCtx.currentTime, tier.chords[0][0] - 12, 0.05); }
+    var stepDur = 60 / tier.bpm / 2; // eighth notes, 8 per bar
+    while (music.nextT < audioCtx.currentTime + 0.25) {
+      var i = music.step % 8, bar = music.bar, chord = tier.chords[bar % 4], root = chord[0];
+      var t = music.nextT, layer = Math.min(3, Math.floor(bar / 4)); // layers stack in every 4 bars
+      if (i === 0) { // new bar: retune the drone with a slow glide, wander the filter
+        music.drone.frequency.setTargetAtTime(midi(root - 12), t, 0.4);
+        music.droneGain.gain.setTargetAtTime(tier.drone * (0.7 + layer * 0.1), t, 0.6);
+        music.droneFilter.frequency.setTargetAtTime(160 + Math.random() * 260 + ti * 120, t, 1.2);
+      }
+      // bass: root on 1 and 3, fifth / octave / walk-up chosen per bar
+      var bassPat = [[root, -1, root, -1, root + 7, -1, root, -1], [root, -1, root + 7, -1, root, -1, root + 12, root + 7], [root, root, -1, root + 7, root, -1, root + 5, root + 7]][bar % 3];
+      if (bassPat[i] >= 0) tone(t, midi(bassPat[i]), stepDur * 0.85, "square", tier.vol);
+      // lead: improvised from the chord + scale, random walk, denser as tension rises; rests breathe
+      if (layer >= 1 && Math.random() < tier.density) {
+        var pool = [chord[0] + 12, chord[1] + 12, chord[2] + 12, chord[0] + 24];
+        if (Math.random() < 0.35) pool.push(root + 12 + tier.scale[Math.floor(Math.random() * tier.scale.length)]);
+        var cands = pool.filter(function(n){ return Math.abs(n - music.lastLead) <= 7; });
+        var n = (cands.length ? cands : pool)[Math.floor(Math.random() * (cands.length ? cands : pool).length)];
+        music.lastLead = n;
+        tone(t, midi(n), stepDur * (Math.random() < 0.3 ? 1.6 : 0.7), tier.leadType, tier.vol * 0.5);
+      }
+      // arpeggio shimmer (16ths) on every other bar once the second layer is in
+      if (layer >= 2 && bar % 2 === 1) {
+        tone(t, midi(chord[i % 3] + 24), stepDur * 0.35, "triangle", tier.vol * 0.22);
+        tone(t + stepDur / 2, midi(chord[(i + 1) % 3] + 24), stepDur * 0.35, "triangle", tier.vol * 0.22);
+      }
+      // percussion: hats always, kick from tier 1, snare from tier 2
+      if (i % 2 === 1 || ti === 2) noiseHit(t, 0.03, tier.vol * 0.45, 6000);
+      if (ti >= 1 && (i === 0 || i === 4)) tone(t, 62, 0.11, "square", tier.vol * 1.1);
+      if (ti === 2 && (i === 2 || i === 6)) noiseHit(t, 0.09, tier.vol * 0.9, 1800);
+      // a fill every 4th bar from tier 1: quick 16th run up the chord
+      if (ti >= 1 && bar % 4 === 3 && i >= 6) { tone(t, midi(chord[i % 3] + 12), stepDur * 0.3, "square", tier.vol * 0.4); tone(t + stepDur / 2, midi(chord[(i + 1) % 3] + 12), stepDur * 0.3, "square", tier.vol * 0.4); }
+      music.nextT += stepDur; music.step++;
+      if (music.step % 8 === 0) music.bar++;
+    }
+  }
+  function startDemo(){
+    if (!me() || playing) return;
+    beginRun(true);
+    toast("DEMO: 10 SECONDS, NO CREDIT USED 🎮");
+  }
+  function beginRun(isDemo){
+    demoMode = isDemo; runMax = isDemo ? 10000 : MAX_MS; nextSpeedPop = 30000; boost = 0;
     stopTimers();
     initCanvas();
-    obstacles = []; popups = [];
-    score = 0; bestStreak = 0; dist = 0; elapsed = 0;
-    py = 0; vy = 0; spawnIn = 1100; dead = false;
+    items = []; popups = [];
+    score = 0; bestStreak = 0; streak = 0; tufts = 0; closeCalls = 0; elapsed = 0;
+    lives = 3; invuln = 0; shake = 0; turned = false; keyDir = 0; targetX = null;
+    px = (cv.width - PW) / 2; dog.x = cv.width / 2 - CAT_W * SCALE / 2; dog.y = 54; dog.dir = 1; dog.vx = 0;
+    tuftIn = 900; hazIn = 2200; dead = false; hissing = false; storm = 0; calm = 0; nextStorm = 25000; shedFx = 0;
+    warrantyAt = isDemo ? [] : [18000 + Math.random() * 35000, 65000 + Math.random() * 45000]; // one per minute, before the cat turns
+    board.classList.add("live"); document.body.classList.add("playing");
     playing = true;
+    musicStart();
     updateHud();
     $("#overlay").hidden = true;
     document.querySelector(".stage").style.minHeight = ""; // game board back to design size
@@ -2338,19 +2591,28 @@
     rafId = requestAnimationFrame(tick);
   }
   $("#start").addEventListener("click", startRun);
+  $("#demo-btn").addEventListener("click", startDemo);
   $("#again-btn").addEventListener("click", startRun);
 
   function endGame(){
     playing = false;
-    justFinished = true;
     stopTimers();
+    musicStop();
+    board.classList.remove("live"); document.body.classList.remove("playing");
+    if (demoMode) {
+      demoMode = false;
+      renderAll();
+      toast(score > 0 ? "DEMO OVER — " + Math.floor(score) + " PTS. NOW DO IT FOR REAL 🪙" : "DEMO OVER — READY FOR THE REAL RUN? 🪙");
+      return;
+    }
+    justFinished = true;
     score = Math.round(score);
     updateHud();
     blip(660, 0.12); setTimeout(function(){ blip(440, 0.25); }, 130);
 
     $("#final-score").textContent = String(score);
     $("#rank-title").textContent = rankTitle(score);
-    $("#end-streak").textContent = "Distance: " + Math.floor(dist / 40) + "m · close calls: " + bestStreak;
+    $("#end-streak").textContent = "Fur caught: " + tufts + " · best streak: " + bestStreak + " · daring catches: " + closeCalls;
     showPanel("screen-end");
 
     var m = me();
@@ -2361,7 +2623,7 @@
     var tries = triesForMe(m.email, WEEK);
     var attempt = myRuns().length + 1;
     var left = Math.max(0, tries - attempt);
-    $("#end-title").textContent = left <= 0 ? "LAST CREDIT SPENT!" : (elapsed >= MAX_MS ? "YOU OUTRAN THE MESS!" : "WIPED OUT!");
+    $("#end-title").textContent = left <= 0 ? "LAST CREDIT SPENT!" : (elapsed >= MAX_MS ? "YOU OUTRAN THE SHED!" : "WIPED OUT BY THE HALLWAY!");
     if (left > 0) {
       againBtn.hidden = false;
       againBtn.textContent = "PLAY AGAIN — " + left + " CREDIT" + (left === 1 ? "" : "S") + " LEFT";
