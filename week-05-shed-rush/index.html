@@ -1968,7 +1968,7 @@
   var score = 0, bestStreak = 0, playing = false, dead = false;
   var SCALE = 3, MAX_MS = 180000, TURN_MS = 120000, WALL = 24;
   var PW = 17 * SCALE, PH = 23 * SCALE, CAT_W = 20, CAT_H = 18, FUR = 9;
-  var px = 0, lastPX = null, keyDir = 0, elapsed = 0, speed = 0, floorOff = 0;
+  var px = 0, lastPX = null, keyDir = 0, elapsed = 0, speed = 0, floorOff = 0, ptrScale = 1;
   var lives = 3, streak = 0, tufts = 0, closeCalls = 0, invuln = 0, shake = 0, turned = false;
   var boost = 0, demoMode = false, runMax = MAX_MS, nextSpeedPop = 30000, hissing = false;
   var storm = 0, calm = 0, nextStorm = 25000, shedFx = 0, warrantyAt = [], lastMin = 0, clockAt = 0, overtime = false;
@@ -2488,15 +2488,22 @@
     }
     rafId = requestAnimationFrame(tick);
   }
-  function pointerX(e){ var r = cv.getBoundingClientRect(); return (e.clientX - r.left) * (cv.width / r.width); }
-  board.addEventListener("pointerdown", function(e){ e.preventDefault(); lastPX = pointerX(e); });
-  document.addEventListener("pointermove", function(e){ // relative steering from anywhere on the page: never pins to a wall, never needs a click
+  function refreshPtrScale(){ var r = cv.getBoundingClientRect(); ptrScale = r.width ? cv.width / r.width : 1; } // cached: no layout read per mouse event
+  window.addEventListener("resize", refreshPtrScale);
+  function lockPointer(){ // capture the mouse for the run: it can never hit a screen edge, and the cursor is hidden by the browser
+    try { var pl = board.requestPointerLock && board.requestPointerLock(); if (pl && pl.catch) pl.catch(function(){}); } catch (e) {} // not allowed here → relative fallback
+  }
+  function unlockPointer(){ try { if (document.pointerLockElement === board && document.exitPointerLock) document.exitPointerLock(); } catch (e) {} }
+  function steer(dxCss){ px += dxCss * ptrScale; px = Math.max(minX(), Math.min(maxX(), px)); keyDir = 0; }
+  board.addEventListener("pointerdown", function(e){ e.preventDefault(); lastPX = e.clientX; if (playing && document.pointerLockElement !== board) lockPointer(); });
+  document.addEventListener("pointermove", function(e){
     if (!playing) return;
-    var x = pointerX(e);
-    if (lastPX !== null) { px += x - lastPX; px = Math.max(minX(), Math.min(maxX(), px)); keyDir = 0; }
-    lastPX = x;
+    if (document.pointerLockElement === board) { steer(e.movementX || 0); return; } // locked: pure relative motion
+    if (lastPX !== null) steer(e.clientX - lastPX);                                    // fallback: relative from anywhere on the page
+    lastPX = e.clientX;
   });
   document.addEventListener("pointerout", function(e){ if (!e.relatedTarget) lastPX = null; }); // left the window: no jump on return
+  document.addEventListener("pointerlockchange", function(){ lastPX = null; });
   window.addEventListener("blur", function(){ keyDir = 0; lastPX = null; }); // a missed key-up can't lock the vacuum
   document.addEventListener("keydown", function(e){
     if (!playing) return;
@@ -2653,6 +2660,7 @@
     warrantyAt = isDemo ? [] : [18000 + Math.random() * 35000, 65000 + Math.random() * 45000]; // one per minute, before the cat turns
     lastMin = 0; overtime = false; clockAt = isDemo ? 0 : 150000 + Math.random() * 20000;
     board.classList.add("live"); document.body.classList.add("playing");
+    refreshPtrScale(); lockPointer();
     playing = true;
     musicStart();
     updateHud();
@@ -2670,7 +2678,7 @@
     playing = false;
     stopTimers();
     musicStop();
-    board.classList.remove("live"); document.body.classList.remove("playing");
+    board.classList.remove("live"); document.body.classList.remove("playing"); unlockPointer();
     if (demoMode) {
       demoMode = false;
       renderAll();
